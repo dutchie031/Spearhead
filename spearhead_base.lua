@@ -1516,18 +1516,41 @@ do
             end
 
             SpearheadEvents.AddCommandsToGroup = function(groupId)
-
                 local base = "MISSIONS"
                 if groupId then
-                    missionCommands.addCommandForGroup(groupId, "Stage Status", {}, triggerStatusRequestReceived, groupId)
+                    missionCommands.addCommandForGroup(groupId, "Stage Status", nil, triggerStatusRequestReceived, groupId)
                 end
             end
 
             --Single player purpose
-            for i = 1, 2  do
-                for _, unit in pairs(coalition.getPlayers(i)) do
+            local id = net.get_my_player_id()
+            if id == 0 then
+                SpearheadLogger:info("Single Player detected")
+                 
+                local unit = world.getPlayer()
+                if unit then
                     local groupId = unit:getGroup():getID()
                     SpearheadEvents.AddCommandsToGroup(groupId)
+
+                    --DEBUG COMMANDS
+                    do
+                        local activateStage = function (number)
+                            SpearheadEvents.PublishStageNumberChanged(number)
+                        end
+
+                        missionCommands.addSubMenuForGroup(groupId , "debug" , nil)
+                        missionCommands.addSubMenuForGroup(groupId , "Set Stage" , {"debug"})
+
+                        for i = 0, 9 do
+                            local menuName = tostring(i) .. ".."
+                            missionCommands.addSubMenuForGroup(groupId , menuName, {"debug", "Set Stage"})
+                            for ii = 0, 9 do
+                                local number  = tonumber(tostring(i) .. tostring(ii))
+                                missionCommands.addCommandForGroup(groupId, "Stage " .. tostring(number), { "debug", "Set Stage", menuName }, activateStage, number)
+                                SpearheadLogger:info("blaat " .. number)
+                            end
+                        end
+                    end
                 end
             end
         end

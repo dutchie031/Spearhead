@@ -144,17 +144,6 @@ local stageConfig = {
 Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
 Spearhead.internal.GlobalStageManager.start(databaseManager)
 
-local activateStage = function (number)
-    local succ, err = pcall( function () 
-        Spearhead.Events.PublishStageNumberChanged(number)
-    end)
-    env.error(err)
-end
-
-missionCommands.addCommand("stage1", {}, activateStage, 1)
-missionCommands.addCommand("stage2", {}, activateStage, 2)
-missionCommands.addCommand("stage3", {}, activateStage, 3)
-missionCommands.addCommand("stage4", {}, activateStage, 4)
 
 Spearhead.LoadingDone()
 --Check lines of code in directory per file: 

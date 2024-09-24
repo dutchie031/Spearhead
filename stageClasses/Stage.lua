@@ -230,11 +230,13 @@ do --init STAGE DIRECTOR
             -- end
         end
 
-        o.ManageStage = function(self)
-        end
-
         o.OnStatusRequestReceived = function(self, groupId)
-            trigger.action.outTextForGroup("Status Update incoming... ")
+            if self.activeStage ~= self.stageNumber then
+                return
+            end
+
+            trigger.action.outTextForGroup(groupId, "Status Update incoming... ", 3)
+            trigger.action.outTextForGroup(groupId, " " .. self.zoneName, 3)
         end
 
         o.OnStageNumberChanged = function (self, number)
@@ -258,6 +260,7 @@ do --init STAGE DIRECTOR
             end
         end
 
+        Spearhead.Events.AddOnStatusRequestReceivedListener(o)
         Spearhead.Events.AddStageNumberChangedListener(o)
         return o
     end
