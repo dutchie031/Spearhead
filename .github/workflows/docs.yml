@@ -15,13 +15,13 @@ jobs:
     working-directory: .
   steps:
   - uses: actions/checkout@v4  
-  - name: Push generated webpage to another repository
+  - name: Push readme to another repository
     uses: nkoppel/push-files-to-another-repository@v1.1.3
     env:
         API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
     with:
         source-files: 'DOC.md'
-        destination-username: 'nkoppel'
+        destination-username: 'dutchie032'
         destination-repository: 'dutchie032.github.io '
         destination-directory: 'Spearhead'
         commit-email: 'timrorije@gmail.com'
