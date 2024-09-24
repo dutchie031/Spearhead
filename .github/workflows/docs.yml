@@ -14,7 +14,7 @@ jobs:
     branch: main
     username: dutchie032
     repo: dutchie032.github.io 
-    sourcefile: DOC.md
+    sourcefile: DOC
   defaults:
    run:
     working-directory: .
@@ -36,8 +36,8 @@ jobs:
     run: ls
   - name: mkdir
     run: mkdir -p ./$repo/Spearhead
-  - name: copy file
-    run: cp ./spearhead/$sourcefile ./$repo/Spearhead/$sourcefile
+  - run: npm i markdown-to-html-cli -g
+  - run: markdown-to-html --source ./spearhead/$sourcefile.md --output ./$repo/Spearhead/$sourcefile.html
   - name: ls
     run: ls
     working-directory: ./dutchie032.github.io
