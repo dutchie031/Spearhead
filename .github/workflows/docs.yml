@@ -14,12 +14,6 @@ jobs:
    run:
     working-directory: .
   steps:
-
-  - shell: bash
-    env:
-      SUPER_SECRET: ${{ secrets.API_TOKEN_GITHUB }}
-    run: |
-      echo "$SUPER_SECRET"
   - name: Push readme to another repository
     uses: nkoppel/push-files-to-another-repository@v1.1.3
     env:
