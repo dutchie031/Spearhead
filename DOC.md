@@ -11,7 +11,29 @@ It keeps track of completed missions, moves the stages forward once all mission 
 The goal is for the mission maker to focus on the story and the detailed missions, without having to worry about all the triggers and mission management the scripts normally take care off.
 
 
+## Index 
+
+- [Current Features](#current-features)
+- [Stage](#stage)
+  - [Completion](#completion)
+  - [On Completion](#on-completion)
+
+
+## Current Features
+
+- Stage Progression
+- 
+
 ## Stage
+
+A stage is a logical part of a mission. It's isn't anything special per se, but everything revolves around stages in Spearhead. <br/>
+Everything is tied to at a stage. <br/>
+A
+
+### Completion
+
+### On Completion
+
 
 
 ## Mission
