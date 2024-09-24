@@ -27,7 +27,7 @@ do --init STAGE DIRECTOR
 
         o.stageNumber = orderNumber
         o.database = database
-
+        o.logger = logger
         o.db = {}
         o.db.missions = {}
         o.db.sams = {}
@@ -35,6 +35,7 @@ do --init STAGE DIRECTOR
         o.db.blueAirbasegroups = {}
         o.db.airbaseIds = {}
         o.db.farps = {}
+        o.activeStage = 0
         o.preActivated = false
 
         do --Init Stage
@@ -82,7 +83,6 @@ do --init STAGE DIRECTOR
                 for _, airbaseId in pairs(airbaseIds) do
                     
                     for _, groupName in pairs(database:getRedGroupsAtAirbase(airbaseId)) do 
-                        logger:debug("blaat)")
                         table.insert(o.db.redAirbasegroups, groupName)
                     end
 
@@ -117,7 +117,7 @@ do --init STAGE DIRECTOR
                 end
             end
 
-            logger:debug("blaat Pre-activating stage with airbase groups amount: " .. Spearhead.Util.tableLength(self.db.redAirbasegroups))
+            self.logger:debug("Pre-activating stage with airbase groups amount: " .. Spearhead.Util.tableLength(self.db.redAirbasegroups))
 
             for _ , groupName in pairs(self.db.redAirbasegroups) do
                 Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
@@ -129,6 +129,18 @@ do --init STAGE DIRECTOR
                 self:PreActivate()
             end
             
+            local miscGroups = self.database:getMiscGroupsAtStage(self.zoneName)
+            self.logger:debug("Activating Misc groups for zone: " .. Spearhead.Util.tableLength(miscGroups))
+            for _, groupName in pairs(miscGroups) do
+                Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+            end
+
+            for _, mission in pairs(self.db.missions) do
+                if mission.missionType == Spearhead.internal.Mission.MissionType.DEAD then
+                    mission:Activate()
+                end
+            end
+
             --[[
                 TODO: Activate Stage
             ]]--
@@ -221,7 +233,18 @@ do --init STAGE DIRECTOR
         o.ManageStage = function(self)
         end
 
+        o.OnStatusRequestReceived = function(self, groupId)
+            trigger.action.outTextForGroup("Status Update incoming... ")
+        end
+
         o.OnStageNumberChanged = function (self, number)
+
+            if self.activeStage == number then --only activate once for a stage
+                return
+            end
+
+            self.activeStage = number
+
             if Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
                 self:PreActivate()
             end

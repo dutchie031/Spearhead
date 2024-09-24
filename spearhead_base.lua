@@ -1491,6 +1491,47 @@ do
         end
     end
 
+    do --COMMANDS 
+        do -- status updates
+        
+            local onStatusRequestReceivedListeners = {}
+
+            ---comment
+            ---@param listener table object with OnStatusRequestReceived(self, groupId)
+            SpearheadEvents.AddOnStatusRequestReceivedListener = function(listener)
+                if type(listener) ~= "table" then
+                    SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+                    return
+                end
+
+                table.insert(onStatusRequestReceivedListeners, listener)
+            end
+
+            local triggerStatusRequestReceived = function (groupId)
+                for _, callable in pairs(onStatusRequestReceivedListeners) do
+                    local succ, err = pcall(function ()
+                        callable:OnStatusRequestReceived(groupId)
+                    end)
+                end
+            end
+
+            SpearheadEvents.AddCommandsToGroup = function(groupId)
+
+                local base = "MISSIONS"
+                if groupId then
+                    missionCommands.addCommandForGroup(groupId, "Stage Status", {}, triggerStatusRequestReceived, groupId)
+                end
+            end
+
+            --Single player purpose
+            for i = 1, 2  do
+                for _, unit in pairs(coalition.getPlayers(i)) do
+                    local groupId = unit:getGroup():getID()
+                    SpearheadEvents.AddCommandsToGroup(groupId)
+                end
+            end
+        end
+    end
 
     local e = {}
     function e:onEvent(event)
@@ -1528,6 +1569,12 @@ do
                     end
                 end
             end
+        end
+
+        if event.id == world.event.S_EVENT_PLAYER_ENTER_UNIT then
+            env.info("blaat player entering unit")
+            local groupId = event.initiator:getGroup():getID()
+            SpearheadEvents.AddCommandsToGroup(groupId)
         end
     end
 

@@ -298,7 +298,7 @@ do -- DB
                     local baseId = tostring(airbase:getID())
                     local point = airbase:getPoint()
 
-                    if isAirbaseInZone[tostring(baseId) or "something" ] == true then
+                    if isAirbaseInZone[tostring(baseId) or "something" ] == true and airbase:getDesc().Category == Airbase.Category.AIRDROME then
                         o.tables.redAirbaseGroupsPerAirbase[baseId] = {}
                         o.tables.blueAirbaseGroupsPerAirbase[baseId] = {}
                         local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, { x = point.x, z = point.z, radius = 6600 })
@@ -309,8 +309,10 @@ do -- DB
                                 if object then
                                     if object:getCoalition() == coalition.side.RED then
                                         table.insert(o.tables.redAirbaseGroupsPerAirbase[baseId], groupName)
+                                        is_group_taken[groupName] = true
                                     elseif object:getCoalition() == coalition.side.BLUE then
                                         table.insert(o.tables.blueAirbaseGroupsPerAirbase[baseId], groupName)
+                                        is_group_taken[groupName] = true
                                     end
                                 end
                             else
@@ -330,25 +332,24 @@ do -- DB
                 end
             end
 
-            o.tables.miscGroupsInStage = {}
-            local loadMiscGroupsInStage = function ()
+            o.tables.miscGroupsInStages = {}
+            local loadMiscGroupsInStages = function ()
                 local all_groups = getAvailableGroups()
                 for _, stage_zone in pairs(o.tables.stage_zones) do
-                    o.tables.miscGroupsInStage[stage_zone] = {}
+                    o.tables.miscGroupsInStages[stage_zone] = {}
                     local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stage_zone)
                     for _, groupName in pairs(groups) do
-
                         if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
                             local object = StaticObject.getByName(groupName)
                             if object and object:getCoalition() ~= coalition.side.NEUTRAL then
                                 is_group_taken[groupName] = true
-                                table.insert(o.tables.miscGroupsInStage[stage_zone], groupName)
+                                table.insert(o.tables.miscGroupsInStages[stage_zone], groupName)
                             end
                         else
                             local group = Group.getByName(groupName)
                             if group and group:getCoalition() ~= coalition.side.NEUTRAL then
                                 is_group_taken[groupName] = true
-                                table.insert(o.tables.miscGroupsInStage[stage_zone], groupName)
+                                table.insert(o.tables.miscGroupsInStages[stage_zone], groupName)
                             end
                         end
                     end
@@ -360,7 +361,9 @@ do -- DB
             loadRandomMissionzoneUnits()
             loadFarpGroups()
             loadAirbaseGroups()
-            loadMiscGroupsInStage()
+            loadMiscGroupsInStages()
+
+            Logger:debug(o.tables.miscGroupsInStages)
 
             local cleanup = function () --CLean up all groups that are now managed inside zones by spearhead 
                 
@@ -546,12 +549,16 @@ do -- DB
         
         o.getRedGroupsAtAirbase = function (self, airbaseId)
             local baseId = tostring(airbaseId)
-            return self.tables.redAirbaseGroupsPerAirbase[baseId]
+            return self.tables.redAirbaseGroupsPerAirbase[baseId] or {}
         end
 
         o.getBlueGroupsAtAirbase = function (self, airbaseId)
             local baseId = tostring(airbaseId)
-            return self.tables.blueAirbaseGroupsPerAirbase[baseId]
+            return self.tables.blueAirbaseGroupsPerAirbase[baseId] or {}
+        end
+
+        o.getMiscGroupsAtStage = function(self, stageName)
+            return self.tables.miscGroupsInStages[stageName] or {}
         end
 
         o.GetNewMissionCode = function (self)
