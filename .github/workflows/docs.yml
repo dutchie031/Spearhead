@@ -10,13 +10,15 @@ jobs:
  pushdoc:
   name: push_file   
   runs-on: ubuntu-latest
-  defaults:
   env:
-    Greeting: Hello
+    branch: main
+    username: dutchie032
+    repo: dutchie032.github.io 
+  defaults:
    run:
     working-directory: .
   steps:
   - name: Setup credentials to access private repositories
     run: git config --global url.https://${{ secrets.API_TOKEN_GITHUB }}@github.com/.insteadOf https://github.com/
   - name: Push generated webpage to another repository
-    run: git clone --single-branch --branch 'main' 
+    run: git clone --single-branch --branch $branch https://github.com/$username/$repo 
