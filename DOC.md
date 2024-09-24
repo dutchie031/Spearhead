@@ -11,11 +11,6 @@ It keeps track of completed missions, moves the stages forward once all mission 
 The goal is for the mission maker to focus on the story and the detailed missions, without having to worry about all the triggers and mission management the scripts normally take care off.
 
 
-
-
-
-
-
 ## Stage
 
 
