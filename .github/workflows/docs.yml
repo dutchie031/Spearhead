@@ -22,6 +22,10 @@ jobs:
   - uses: actions/checkout@v4
   - name: Setup credentials to access private repositories
     run: git config --global url.https://${{ secrets.API_TOKEN_GITHUB }}@github.com/.insteadOf https://github.com/
+  - name: Git Config
+    run: git config --global user.email "automated@action.com"
+  - name: Git Config
+    run: git config --global user.name "automated action"
   - name: Push generated webpage to another repository
     run: git clone --single-branch --branch $branch https://github.com/$username/$repo 
   - name: mkdir
