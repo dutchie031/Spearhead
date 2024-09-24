@@ -37,7 +37,7 @@ jobs:
   - name: mkdir
     run: mkdir -p ./$repo/Spearhead
   - run: npm i markdown-to-html-cli -g
-  - run: markdown-to-html --source ./spearhead/$sourcefile.md --output ./$repo/Spearhead/$sourcefile.html
+  - run: markdown-to-html --dark-mode auto --markdown-style-theme dark --source ./spearhead/$sourcefile.md --output ./$repo/Spearhead/$sourcefile.html
   - name: ls
     run: ls
     working-directory: ./dutchie032.github.io
