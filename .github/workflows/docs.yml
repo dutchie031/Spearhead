@@ -40,13 +40,13 @@ jobs:
     run: cp ./spearhead/$sourcefile ./$repo/Spearhead/$sourcefile
   - name: ls
     run: ls
-    working-directory: ./$repo
+    working-directory: ./dutchie032.github.io
   - name: add
     run: git add --a
-    working-directory: ./$repo
+    working-directory: ./dutchie032.github.io
   - name: commit
     run: git commit -a -m "Automatic Update of Spearhead README"
-    working-directory: ./$repo
+    working-directory: ./dutchie032.github.io
   - name: push
     run: git push
-    working-directory: ./$repo
+    working-directory: ./dutchie032.github.io
