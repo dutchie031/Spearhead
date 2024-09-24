@@ -31,5 +31,6 @@ jobs:
         destination-directory: 'Spearhead'
         commit-email: 'timrorije@gmail.com'
         commit-username: 'dutchie032'
+        destination-branch: 'main'
 
   
