@@ -16,17 +16,13 @@ jobs:
   steps:
   - name: Setup credentials to access private repositories
     run: git config --global url.https://${{ secrets.API_TOKEN_GITHUB }}@github.com/.insteadOf https://github.com/
-  - name: Push readme to another repository
-    uses: nkoppel/push-files-to-another-repository@v1.1.3
-    env:
-        API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+  - uses: sator-imaging/Copy-to-Another-Repository@v1
     with:
-        source-files: 'DOC.md'
-        destination-username: 'dutchie032'
-        destination-repository: 'dutchie032.github.io '
-        destination-directory: 'Spearhead'
-        commit-email: 'timrorije@gmail.com'
-        commit-username: 'dutchie032'
-        destination-branch: 'main'
-
-  
+      # required parameters
+      target-filepath: 'DOC.md'      # file path to copy
+      output-branch: 'main'   # branch name to create pull request
+      output-repo: 'dutchie032/dutchie032.github.io'
+      output-directory: "Spearhead"  
+      git-token: ${{ secrets.API_TOKEN_GITHUB }}
+      git-name: "github-actions[bot]"   # your name can be set by ${{ github.actor }}
+      git-email: 'github-actions[bot]@users.noreply.github.com'   # associated user icon is shown in commit page

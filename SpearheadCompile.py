@@ -7,7 +7,11 @@ def CreateReadme():
     print("TODO")
 
 def compileClasses(root):
-    for subFolder in  [ "", ""]:
+    for subFolder in  [ "capClasses", "stageClasses"]:
+        path = os.path.join(root, subFolder)
+        for name in glob.glob(f"{path}/*.lua"):
+            with open(path, 'r') as file:
+                
 
 def compile(root, target):
     compiled = ""

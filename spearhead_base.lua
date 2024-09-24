@@ -1,4 +1,3 @@
---1
 
 --- DEFAULT Values
 if Spearhead == nil then Spearhead = {} end
