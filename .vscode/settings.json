@@ -1,0 +1,16 @@
+{
+    "Lua.diagnostics.globals": [
+        "missionCommands",
+        "env",
+        "Airbase",
+        "world",
+        "trigger",
+        "StaticObject",
+        "Group",
+        "Unit",
+        "Object",
+        "coalition",
+        "timer",
+        "AI"
+    ]
+}
