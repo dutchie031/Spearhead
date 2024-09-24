@@ -32,12 +32,16 @@ jobs:
     run: git config --global user.name "automated action"
   - name: Push generated webpage to another repository
     run: git clone --single-branch --branch $branch https://github.com/$username/$repo 
+  - name: ls
+    run: ls
   - name: mkdir
     run: mkdir -p ./$repo/Spearhead
   - name: copy file
     run: cp ./spearhead/$sourcefile ./$repo/Spearhead/$sourcefile
   - name: copy file
     run: cd ./$repo
+  - name: ls
+    run: ls
   - name: add
     run: git add --a
   - name: commit
