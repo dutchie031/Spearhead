@@ -38,13 +38,15 @@ jobs:
     run: mkdir -p ./$repo/Spearhead
   - name: copy file
     run: cp ./spearhead/$sourcefile ./$repo/Spearhead/$sourcefile
-  - name: copy file
-    run: cd ./$repo
   - name: ls
     run: ls
+    working-directory: ./$repo
   - name: add
     run: git add --a
+    working-directory: ./$repo
   - name: commit
     run: git commit -a -m "Automatic Update of Spearhead README"
+    working-directory: ./$repo
   - name: push
     run: git push
+    working-directory: ./$repo
