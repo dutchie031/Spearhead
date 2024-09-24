@@ -2,18 +2,12 @@ import os
 import sys
 import glob
 
-Order = [
-    "spearhead_defaults.lua",
-    "spearhead_base.lua",
-    "spearhead_events.lua",
-    "spearhead_dcsbase.lua",
-    "spearhead_routes.lua",
-    "spearhead_mission.lua",
-    "spearhead_db.lua",
-    "spearhead_stage.lua",
-    "spearhead_cap.lua",
-    "spearhead.lua"
-]
+
+def CreateReadme(): 
+    print("TODO")
+
+def compileClasses(root):
+    for subFolder in  [ "", ""]:
 
 def compile(root, target):
     compiled = ""

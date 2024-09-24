@@ -1,9 +1,3 @@
---[[
-
-# 2. Stages
-
-]]
-
 
 local Stage = {}
 do --init STAGE DIRECTOR
