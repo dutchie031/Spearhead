@@ -24,4 +24,6 @@ jobs:
         destination-repository: 'dutchie032.github.io '
         destination-directory: 'Spearhead'
         commit-email: 'timrorije@gmail.com'
+        commit-username: 'dutchie032'
+        
   
