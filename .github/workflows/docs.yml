@@ -30,7 +30,7 @@ jobs:
     run: git config --global user.email "automated@action.com"
   - name: Git Config
     run: git config --global user.name "automated action"
-  - name: Push generated webpage to another repository
+  - name: clone
     run: git clone --single-branch --branch $branch https://github.com/$username/$repo 
   - name: ls
     run: ls
