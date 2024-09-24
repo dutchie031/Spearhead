@@ -38,3 +38,5 @@ jobs:
     run: git add --a
   - name: commit
     run: git commit -a -m "Automatic Update of Spearhead README"
+  - name: commit
+    run: git push
