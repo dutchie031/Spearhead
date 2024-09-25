@@ -161,8 +161,7 @@ CapGroup.GroupState = {
     RTBINTEN = 4,
     RTB = 5,
     DEAD = 6,
-    REARMING = 7,
-    DESPAWNED = 8
+    REARMING = 7
 }
 
 local function SetReadyOnRampAsync(self, time)
@@ -203,6 +202,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     o.unitCount = 0
     o.onStationSince = 0
     o.currentCapTaskingDuration = 0
+    o.markedForDespawn = false
 
     --config
     o.capConfig = {}
@@ -237,6 +237,8 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     end
 
     o.SpawnOnTheRamp = function(self)
+        self.markedForDespawn = false
+        self.logger:debug("Spawning group " .. self.groupName)
         self.aliveUnits = {}
         self.landedUnits = {}
         self.onStationSince = 0
@@ -258,7 +260,9 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     end
 
     o.Despawn = function(self)
+        self.logger:debug("Despawning group " .. self.groupName)
         Spearhead.DcsUtil.DestroyGroup(self.groupName)
+        self:SetState(CapGroup.GroupState.UNSPAWNED)
     end
 
     o.SendRTB = function(self)
@@ -270,8 +274,16 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
                 timer.scheduleFunction(setTaskAsync, { task = rtbTask, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
             else
                 self.logger:error("No RTB task could be created for group: " .. self.groupName .. " due to " .. errormessage)
+                if self.markedForDespawn == true then
+                    self:Despawn()
+                end
             end
         end
+    end
+
+    o.SendRTBAndDespawn = function(self)
+        self.markedForDespawn = true
+        o.SendRTB(self)
     end
 
     ---Starts and send this group to perform CAP at a stage
@@ -394,10 +406,18 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
 
         if landedCount + deadCount == self.unitCount then
             if landed then
-                timer.scheduleFunction(DelayedStartRearm, { self = self }, timer.getTime() + RESPAWN_AFTER_TOUCHDOWN_SECONDS)
+                if self.markedForDespawn == true then
+                    self:Despawn()
+                else
+                    timer.scheduleFunction(DelayedStartRearm, { self = self }, timer.getTime() + RESPAWN_AFTER_TOUCHDOWN_SECONDS)
+                end
             else
-                local delay = self.capConfig.deathDelay - self.capConfig.rearmDelay + RESPAWN_AFTER_TOUCHDOWN_SECONDS
-                timer.scheduleFunction(DelayedStartRearm, { self = self }, timer.getTime() + delay)
+                if self.markedForDespawn == true then
+                    self:Despawn()
+                else
+                    local delay = self.capConfig.deathDelay - self.capConfig.rearmDelay + RESPAWN_AFTER_TOUCHDOWN_SECONDS
+                    timer.scheduleFunction(DelayedStartRearm, { self = self }, timer.getTime() + delay)
+                end
             end
         end
     end

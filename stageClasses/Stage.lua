@@ -2,6 +2,9 @@
 local Stage = {}
 do --init STAGE DIRECTOR
 
+
+    local stageDrawingId = 0
+
     ---comment
     ---@param stagezone_name string
     ---@param database table
@@ -39,6 +42,9 @@ do --init STAGE DIRECTOR
         o.activeStage = 0
         o.preActivated = false
         o.stageConfig = stageConfig or {}
+        o.stageDrawingId = stageDrawingId + 1
+
+        stageDrawingId = stageDrawingId + 1
 
         do --Init Stage
             logger:info("Initiating new Stage with name: " .. stagezone_name)
@@ -138,7 +144,34 @@ do --init STAGE DIRECTOR
             self:ActivateMissionsIfApplicable(self)
         end
 
+        o.MarkStage = function(self, blue)
+            local fillColor = {1, 0, 0, 0.1}
+            local line ={ 1, 0,0, 1 }
+            if blue == true then
+                fillColor = {0, 0, 1, 0.1}
+                line ={ 0, 0,1, 1 }
+            end
+
+            local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
+            if zone then
+                self.logger:debug("drawing stage")
+                if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
+                    trigger.action.circleToAll(-1, self.stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, {0,0,0,0}, {0,0,0,0},4, true)
+                else
+                    --trigger.action.circleToAll(-1, self.stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, { 1, 0,0, 1 }, {1,0,0,1},4, true)
+                    trigger.action.quadToAll( -1, self.stageDrawingId,  zone.verts[2], zone.verts[1], zone.verts[4],  zone.verts[3], {0,0,0,0}, {0,0,0,0}, 4, true)
+                end
+
+                trigger.action.setMarkupColorFill(self.stageDrawingId, fillColor)
+                trigger.action.setMarkupColor(self.stageDrawingId, line)
+            end
+        end
+        
         o.ActivateStage = function(self)
+            pcall(function()
+                self:MarkStage()
+            end)
+
             self:PreActivate()
             
             local miscGroups = self.database:getMiscGroupsAtStage(self.zoneName)
@@ -211,6 +244,10 @@ do --init STAGE DIRECTOR
         end
 
         local ActivateBlueAsync = function(self)
+            pcall(function()
+                self:MarkStage(true)
+            end)
+
             for key, airbaseId in pairs(self.db.airbaseIds) do
                 local airbase = Spearhead.DcsUtil.getAirbaseById(airbaseId)
 

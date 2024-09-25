@@ -18,7 +18,6 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
     o.logger = logger
     o.activeStage = 0
     o.capConfig = capConfig
-    o.spawned = false
 
     if capConfig == nil then
         capConfig = {}
@@ -82,7 +81,6 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
 
             if targetStage ~= nil and capGroup.state == Spearhead.internal.CapGroup.GroupState.UNSPAWNED then
                 capGroup:SpawnOnTheRamp()
-                self.spawned = true
             end
         end
     end
@@ -108,7 +106,7 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
                     end
                     countPerStage[supposedTargetStage] = countPerStage[supposedTargetStage] + 1
                 else
-                    backupGroup:SendRTB()
+                    backupGroup:SendRTBAndDespawn()
                 end
             elseif backupGroup.state == Spearhead.internal.CapGroup.GroupState.RTBINTEN and backupGroup:GetTargetZone(self.activeStage) ~= backupGroup.assignedStageNumber then
                 backupGroup:SendRTB()
@@ -149,9 +147,7 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
                     primaryGroup:SendRTB()
                 end
             else
-                if primaryGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT or primaryGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION then
-                    primaryGroup:SendRTB()
-                end
+                primaryGroup:SendRTBAndDespawn()
             end
         end
 
@@ -167,6 +163,8 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
                         backupGroup:SendToStage(supposedTargetStage)
                         countPerStage[supposedTargetStage] = countPerStage[supposedTargetStage] + 1
                     end
+                else
+                    backupGroup:SendRTBAndDespawn()
                 end
             end
         end

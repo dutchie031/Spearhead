@@ -11,6 +11,7 @@
         "Object",
         "coalition",
         "timer",
-        "AI"
+        "AI",
+        "net"
     ]
 }

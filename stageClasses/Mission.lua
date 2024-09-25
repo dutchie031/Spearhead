@@ -193,9 +193,6 @@ do -- INIT Mission Class
             if self.missionState == Mission.MissionState.COMPLETED then
                 return
             end
-            --[[
-                TODO: Check own state based on mission type 
-            ]]--
 
             if self.hasSpecificTargets == true then
                 local specificTargetsAlive = false
@@ -225,9 +222,11 @@ do -- INIT Mission Class
 
                         local aliveRatio = (groupTotal - groupDeath) / groupTotal
                         if aliveRatio >= MINIMAL_UNITS_ALIVE_RATIO then
-                            aliveGroups = 1
+                            aliveGroups = aliveGroups + 1
                         end
                     end
+
+                    return aliveGroups
                 end
                 
                 if self.missionType == Mission.MissionType.STRIKE then --strike targets should normally have TGT targets
@@ -246,11 +245,11 @@ do -- INIT Mission Class
 
             if self.missionState == Mission.MissionState.COMPLETED then
                 self.logger:debug("Mission complete " .. self.name)
-                trigger.action.outText("Mission " .. self.name .. " (" .. self.code .. ") was completed succesfully!"  )
+                trigger.action.outText("Mission " .. self.name .. " (" .. self.code .. ") was completed succesfully!", 20)
 
                 TriggerMissionComplete(self)
                 --Schedule cleanup after 5 minutes of mission complete
-                timer.scheduleFunction(CleanupDelayedAsync, self, timer.getTime() + 300)
+                --timer.scheduleFunction(CleanupDelayedAsync, self, timer.getTime() + 300)
             end
         end
 
