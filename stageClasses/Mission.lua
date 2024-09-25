@@ -102,6 +102,8 @@ do -- INIT Mission Class
         o.logger = logger
         o.code = database:GetNewMissionCode()
 
+        o.groupNamesPerUnit = {}
+
         o.groupUnitAliveDict = {}
         o.targetAliveStates = {}
         o.hasSpecificTargets = false
@@ -115,10 +117,13 @@ do -- INIT Mission Class
             --[[
                 OnUnit lost event
             ]]--
-            local category = object:getCategory()
+            self.logger:debug("Getting on unit lost event")
+
+            local category = Object.getCategory(object)
             if category == Object.Category.UNIT then
                 local unitName = object:getName()
-                local groupName = object:getGroup():getName()
+                self.logger:debug("UnitName:" .. unitName)
+                local groupName = self.groupNamesPerUnit[unitName]
                 self.groupUnitAliveDict[groupName][unitName] = false
 
                 if self.targetAliveStates[groupName][unitName] then
@@ -128,11 +133,13 @@ do -- INIT Mission Class
                 local name = object:getName()
                 self.groupUnitAliveDict[name][name] = false
 
+                self.logger:debug("Name " .. name)
+
                 if self.targetAliveStates[name][name] then
                     self.targetAliveStates[name][name] = false
                 end
             end
-            CheckStateAsync(false)
+            timer.scheduleFunction(CheckStateAsync, self, timer.getTime() + 3)
         end
 
         o.MissionCompleteListeners = {}
@@ -190,8 +197,8 @@ do -- INIT Mission Class
                 TODO: Check own state based on mission type 
             ]]--
 
-            local specificTargetsAlive = false
             if self.hasSpecificTargets == true then
+                local specificTargetsAlive = false
                 for groupName, unitNameDict in pairs(self.targetAliveStates) do
                     for unitName, isAlive in pairs(unitNameDict) do
                         if isAlive == true then
@@ -199,8 +206,10 @@ do -- INIT Mission Class
                         end
                     end
                 end
+                if specificTargetsAlive == false then
+                    self.missionState = Mission.MissionState.COMPLETED
+                end
             else
-
                 local function CountAliveGroups()
                     local aliveGroups = 0
 
@@ -235,8 +244,10 @@ do -- INIT Mission Class
                 ]]
             end
 
-
             if self.missionState == Mission.MissionState.COMPLETED then
+                self.logger:debug("Mission complete " .. self.name)
+                trigger.action.outText("Mission " .. self.name .. " (" .. self.code .. ") was completed succesfully!"  )
+
                 TriggerMissionComplete(self)
                 --Schedule cleanup after 5 minutes of mission complete
                 timer.scheduleFunction(CleanupDelayedAsync, self, timer.getTime() + 300)
@@ -260,8 +271,42 @@ do -- INIT Mission Class
             StartCheckingAndUpdateSelfContinuous(self)
         end
 
+        local ToStateString = function(self)
+            if self.hasSpecificTargets then
+                local dead = 0
+                local total = 0
+                for _, group in pairs(self.targetAliveStates) do
+                    for _, isAlive in pairs(group) do
+                        total = total + 1
+                        if isAlive == false then
+                            dead = dead + 1
+                        end
+                    end
+                end
+                local completionPercentage = math.floor((dead / total) * 100)
+                return "Targets Destroyed: " .. completionPercentage .. "%"
+            else
+                local dead = 0
+                local total = 0
+                for _, group in pairs(self.targetAliveStates) do
+                    for _, isAlive in pairs(group) do
+                        total = total + 1
+                        if isAlive == false then
+                            dead = dead + 1
+                        end
+                    end
+                end
+
+                local completionPercentage = math.floor((dead / total) * 100)
+                return "Targets Destroyed: " .. completionPercentage .. "%"
+            end
+        end
+
         o.ShowBriefing = function(self, groupId)
-            local text = "Mission [" .. self.code .. "] ".. self.name .. "\n \n" .. self.missionbriefing .. " \n \nState TODO"
+            local stateString = ToStateString(self)
+
+            if self.missionbriefing == nil then self.missionbriefing = "No briefing available" end
+            local text = "Mission [" .. self.code .. "] ".. self.name .. "\n \n" .. self.missionbriefing .. " \n \n" .. stateString
             trigger.action.outTextForGroup(groupId, text, 30);
         end
 
@@ -278,14 +323,11 @@ do -- INIT Mission Class
                 self.targetAliveStates[group_name] = {}
 
                 if Spearhead.DcsUtil.IsGroupStatic(group_name) then
-                    self.startingUnits = self.startingUnits + 1
                     Spearhead.Events.addOnUnitLostEventListener(group_name, self)
 
-                    self.groupUnitAliveDict[group_name][group_name] = true
                     if Spearhead.Util.startswith(group_name, "TGT_") == true then
                         self.targetAliveStates[group_name][group_name] = true
                     end
-
                 else
                     local group = Group.getByName(group_name)
                     local isGroupTarget = Spearhead.Util.startswith(group_name, "TGT_")
@@ -293,11 +335,22 @@ do -- INIT Mission Class
                     self.startingUnits = self.startingUnits + group:getInitialSize()
                     for _, unit in pairs(group:getUnits()) do
                         local unitName = unit:getName()
+
+                        self.groupNamesPerUnit[unitName] = group_name
+
                         Spearhead.Events.addOnUnitLostEventListener(unitName, self)
                         self.groupUnitAliveDict[group_name][unitName] = true
 
                         if isGroupTarget == true or Spearhead.Util.startswith(unitName, "TGT_") == true then
                             self.targetAliveStates[group_name][unitName] = true
+                        end
+
+                        if self.missionType == MissionType.DEAD or self.missionType == MissionType.SAM then
+                            local desc = unit:getDesc()
+                            local attributes = desc.attributes
+                            if attributes["SAM"] == true or attributes["SAM TR"] or attributes["AAA"] then
+                                self.targetAliveStates[group_name][unitName] = true
+                            end
                         end
                     end
                 end

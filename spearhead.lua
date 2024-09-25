@@ -144,12 +144,11 @@ local stageConfig = {
 Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
 Spearhead.internal.GlobalStageManager.start(databaseManager)
 
---[[
-    TODO: REMOVE DEBUG
-]]
+
 Spearhead.Events.PublishStageNumberChanged(1)
 
 Spearhead.LoadingDone()
 --Check lines of code in directory per file: 
 -- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }
 -- find . -name '*.lua' | xargs wc -l
+

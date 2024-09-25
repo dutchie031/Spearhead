@@ -281,7 +281,6 @@ do --init STAGE DIRECTOR
             for _, mission in pairs(self.db.missionsByCode) do
                 totalmissions = totalmissions + 1
                 if mission.missionState == Spearhead.internal.Mission.MissionState.ACTIVE then
-                    self.logger:debug("blaat")
 
                     text = text .. "\n [" .. mission.code .. "] " .. mission.name .. 
                     " ("  ..  mission.missionTypeDisplayName .. ") \n"
@@ -318,6 +317,7 @@ do --init STAGE DIRECTOR
             if previousActive <= self.stageNumber then
                 if number > self.stageNumber then
                     self:ActivateBlueStage()
+                    self:RemoveAllMissionCommands()
                 end
             end
         end
@@ -335,12 +335,30 @@ do --init STAGE DIRECTOR
             end
         end
         
+        o.RemoveMissionCommands = function (self, mission)
+
+            self.logger:debug("Removing commands for: " .. mission.name)
+
+            local folderName = mission.name .. "(" .. mission.missionTypeDisplayName .. ")"
+            for i = 0, 2 do
+                local players = coalition.getPlayers(i)
+                for _, playerUnit in pairs(players) do
+                    local groupId = playerUnit:getGroup():getID()
+                    missionCommands.removeItemForGroup(groupId, { "Missions", folderName })
+                end
+            end
+        end
+
+        o.RemoveAllMissionCommands = function (self)
+            for _, mission in pairs(self.db.missionsByCode) do
+                self:RemoveMissionCommands(mission)
+            end
+        end
+
         o.AddCommandsForMissionToGroup = function (self, groupId, mission)
             local folderName = mission.name .. "(" .. mission.missionTypeDisplayName .. ")"
             missionCommands.addSubMenuForGroup(groupId, folderName, { "Missions"} )
             missionCommands.addCommandForGroup(groupId, "Show Briefing", { "Missions", folderName }, ShowBriefingClicked, { self = self, groupId = groupId, missionCode = mission.code })
-            self.logger:debug("blaat added command")
-
         end
 
         o.AddCommmandsForMissionToAllPlayers = function(self, mission)
@@ -364,18 +382,20 @@ do --init STAGE DIRECTOR
             end
         end
 
+        local removeMissionCommandsDelayed = function(input)
+            local self = input.self
+            local mission = input.mission
+            self:RemoveMissionCommands(mission)
+        end
+        
         o.OnMissionComplete = function(self, mission)
-            local folderName = mission.name .. "(" .. mission.missionTypeDisplayName .. ")"
-            for i = 0, 2 do
-                local players = coalition.getPlayers(i)
-                for _, playerUnit in pairs(players) do
-                    local groupId = playerUnit:getGroup():getID()
-                    missionCommands.removeItemForGroup(groupId, { "Missions", folderName })
-                end
-            end
+            timer.scheduleFunction(removeMissionCommandsDelayed, { self = self, mission = mission}, timer.getTime() + 20)
             timer.scheduleFunction(activateMissionsIfApplicableAsync, self, timer.getTime() + 10)
         end
 
+        for _, mission in pairs(o.db.missionsByCode) do
+            mission:AddMissionCompleteListener(o)
+        end
 
         Spearhead.Events.AddOnStatusRequestReceivedListener(o)
         Spearhead.Events.AddStageNumberChangedListener(o)

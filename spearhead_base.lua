@@ -1608,7 +1608,7 @@ do
             event.id == world.event.S_EVENT_EJECTION or
             event.id == world.event.S_EVENT_UNIT_LOST then
             local object = event.initiator
-            if object and OnUnitLostListeners[object:getName()] then
+            if object and object.getName and OnUnitLostListeners[object:getName()] then
                 for _, callable in pairs(OnUnitLostListeners[object:getName()]) do
                     local succ, err = pcall(function()
                         callable:OnUnitLost(object)

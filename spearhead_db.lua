@@ -84,6 +84,14 @@ do -- DB
                                         o.tables.descriptions[name] = layer_object.text
                                     end
                                 end
+
+                                local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY, o.tables.random_mission_zones)
+                                if Spearhead.Util.tableLength(inZone) >= 1 then
+                                    local name = inZone[1]
+                                    if name ~= nil then
+                                        o.tables.descriptions[name] = layer_object.text
+                                    end
+                                end
                             end
                         end
                     end
@@ -583,6 +591,19 @@ do -- DB
             Logger:info("Farps:             " .. Spearhead.Util.tableLength(o.tables.farp_zones))
             Logger:info("Airbases:          " .. Spearhead.Util.tableLength(o.tables.airbasesPerStage))
             Logger:info("RedAirbase Groups: " .. Spearhead.Util.tableLength(o.tables.redAirbaseGroupsPerAirbase["21"]))
+
+
+            for _, missionZone in pairs(o.tables.mission_zones) do
+                if o.tables.descriptions[missionZone] == nil then
+                    Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
+                end
+            end
+
+            for _, randomMission in pairs(o.tables.random_mission_zones) do
+                if o.tables.descriptions[randomMission] == nil then
+                    Spearhead.AddMissionEditorWarning("Mission with zonename: " .. randomMission .. " does not have a briefing")
+                end
+            end
 
         end
         singleton = o
