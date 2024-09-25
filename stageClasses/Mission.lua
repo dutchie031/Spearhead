@@ -94,6 +94,7 @@ do -- INIT Mission Class
         o.groupNames = database:getGroupsForMissionZone(missionZoneName)
         o.name = parsed.missionName
         o.missionType = parsed.type
+        o.missionTypeDisplayName = Mission.MissionType.toString(o.missionType)
         o.startingGroups = Spearhead.Util.tableLength(o.groupNames)
         o.missionState = Mission.MissionState.NEW
         o.missionbriefing = database:GetDescriptionForMission(missionZoneName)
@@ -259,9 +260,9 @@ do -- INIT Mission Class
             StartCheckingAndUpdateSelfContinuous(self)
         end
 
-        o.ShowBriefing = function(self, unitId)
-            local text = "Mission #" .. self.code .. "\n" .. self.missionbriefing .. " \n \nState TODO"
-            trigger.action.outTextForUnit(unitId, text, 30);
+        o.ShowBriefing = function(self, groupId)
+            local text = "Mission [" .. self.code .. "] ".. self.name .. "\n \n" .. self.missionbriefing .. " \n \nState TODO"
+            trigger.action.outTextForGroup(groupId, text, 30);
         end
 
         o.Cleanup = function(self)

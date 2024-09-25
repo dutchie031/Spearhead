@@ -230,7 +230,6 @@ do -- DB
             o.tables.capGroupsOnAirbase = {}
             local loadCapUnits = function()
                 local all_groups = getAvailableCAPGroups()
-                Logger:debug(all_groups)
                 local airbases = world.getAirbases()
                 for _, airbase in pairs(airbases) do
                     local baseId = airbase:getID()
@@ -298,7 +297,7 @@ do -- DB
                     local baseId = tostring(airbase:getID())
                     local point = airbase:getPoint()
 
-                    if isAirbaseInZone[tostring(baseId) or "something" ] == true and airbase:getDesc().Category == Airbase.Category.AIRDROME then
+                    if isAirbaseInZone[tostring(baseId) or "something" ] == true and airbase:getDesc().category == Airbase.Category.AIRDROME then
                         o.tables.redAirbaseGroupsPerAirbase[baseId] = {}
                         o.tables.blueAirbaseGroupsPerAirbase[baseId] = {}
                         local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, { x = point.x, z = point.z, radius = 6600 })
@@ -362,8 +361,6 @@ do -- DB
             loadFarpGroups()
             loadAirbaseGroups()
             loadMiscGroupsInStages()
-
-            Logger:debug(o.tables.miscGroupsInStages)
 
             local cleanup = function () --CLean up all groups that are now managed inside zones by spearhead 
                 
@@ -586,7 +583,7 @@ do -- DB
             Logger:info("Farps:             " .. Spearhead.Util.tableLength(o.tables.farp_zones))
             Logger:info("Airbases:          " .. Spearhead.Util.tableLength(o.tables.airbasesPerStage))
             Logger:info("RedAirbase Groups: " .. Spearhead.Util.tableLength(o.tables.redAirbaseGroupsPerAirbase["21"]))
-            Spearhead.Util.tableLength(o.tables.airbasesPerStage)
+
         end
         singleton = o
         return o

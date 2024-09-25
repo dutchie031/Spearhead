@@ -47,7 +47,7 @@ do -- INIT UTIL
             return result
         end
 
-        for str in string.gmatch(input, "([^" .. seperator .. "]+)") do
+        for str in string.gmatch(input, "[^" .. seperator .. "]+") do
             table.insert(result, str)
         end
         return result
@@ -1493,9 +1493,8 @@ do
 
     do --COMMANDS 
         do -- status updates
-        
-            local onStatusRequestReceivedListeners = {}
 
+            local onStatusRequestReceivedListeners = {}
             ---comment
             ---@param listener table object with OnStatusRequestReceived(self, groupId)
             SpearheadEvents.AddOnStatusRequestReceivedListener = function(listener)
@@ -1547,8 +1546,36 @@ do
                             for ii = 0, 9 do
                                 local number  = tonumber(tostring(i) .. tostring(ii))
                                 missionCommands.addCommandForGroup(groupId, "Stage " .. tostring(number), { "debug", "Set Stage", menuName }, activateStage, number)
-                                SpearheadLogger:info("blaat " .. number)
                             end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    do -- PLAYER ENTER UNIT
+        local playerEnterUnitListeners = {}
+        ---comment
+        ---@param listener table object with OnPlayerEnterUnit(self, unit)
+        SpearheadEvents.AddOnPlayerEnterUnitListener = function(listener)
+            if type(listener) ~= "table" then
+                SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+                return
+            end
+
+            table.insert(playerEnterUnitListeners, listener)
+        end
+
+        SpearheadEvents.TriggerPlayerEntersUnit = function(unit)
+            if unit ~= nil then
+                if playerEnterUnitListeners then
+                    for _, callable in pairs(playerEnterUnitListeners) do
+                        local succ, err = pcall(function()
+                            callable:OnPlayerEnterUnit(unit)
+                        end)
+                        if err then
+                            SpearheadLogger:error(err)
                         end
                     end
                 end
@@ -1609,6 +1636,8 @@ Spearhead.MissionEditingWarnings = {}
 function Spearhead.AddMissionEditorWarning(warningMessage)
     table.insert(Spearhead.MissionEditingWarnings, warningMessage or "skip")
 end
+
+missionCommands.addSubMenu("Missions")
 
 local loadDone = false
 Spearhead.LoadingDone = function()

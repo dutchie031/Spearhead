@@ -7,7 +7,7 @@ do --init STAGE DIRECTOR
     ---@param database table
     ---@param logger table
     ---@return table?
-    function Stage:new(stagezone_name, database, logger)
+    function Stage:new(stagezone_name, database, logger, stageConfig)
         local o = {}
         setmetatable(o, { __index = self })
 
@@ -29,6 +29,7 @@ do --init STAGE DIRECTOR
         o.database = database
         o.logger = logger
         o.db = {}
+        o.db.missionsByCode = {}
         o.db.missions = {}
         o.db.sams = {}
         o.db.redAirbasegroups = {}
@@ -37,14 +38,16 @@ do --init STAGE DIRECTOR
         o.db.farps = {}
         o.activeStage = 0
         o.preActivated = false
+        o.stageConfig = stageConfig or {}
 
         do --Init Stage
             logger:info("Initiating new Stage with name: " .. stagezone_name)
 
             local missionZones = database:getMissionsForStage(stagezone_name)
             for _, missionZone in pairs(missionZones) do
-                local mission = Spearhead.internal.Mission:new(missionZone, database)
+                local mission = Spearhead.internal.Mission:new(missionZone, database, logger)
                 if mission then
+                    o.db.missionsByCode[mission.code] = mission
                     if mission.missionType == Spearhead.internal.Mission.MissionType.SAM then
                         table.insert(o.db.sams, mission)
                     else
@@ -57,7 +60,7 @@ do --init STAGE DIRECTOR
 
             local randomMissionByName = {}
             for _, missionZoneName in pairs(randomMissionNames) do
-                local mission = Spearhead.internal.Mission:new(missionZoneName, database)
+                local mission = Spearhead.internal.Mission:new(missionZoneName, database, logger)
                 if mission then
                     if randomMissionByName[mission.name] == nil then
                         randomMissionByName[mission.name] = {}
@@ -69,6 +72,7 @@ do --init STAGE DIRECTOR
             for _, missions in pairs(randomMissionByName) do
                 local mission = Spearhead.Util.randomFromList(missions)
                 if mission then
+                    o.db.missionsByCode[mission.code] = mission
                     if mission.missionType == Spearhead.internal.Mission.MissionType.SAM then
                         table.insert(o.db.sams, mission)
                     else
@@ -109,25 +113,33 @@ do --init STAGE DIRECTOR
         ---Activates all SAMS, Airbase units etc all at once.
         ---@param self table
         o.PreActivate = function(self)
-            if self.preActivated == true then return end
-            self.preActivated = true
-            for key, mission in pairs(self.db.sams) do
-                if mission and mission.Activate then
-                    mission:Activate()
+            if self.preActivated == false then
+                self.preActivated = true
+                for key, mission in pairs(self.db.sams) do
+                    if mission and mission.Activate then
+                        mission:Activate()
+                    end
+                end
+                self.logger:debug("Pre-activating stage with airbase groups amount: " .. Spearhead.Util.tableLength(self.db.redAirbasegroups))
+
+                for _ , groupName in pairs(self.db.redAirbasegroups) do
+                    Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
                 end
             end
 
-            self.logger:debug("Pre-activating stage with airbase groups amount: " .. Spearhead.Util.tableLength(self.db.redAirbasegroups))
-
-            for _ , groupName in pairs(self.db.redAirbasegroups) do
-                Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+            if self.activeStage == self.stageNumber then
+                for _, mission in pairs(self.db.sams) do
+                    self:AddCommmandsForMissionToAllPlayers(mission)
+                end
             end
         end
 
-        o.ActiveStage = function(self)
-            if self.preActivated == false then
-                self:PreActivate()
-            end
+        local activateMissionsIfApplicableAsync = function(self)
+            self:ActivateMissionsIfApplicable(self)
+        end
+
+        o.ActivateStage = function(self)
+            self:PreActivate()
             
             local miscGroups = self.database:getMiscGroupsAtStage(self.zoneName)
             self.logger:debug("Activating Misc groups for zone: " .. Spearhead.Util.tableLength(miscGroups))
@@ -138,18 +150,43 @@ do --init STAGE DIRECTOR
             for _, mission in pairs(self.db.missions) do
                 if mission.missionType == Spearhead.internal.Mission.MissionType.DEAD then
                     mission:Activate()
+                    self:AddCommmandsForMissionToAllPlayers(mission)
+                end
+            end
+            timer.scheduleFunction(activateMissionsIfApplicableAsync, self, timer.getTime() + 5)
+        end
+
+        o.ActivateMissionsIfApplicable = function (self)
+            local activeCount = 0 
+
+            local availableMissions = {}
+            for _, mission in pairs(self.db.missionsByCode) do
+                if mission.missionState == Spearhead.internal.Mission.MissionState.ACTIVE then
+                    activeCount = activeCount + 1
+                end
+
+                if mission.missionState == Spearhead.internal.Mission.MissionState.NEW then
+                    table.insert(availableMissions, mission)
                 end
             end
 
-            --[[
-                TODO: Activate Stage
-            ]]--
+            local max = self.stageConfig.maxMissionsInStage or 10
 
-        end
-
-        o.ActivateAllMissions = function(self)
-            for _, mission in pairs(self.db.missions) do
-                mission:Activate()
+            local availableMissionsCount = Spearhead.Util.tableLength(availableMissions)
+            if activeCount < max and availableMissionsCount > 0  then
+                for i = activeCount+1, max do
+                    if availableMissionsCount == 0 then
+                        i = max+1 --exits this loop
+                    else
+                        local index = math.random(1, availableMissionsCount)
+                        local mission = table.remove(availableMissions, index)
+                        if mission then
+                            mission:Activate()
+                            self:AddCommmandsForMissionToAllPlayers(mission)
+                        end
+                        availableMissionsCount = availableMissionsCount - 1
+                    end
+                end
             end
         end
 
@@ -236,7 +273,30 @@ do --init STAGE DIRECTOR
             end
 
             trigger.action.outTextForGroup(groupId, "Status Update incoming... ", 3)
-            trigger.action.outTextForGroup(groupId, " " .. self.zoneName, 3)
+
+            local text = "Mission Status: \n"
+
+            local  totalmissions = 0
+            local completedMissions = 0
+            for _, mission in pairs(self.db.missionsByCode) do
+                totalmissions = totalmissions + 1
+                if mission.missionState == Spearhead.internal.Mission.MissionState.ACTIVE then
+                    self.logger:debug("blaat")
+
+                    text = text .. "\n [" .. mission.code .. "] " .. mission.name .. 
+                    " ("  ..  mission.missionTypeDisplayName .. ") \n"
+                end
+               
+                if mission.missionState == Spearhead.internal.Mission.MissionState.COMPLETED then
+                    completedMissions = completedMissions + 1
+                end
+            end
+
+            local completionPercentage = math.floor((completedMissions / totalmissions) * 100)
+            text = text .. " \n Missions Complete: " .. completionPercentage .. "%" 
+
+            self.logger:debug(text)
+            trigger.action.outTextForGroup(groupId, text, 20)
         end
 
         o.OnStageNumberChanged = function (self, number)
@@ -245,20 +305,77 @@ do --init STAGE DIRECTOR
                 return
             end
 
+            local previousActive = self.activeStage
             self.activeStage = number
-
             if Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
                 self:PreActivate()
             end
 
             if number == self.stageNumber then
-                self:ActiveStage()
+                self:ActivateStage()
             end
 
-            if number > self.stageNumber then
-                self:ActivateBlueStage()
+            if previousActive <= self.stageNumber then
+                if number > self.stageNumber then
+                    self:ActivateBlueStage()
+                end
             end
         end
+
+        --- input = { self, groupId, missionCode }
+        local ShowBriefingClicked = function (input)
+            
+            local self = input.self
+            local groupId = input.groupId
+            local missionCode = input.missionCode
+
+            local mission  = self.db.missionsByCode[missionCode]
+            if mission then
+                mission:ShowBriefing(groupId)
+            end
+        end
+        
+        o.AddCommandsForMissionToGroup = function (self, groupId, mission)
+            local folderName = mission.name .. "(" .. mission.missionTypeDisplayName .. ")"
+            missionCommands.addSubMenuForGroup(groupId, folderName, { "Missions"} )
+            missionCommands.addCommandForGroup(groupId, "Show Briefing", { "Missions", folderName }, ShowBriefingClicked, { self = self, groupId = groupId, missionCode = mission.code })
+            self.logger:debug("blaat added command")
+
+        end
+
+        o.AddCommmandsForMissionToAllPlayers = function(self, mission)
+            for i = 0, 2 do
+                local players = coalition.getPlayers(i)
+                for _, playerUnit in pairs(players) do
+                    local groupId = playerUnit:getGroup():getID()
+                    self:AddCommandsForMissionToGroup(groupId, mission)
+                end
+            end
+        end
+        
+        o.OnPlayerEntersUnit = function (self, unit)
+            if self.activeStage == self.stageNumber then
+                local groupId = unit:getGroup():getID()
+                for _, mission in pairs(self.db.missionsByCode) do
+                    if mission.missionState == Spearhead.internal.Mission.MissionState.ACTIVE then
+                        self:AddCommandsForMissionToGroup(groupId, mission)
+                    end
+                end
+            end
+        end
+
+        o.OnMissionComplete = function(self, mission)
+            local folderName = mission.name .. "(" .. mission.missionTypeDisplayName .. ")"
+            for i = 0, 2 do
+                local players = coalition.getPlayers(i)
+                for _, playerUnit in pairs(players) do
+                    local groupId = playerUnit:getGroup():getID()
+                    missionCommands.removeItemForGroup(groupId, { "Missions", folderName })
+                end
+            end
+            timer.scheduleFunction(activateMissionsIfApplicableAsync, self, timer.getTime() + 10)
+        end
+
 
         Spearhead.Events.AddOnStatusRequestReceivedListener(o)
         Spearhead.Events.AddStageNumberChangedListener(o)
