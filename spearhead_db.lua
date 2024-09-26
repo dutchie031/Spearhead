@@ -30,6 +30,7 @@ do -- DB
             o.tables.cap_route_zones = {}
 
             o.tables.stage_zonesByNumer = {}
+            o.tables.stage_numberPerzone = {}
 
             do -- INIT ZONE TABLES
                 if env.mission.triggers and env.mission.triggers.zones then
@@ -43,11 +44,10 @@ do -- DB
                             if split_string[2] then
                                 local stringified = tostring(split_string[2]) or "unknown"
                                 if o.tables.stage_zonesByNumer[stringified] == nil then
-                                    o.tables.stage_zonesByNumer[stringified] = zone_name
-                                else
-                                    table.insert(Spearhead.MissionEditingWarnings, "Duplicate Stage Order number found. This zone will work, but will not be part of the CAP script")
+                                    o.tables.stage_zonesByNumer[stringified] = {}
                                 end
-                                
+                                table.insert(o.tables.stage_zonesByNumer[stringified], zone_name)
+                                o.tables.stage_numberPerzone[zone_name] = stringified
                             end
                         end
 
@@ -384,19 +384,23 @@ do -- DB
             cleanup()
 
             --- key: zoneName value: { current, routes = [ { point1, point2 } ] }
-            o.tables.capRoutes = {}
+            o.tables.capRoutesPerStageNumber = {}
             for _, zoneName in pairs(o.tables.stage_zones) do
+                local number = tostring(o.tables.stage_numberPerzone[zoneName] or "unknown")
 
-                local configValue = {
-                    current = 0,
-                    routes = {}
-                }
+                if o.tables.capRoutesPerStageNumber[number] == nil then
+                    o.tables.capRoutesPerStageNumber[number] = {
+                        current = 0,
+                        routes = {}
+                    }
+                end
+
                 for _, cap_route_zone in pairs(o.tables.cap_route_zones) do
                     if Spearhead.DcsUtil.isZoneInZone(cap_route_zone, zoneName) == true then
                         local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
                         if zone then
                             if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                                table.insert(configValue.routes, { point1 = { x = zone.x , z = zone.z }, point2 = nil } )
+                                table.insert(o.tables.capRoutesPerStageNumber[number].routes, { point1 = { x = zone.x , z = zone.z }, point2 = nil } )
                             else
                                 local function getDist(a, b)
                                     return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
@@ -422,7 +426,7 @@ do -- DB
                                 end
 
                                 if biggestA and biggestB then
-                                    table.insert(configValue.routes, 
+                                    table.insert(o.tables.capRoutesPerStageNumber[number].routes, 
                                     {
                                         point1 = { x = biggestA.x , z = biggestA.z },
                                         point2 = { x = biggestB.x , z = biggestB.z }
@@ -432,8 +436,8 @@ do -- DB
                         end
                     end
                 end
-                o.tables.capRoutes[zoneName] = configValue
             end
+            o.Logger:debug(o.tables.capRoutesPerStageNumber)
             
             o.tables.missionCodes = {}
         end
@@ -442,9 +446,9 @@ do -- DB
             return self.tables.descriptions[missionZoneName]
         end
 
-        o.getCapRouteInZone = function(self, targetZone, baseId)
-
-            local routeData = self.tables.capRoutes[targetZone]
+        o.getCapRouteInZone = function(self, stageNumber, baseId)
+            local stageNumber = tostring(stageNumber) or "nothing"
+            local routeData = self.tables.capRoutesPerStageNumber[stageNumber]
             if routeData  then
                 local count = Spearhead.Util.tableLength(routeData.routes)
                 if count > 0 then
@@ -452,7 +456,6 @@ do -- DB
                     if count < routeData.current then
                         routeData.current = 1
                     end
-
                     return routeData.routes[routeData.current]
                 end
             end
@@ -465,7 +468,8 @@ do -- DB
                     local aY = pC.z + vY / magV * radius;
                     return { x = aX, z = aY }
                 end
-                local stagezone = Spearhead.DcsUtil.getZoneByName(targetZone)
+                local stageZoneName = Spearhead.Util.randomFromList(self.tables.stage_zonesByNumer[stageNumber]) or "none"
+                local stagezone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
                 if stagezone then
                     local base = Spearhead.DcsUtil.getAirbaseById(baseId)
                     if base then
@@ -501,7 +505,7 @@ do -- DB
         ---@param self table
         ---@param number number
         ---@return string zoneName
-        o.getStageZoneByStageNumber = function (self, number)
+        o.getStageZonesByStageNumber = function (self, number)
             local numberString = tostring(number)
             return self.tables.stage_zonesByNumer[numberString]
         end

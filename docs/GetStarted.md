@@ -42,9 +42,33 @@ A CAP group needs to follow the following naming convention: `CAP_<A|B><CONFIG>_
 
 For details on config read this: [CAP Group Config](./Reference.html#cap-group-config)
  
-<img src="img/starting_stages.png" alt="drawing" width="35%"/>
-<img src="img/starting_stages.png" alt="drawing" width="35%"/>
-<br/>
+For now I set up 3 groups with the following names. `CAP_A[1]1_Rota1` , `CAP_A[1]1_Rota1-1` , `CAP_B[1]1_Rota1` <br/>
+The first two are marked with `A` and will therefore be primary CAP units. They will be scheduled and make up for the total count. <br/>
+Meaning that for this airbase there is 2 CAP units max at a time flying out. <br/>
+In this case all groups have `[1]1` in the name, (This would be the same as `[1]A`) which means that when stage 1 is active the groups will activate and fly out to stage 1.
 
+I also set up a few groups further back. One example: `CAP_A[1-3]3_Group1`. This group will protect zone 3 when zones 1 through 3 are active. 
+
+CAP units fly out, fly their CAP zone for x amount of minutes and will then RTB. <br/>
+Before they actually RTB an event is triggered 10 minutes before the actual RTB task. This event will trigger a backup unit to startup and fly out to take over. <br/>
+
+Best is to test it out and see for yourself. <br/>
+
+### Creating CAP routes
+
+Creating cap routes is not needed per se, but with a multi-stage stage (we have 2 stages with `_1_`) it is recommended. <br/>
+Similarly with huge stages. <br/>
+If there is multiple zones is will "round-robin" over them. <br/>
+
+If no CAP route is present the unit will fly a route generated differently per zone: <br/>
+`quad zone` => race-track between the corner closest to the origin airbase to the center point of the zone <br/>
+`circle zone` => race-track between the closest point on circle to the origin airbase to the center <br/>
+
+If you want to create you own CAP Routes you can! <br/>
+For this example I created 2 CAP routes inside of the 2 `_1_` stages. <br/>
+
+As you can see below there's a nice quick you can exploit. As long as the `X` of the zone is inside of the the `CAPROUTE` will be used! 
+
+![CAP Routes Image](./img/cap_routes.png)
 
 ## Setting up the missions

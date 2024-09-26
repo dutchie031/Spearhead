@@ -1,68 +1,4 @@
---[[
 
-#### Why?
-For Spearhead there's a lot of stages and states the mission can be in. <br/>
-To make sure CAP units will be at the place where the mission maker expects them to be there's a naming convention that should help. <br/>
-You as a mission maker will have full controll over where they are supposed to be, the script will take care of getting them there.
-The CAP manager's goal is to provide dedicated aircraft scheduling that doesn't reset every stage reset.
-
-Naming: CAP\_\<"A" | B"\>\<Config\>_\<Free form name\>
-#### Config:
-```
-1 at x:               [<activeStage>]<capStage>
-n and n  at x:        [<activeStage>,<activeStage>]<capStage>
-n till n at x:        [<activeStage>-<activeStage>]<capStage>
-n till n and n at x:  [<activeStage>-<activeStage>,<activeStage>]<capStage>
-n till n at Active:   [<activeStage>-<activeStage>]A
-
-divider: |
-
-examples:
-
-CAP_A[1-4,6]7|[5,7]8_SomeName => Will fly CAP at stage 7 when stages 1 through 4 and 6 are active and will fly CAP at 8 when 5 and 7 are active
-CAP_A[2-5]5|[6]6_SomeName => Will fly CAP at stage 5 when stages 2 through 5 active and will fly CAP at 6 when 6 is active
-CAP_A[1-5]A|[6]7_SomeName => Will fly CAP at the ACTIVE stage if Stages 1-5 are active. Basically following the active stages. Then when 6 is active it will fly in 7
-
-CAP_B[1-5]A|[6]7_SomeName => Will fly BACKUP CAP for the active zones 1 through 5 and back up for 7 when 6 is active.
-
-```
-
-### How many? And how to add backups?
-
-To fascilitate a nice flow of the mission and also make sure it doesn't oversaturate the zones with aircraft the script works with a Active/Backup system in the naming. <br/>
-This really doesn't mean much per se once the mission runs, but most importantly is that the A units define how many groups there should be max in a zone at a time. <br/>
-The B units will simply be used to fill that amount if the A units can't due to RTB, Death, Rearming etc. <br/>
-
-#### Example
-
-Take the units:
-```
-CAP_A[1-5]A_SomeName1
-CAP_A[1-5]A_SomeName2
-CAP_B[1-3,5]A_SomeName
-```
-`CAP_A...` units are primary units where the `CAP_B...` units are the backups. <br/>
-In this case the CAP manager sees that for stages 1 through 5 this configuration requires 2 groups in the active zone. <br/>
-If one of those 2 groups dies or is going back to base the B group will be used to top up the CAP units at that zone. <br/>
-After scheduling the B units the A units that are back at base ready on the ramp will also not be scheduled until the CAP units that are active in the zone (inlcuding B units) drop below the required CAP unit (of 2 in this example)
-
-In this example there is no Backup unit for zone 4. This might quiet down the CAP a little as the Active groups will have to rearm and refuel without there being any backup.
-
-### What the cap manager does:
-- Spawn aircraft on the ramp (or despawn when they are not needed anymore for culling)
-- Send out aircraft based on where they are supposed to be
-- Send Aircraft RTB after X time. <br/>
-  RTB in this sense means back to its base of origin. Not the closest friendly base like DCS does.
-- Simulates Rearming and then sending them out when needed.
-- Delays aircraft for X amount of time before spawning and rearming after a groups demise.
-- Aircraft are spawned on the ramp so OCA does have effect. (Be sure to also take a look at the Airbase and SAM spawning for defences)
-
-### Future Ideas
-
-- Aircraft rearm hubs with finite spawns on other airbases that get replenished by aircraft flying in.
-
-
-]] --
 
 local CapHelper = {}
 do
@@ -193,7 +129,6 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     o.isBackup = parsed.isBackup
 
     --vars
-    o.assignedStageName = nil
     o.assignedStageNumber = nil
     
     o.state = CapGroup.GroupState.UNSPAWNED
@@ -294,47 +229,42 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
             return --Can't task a unit that's dead or RTB
         end
 
-        local stageZoneName = self.database:getStageZoneByStageNumber(stageZoneNumber)
         self.assignedStageNumber = stageZoneNumber
-        self.assignedStageName = stageZoneName
         local group = Group.getByName(self.groupName)
         if group and group:isExist() then
-            local zone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
-            if zone then
-                self.logger:debug("Sending group out " .. self.groupName)
-                local controller = group:getController()
-                local capPoints = database:getCapRouteInZone(stageZoneName, self.airbaseId) or { point1 = { x = zone.x, z = zone.z }, point2 = nil }
+            self.logger:debug("Sending group out " .. self.groupName)
+            local controller = group:getController()
+            local capPoints = database:getCapRouteInZone(stageZoneNumber, self.airbaseId)
 
-                local altitude = math.random(self.capConfig.minAlt, self.capConfig.maxAlt)
-                local speed = math.random(self.capConfig.minSpeed, self.capConfig.maxSpeed)
-                local attackHelos = false
-                local deviationDistance = self.capConfig.maxDeviationRange
-                local capTask
-                if self.state == CapGroup.GroupState.ONRAMP or self.onStationSince == 0 then
-                    controller:setCommand({
-                        id = 'Start',
-                        params = {}
-                    })
-                    local duration = math.random(self.capConfig.minDurationOnStation, self.capConfig
-                    .maxDurationOnstation)
-                    self.logger:debug("random schedule min: " ..
-                    tostring(self.capConfig.minDurationOnStation or "nil") ..
-                    " max: " .. tostring(self.capConfig.maxDurationOnstation or "nil") .. " actual " .. duration)
-                    self.currentCapTaskingDuration = duration
+            local altitude = math.random(self.capConfig.minAlt, self.capConfig.maxAlt)
+            local speed = math.random(self.capConfig.minSpeed, self.capConfig.maxSpeed)
+            local attackHelos = false
+            local deviationDistance = self.capConfig.maxDeviationRange
+            local capTask
+            if self.state == CapGroup.GroupState.ONRAMP or self.onStationSince == 0 then
+                controller:setCommand({
+                    id = 'Start',
+                    params = {}
+                })
+                local duration = math.random(self.capConfig.minDurationOnStation, self.capConfig
+                .maxDurationOnstation)
+                self.logger:debug("random schedule min: " ..
+                tostring(self.capConfig.minDurationOnStation or "nil") ..
+                " max: " .. tostring(self.capConfig.maxDurationOnstation or "nil") .. " actual " .. duration)
+                self.currentCapTaskingDuration = duration
 
-                   
-                    capTask = Spearhead.RouteUtil.createCapMission(self.groupName, self.airbaseId, capPoints.point1, capPoints.point2, altitude, speed, duration, attackHelos, deviationDistance)
-                else
-                    local duration = self.currentCapTaskingDuration - (timer.getTime() - o.onStationSince)
-                    capTask = Spearhead.RouteUtil.createCapMission(self.groupName, self.airbaseId, capPoints.point1, capPoints.point2, altitude, speed, duration, attackHelos, deviationDistance)
-                end
-
-                if capTask then
-                    timer.scheduleFunction(setTaskAsync,
-                        { task = capTask, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
-                end
-                self:SetState(CapGroup.GroupState.INTRANSIT)
+                
+                capTask = Spearhead.RouteUtil.createCapMission(self.groupName, self.airbaseId, capPoints.point1, capPoints.point2, altitude, speed, duration, attackHelos, deviationDistance)
+            else
+                local duration = self.currentCapTaskingDuration - (timer.getTime() - o.onStationSince)
+                capTask = Spearhead.RouteUtil.createCapMission(self.groupName, self.airbaseId, capPoints.point1, capPoints.point2, altitude, speed, duration, attackHelos, deviationDistance)
             end
+
+            if capTask then
+                timer.scheduleFunction(setTaskAsync,
+                    { task = capTask, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
+            end
+            self:SetState(CapGroup.GroupState.INTRANSIT)
         end
     end
 
