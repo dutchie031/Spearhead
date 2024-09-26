@@ -21,11 +21,7 @@ The Get Started guide will not show all details and reasoning. <br/>
 
 A stage is a logical part of a mission. It's isn't anything special per se, but everything revolves around stages in Spearhead. <br/>
 Everything is tied to at a stage. <br/>
-A
 
-### Completion
-
-### On Completion
 
 
 ## Mission
@@ -93,6 +89,10 @@ TIP: You can click on the type to get more details
 &emsp; TODO: documentation: Completion logic 
 
 </details>
+
+### TGT targets
+
+There is 2 ways a mission can complete which depends on the precense 
 
 ### Randomisation
 
