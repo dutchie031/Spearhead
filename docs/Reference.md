@@ -17,6 +17,18 @@ If you however want to go right to the Get Started guide click here: [here](./Ge
 You can always come back later here. <br/>
 The Get Started guide will not show all details and reasoning. <br/>
 
+## Feature / TODO list
+
+- [x] CAP Manager
+    - [x] RTB flow. Flying out before primary flies back. 
+    - []
+- [ ] Stage
+- [ ] Mission
+- [ ] Airbases
+- [ ] Farps 
+- [ ] Carrier/Fleet routes
+
+
 ## Stage
 
 A stage is a logical part of a mission. It's isn't anything special per se, but everything revolves around stages in Spearhead. <br/>
@@ -107,3 +119,61 @@ For example, if you have 1 missionzone with name `RANDOMMISSION_SAM_PLUKE_1` tha
 What you can also do is add empty `RANDOMMISSION_` zones next to the filled `RANDOMMISSION_` zone. 
 For example. You have a `RANDOMMISSION_DEAD_BYRON_1` filled with an SA-19 driving around and 2 more `RANDOMMISSION_DEAD_BYRON_<2 & 3>` zones then it will have a 33% chance of being spawned.
 If a zone is empty it will not be briefed, activated or count towards completion of the `STAGE`
+
+
+### CAP 
+
+Naming: CAP\_\<"A" | B"\>\<Config\>_\<Free form name\>
+##### CAP Group Config:
+```
+1 at x:               [<activeStage>]<capStage>
+n and n  at x:        [<activeStage>,<activeStage>]<capStage>
+n till n at x:        [<activeStage>-<activeStage>]<capStage>
+n till n and n at x:  [<activeStage>-<activeStage>,<activeStage>]<capStage>
+n till n at Active:   [<activeStage>-<activeStage>]A
+
+divider: |
+
+examples:
+
+CAP_A[1-4,6]7|[5,7]8_SomeName => Will fly CAP at stage 7 when stages 1 through 4 and 6 are active and will fly CAP at 8 when 5 and 7 are active
+CAP_A[2-5]5|[6]6_SomeName => Will fly CAP at stage 5 when stages 2 through 5 active and will fly CAP at 6 when 6 is active
+CAP_A[1-5]A|[6]7_SomeName => Will fly CAP at the ACTIVE stage if Stages 1-5 are active. Basically following the active stages. Then when 6 is active it will fly in 7
+
+CAP_B[1-5]A|[6]7_SomeName => Will fly BACKUP CAP for the active zones 1 through 5 and back up for 7 when 6 is active.
+
+```
+
+#### How many? And how to add backups?
+
+To fascilitate a nice flow of the mission and also make sure it doesn't oversaturate the zones with aircraft the script works with a Active/Backup system in the naming. <br/>
+This really doesn't mean much per se once the mission runs, but most importantly is that the A units define how many groups there should be max in a zone at a time. <br/>
+The B units will simply be used to fill that amount if the A units can't due to RTB, Death, Rearming etc. <br/>
+
+#### Example
+
+Take the units:
+```
+CAP_A[1-5]A_SomeName1
+CAP_A[1-5]A_SomeName2
+CAP_B[1-3,5]A_SomeName
+```
+`CAP_A...` units are primary units where the `CAP_B...` units are the backups. <br/>
+In this case the CAP manager sees that for stages 1 through 5 this configuration requires 2 groups in the active zone. <br/>
+If one of those 2 groups dies or is going back to base the B group will be used to top up the CAP units at that zone. <br/>
+After scheduling the B units the A units that are back at base ready on the ramp will also not be scheduled until the CAP units that are active in the zone (inlcuding B units) drop below the required CAP unit (of 2 in this example)
+
+In this example there is no Backup unit for zone 4. This might quiet down the CAP a little as the Active groups will have to rearm and refuel without there being any backup.
+
+#### What the cap manager does:
+- Spawn aircraft on the ramp (or despawn when they are not needed anymore for culling)
+- Send out aircraft based on where they are supposed to be
+- Send Aircraft RTB after X time. <br/>
+  RTB in this sense means back to its base of origin. Not the closest friendly base like DCS does.
+- Simulates Rearming and then sending them out when needed.
+- Delays aircraft for X amount of time before spawning and rearming after a groups demise.
+- Aircraft are spawned on the ramp so OCA does have effect. (Be sure to also take a look at the Airbase and SAM spawning for defences)
+
+#### Future Ideas
+
+- Aircraft rearm hubs with finite spawns on other airbases that get replenished by aircraft flying in.

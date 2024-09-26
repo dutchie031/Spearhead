@@ -149,6 +149,6 @@ Spearhead.Events.PublishStageNumberChanged(1)
 
 Spearhead.LoadingDone()
 --Check lines of code in directory per file: 
--- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }
+-- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }; && GCI . -Include *.lua* -Recurse | foreach{(GC $_).Count} | measure-object -sum |  % Sum  
 -- find . -name '*.lua' | xargs wc -l
 
