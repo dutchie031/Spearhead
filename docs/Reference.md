@@ -27,6 +27,7 @@ The Get Started guide will not show all details and reasoning. <br/>
 - [ ] Airbases
 - [ ] Farps 
 - [ ] Carrier/Fleet routes
+- [ ] Persistance
 
 
 ## Stage
