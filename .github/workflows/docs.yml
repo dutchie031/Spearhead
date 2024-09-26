@@ -40,7 +40,7 @@ jobs:
   - run: npm i markdown-to-html-cli -g
   - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/docs/$sourcefileA.md --output ./$repo/Spearhead/$sourcefileA.html
   - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/docs/$sourcefileB.md --output ./$repo/Spearhead/$sourcefileB.html
-
+  - run: cp ./spearhead/docs/img/. ./$repo/Spearhead/img/
   - name: ls
     run: ls
     working-directory: ./dutchie032.github.io
