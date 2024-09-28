@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
- pushdoc:
+ buildandpush:
   name: push_file   
   runs-on: ubuntu-latest
   env:
@@ -38,9 +38,10 @@ jobs:
   - name: mkdir
     run: mkdir -p ./$repo/Spearhead
   - run: npm i markdown-to-html-cli -g
-  - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/docs/$sourcefileA.md --output ./$repo/Spearhead/$sourcefileA.html
-  - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/docs/$sourcefileB.md --output ./$repo/Spearhead/$sourcefileB.html
-  - run: cp -a ./spearhead/docs/img/. ./$repo/Spearhead/img/
+  - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/$sourcefileA.md --output ./$repo/Spearhead/$sourcefileA.html
+  - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/$sourcefileB.md --output ./$repo/Spearhead/$sourcefileB.html
+  - run: python3 ./spearhead/SpearheadCompile.py "./spearhead" "./$repo/Spearhead/spearhead.lua"
+  - run: cp -a ./spearhead/_docs/img/. ./$repo/Spearhead/img/
   - name: ls
     run: ls
     working-directory: ./dutchie032.github.io

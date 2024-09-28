@@ -2,29 +2,26 @@ import os
 import sys
 import glob
 
-
-def CreateReadme(): 
-    print("TODO")
-
-def compileClasses(root):
-    for subFolder in  [ "capClasses", "stageClasses"]:
-        path = os.path.join(root, subFolder)
-        for name in glob.glob(f"{path}/*.lua"):
-            with open(path, 'r') as file:
-                
+def compileClasses(classesPath):
+    resultString = ""
+    for name in glob.glob(f"{classesPath}/**/*.lua"):
+        with open(name, 'r') as file:
+            resutlString += file.read()
+    return resultString
 
 def compile(root, target):
+    classes = compileClasses(root)
     compiled = ""
-    for filename in Order:
-        path = os.path.join(root, filename)
-        with open(path,'r') as file:
-            fileContents = file.read()
-            compiled += fileContents
-        print(path)
+    compiled += classes
+    
+    mainFileName = os.path.join(root, "main.lua")
+    with open(mainFileName, 'r') as mainFile: 
+        string = mainFile.read()
+        compiled += string
 
     with open(target, "w") as targetFile:
         targetFile.write(compiled)
-    
+
 
 if __name__ == "__main__" : 
     args = sys.argv[1:]

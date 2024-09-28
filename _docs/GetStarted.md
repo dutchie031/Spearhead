@@ -67,8 +67,16 @@ If no CAP route is present the unit will fly a route generated differently per z
 If you want to create you own CAP Routes you can! <br/>
 For this example I created 2 CAP routes inside of the 2 `_1_` stages. <br/>
 
-As you can see below there's a nice quick you can exploit. As long as the `X` of the zone is inside of the the `CAPROUTE` will be used! 
+As you can see below there's a nice feature you can exploit. As long as the `X` of the zone is inside of the the `CAPROUTE` will be used for that stage! 
 
 ![CAP Routes Image](./img/cap_routes.png)
 
-## Setting up the missions
+
+Now all you need to do is start the mission (single player works just fine) and see the AI fly around. <br/>
+Tip: Speeding up the simulation speed to 10x or 15x can help you see how the AI will fly and how it will behave. <br/>
+
+Well, nice, we're don setting up the initial CAP effort. <br/>
+If you want to change values for the CAP routes please read about how to configure it here: [Cap Config](./Reference.html#cap-config)
+
+## Setting up the Missions
+

@@ -124,6 +124,13 @@ If a zone is empty it will not be briefed, activated or count towards completion
 
 ### CAP 
 
+
+#### CAP Config: 
+
+--[[
+  TODO: CAP CONFIG
+]]
+
 Naming: CAP\_\<"A" | B"\>\<Config\>_\<Free form name\>
 ##### CAP Group Config:
 ```
