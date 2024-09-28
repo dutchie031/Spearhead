@@ -120,8 +120,7 @@
 
 ]] --
 
-
-local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.config.logLevel)
+local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
 local databaseManager = Spearhead.DB:new(dbLogger)
 
 local capConfig = {
@@ -133,12 +132,12 @@ local capConfig = {
     minDurationOnStation = 1800,
     maxDurationOnStation = 2700,
     rearmDelay = 600,
-    deathDelay = 1800
+    deathDelay = 1800,
+    logLevel  = Spearhead.LoggerTemplate.LogLevelOptions.INFO
 }
 
 local stageConfig = {
-    preActivatedStages = 3,
-    capActiveStages = 4
+    logLevel = Spearhead.LoggerTemplate.LogLevelOptions.INFO
 }
 
 Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)

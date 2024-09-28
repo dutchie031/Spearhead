@@ -2,35 +2,6 @@
 --- DEFAULT Values
 if Spearhead == nil then Spearhead = {} end
 
-Spearhead.config          = {}
-Spearhead.config.logLevel = 0
-
---Set SpearheadConfig if nil without values
-if not SpearheadConfig then SpearheadConfig = {} end
-
-if not SpearheadConfig.CAP then SpearheadConfig.CAP = {} end
-Spearhead.config.CAP = {
-
-    --- Enables or disables the cap altogether.
-    enable = SpearheadConfig.CAP.enable or true,
-
-    --- Sets the AI cap units
-    engageHelos = SpearheadConfig.CAP.engageHelos or false,
-
-    --- sets the tech type. { 0 = custom, 1 = Modern , 2  = WW2  }
-    technologyType = SpearheadConfig.CAP.technologyType or 1,
-
-    bingoRatio = SpearheadConfig.CAP.bingoRatio or 0.20,
-
-}
-
-if not SpearheadConfig.Stages then SpearheadConfig.Stages = {} end
-
-Spearhead.config.Stages = {
-    preActivatedStages = SpearheadConfig.Stages.maxPreActivated or 3,
-    capActiveStages = SpearheadConfig.Stages.capActiveStages or 4,
-}
-
 local UTIL = {}
 do -- INIT UTIL
     ---splits a string in sub parts by seperator
@@ -784,18 +755,11 @@ do     -- INIT DCS_UTIL
     function DCS_UTIL.IsBingoFuel(groupName, offset)
         if offset == nil then offset = 0 end
         local bingoSetting = 0.20
-        if Spearhead.config and Spearhead.config.CAP then
-            bingoSetting = Spearhead.config.CAP.bingoRatio or 0.20
-        end
-
         bingoSetting = bingoSetting + offset
 
         local group = Group.getByName(groupName)
         for _, unit in pairs(group:getUnits()) do
             if unit and unit:isExist() == true and unit:inAir() == true and unit:getFuel() < bingoSetting then
-                if Spearhead.config.logLevel == Spearhead.LoggerTemplate.LogLevelOptions.DEBUG then
-                    env.info("[Spearhead][DcsUtil][DEBUG] " .. groupName .. " is bingo fuel: " .. unit:getFuel())
-                end
                 return true
             end
         end
@@ -1298,7 +1262,7 @@ Spearhead.RouteUtil = ROUTE_UTIL
 
 local SpearheadEvents = {}
 do
-    local SpearheadLogger = Spearhead.LoggerTemplate:new("Spearhead Events", Spearhead.config.logLevel)
+    local SpearheadLogger = Spearhead.LoggerTemplate:new("Spearhead Events", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
 
     do -- STAGE NUMBER CHANGED
         local OnStageNumberChangedListeners = {}

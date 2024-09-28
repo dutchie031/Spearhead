@@ -12,8 +12,7 @@ In the example we'll show how you can create a simple island hopping mission
 ## Include Script
 
 Firstly include the script. 
-TODO: include link to release.
-
+<a href="./speadhead.lua" target="_blank" rel="noopener noreferrer">Download Script</a>
 
 ## Stages
 

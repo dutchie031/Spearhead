@@ -10,7 +10,7 @@ do
     function GlobalCapManager.start(database, capConfig, stageConfig)
         if initiated == true then return end
 
-        local logger = Spearhead.LoggerTemplate:new("AirbaseManager", Spearhead.config.logLevel)
+        local logger = Spearhead.LoggerTemplate:new("AirbaseManager", capConfig.logLevel)
 
         local zones = database:getStagezoneNames()
         if zones then
@@ -24,7 +24,7 @@ do
                     for _, id in pairs(airbaseIds) do
                         local airbaseName = Spearhead.DcsUtil.getAirbaseName(id)
                         if airbaseName then
-                            local airbaseSpecificLogger = Spearhead.LoggerTemplate:new("CAP_" .. airbaseName, Spearhead.config.logLevel)
+                            local airbaseSpecificLogger = Spearhead.LoggerTemplate:new("CAP_" .. airbaseName, capConfig.logLevel)
                             local airbase = Spearhead.internal.CapAirbase:new(id, database, airbaseSpecificLogger, capConfig, stageConfig)
                             if airbase then
                                 table.insert(airbasesPerStage[stageName], airbase)
