@@ -3,6 +3,7 @@ import sys
 import glob
 
 def compileClasses(classesPath):
+    global resultString
     resultString = ""
     for name in glob.glob(f"{classesPath}/**/*.lua"):
         with open(name, 'r') as file:
