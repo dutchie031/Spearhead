@@ -19,7 +19,6 @@ Please do exactly as it's done below. <br/>
 
 ![Spearhead install](./img/script_install.png)
 
-
 ## Stages
 
 So first of all think about the stages. Read the details about them here: [Stages](./Reference.html#stage)<br/>
@@ -82,6 +81,9 @@ Tip: Speeding up the simulation speed to 10x or 15x can help you see how the AI 
 
 Well, nice, we're don setting up the initial CAP effort. <br/>
 If you want to change values for the CAP routes please read about how to configure it here: [Cap Config](./Reference.html#cap-config)
+
+
+> **_NOTE:_**  Stages that have CAP units active on their airbases will have all Airbases and `SAM` missions activated. This is to give the possibility to protect the enemy CAP units
 
 ## Setting up the Missions
 
