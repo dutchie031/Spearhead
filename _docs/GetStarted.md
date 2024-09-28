@@ -12,7 +12,7 @@ In the example we'll show how you can create a simple island hopping mission
 ## Include Script
 
 Firstly include the script. 
-<a href="./spearhead.lua" target="_blank" rel="noopener noreferrer">Download Script</a>
+<a download="spearhead.lua" href="./spearhead.lua" target="_blank" rel="noopener noreferrer">Download Script</a>
 
 ## Stages
 
