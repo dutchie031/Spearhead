@@ -14,6 +14,12 @@ In the example we'll show how you can create a simple island hopping mission
 Firstly include the script. 
 <a download="spearhead.lua" href="./spearhead.lua" target="_blank" rel="noopener noreferrer">Download Script</a>
 
+Then run the script in the mission. <br/>
+Please do exactly as it's done below. <br/>
+
+![Spearhead install](./img/script_install.png)
+
+
 ## Stages
 
 So first of all think about the stages. Read the details about them here: [Stages](./Reference.html#stage)<br/>
