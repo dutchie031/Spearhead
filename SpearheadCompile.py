@@ -4,13 +4,17 @@ import glob
 
 def compileClasses(classesPath):
     resultString = ""
-    for name in glob.glob(f"{classesPath}/**/*.lua"):
+    for name in glob.glob(f"{classesPath}/**/*.lua", recursive=True):
         with open(name, 'r') as file:
-            resultString += file.read()
+            part = f"do --{ os.path.basename(name)}\n"
+            part += file.read()
+            part += f"\nend --{ os.path.basename(name)}\n"
+            resultString += part
     return resultString
 
 def compile(root, target):
-    classes = compileClasses(root)
+    classPath = os.path.join(root, "classes")
+    classes = compileClasses(classPath)
     compiled = ""
     compiled += classes
     
