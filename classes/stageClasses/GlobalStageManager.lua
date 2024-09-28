@@ -19,4 +19,5 @@ GlobalStageManager.start = function (database, stageConfig)
     end
 end
 
+if not Spearhead.internal then Spearhead.internal = {} end
 Spearhead.internal.GlobalStageManager = GlobalStageManager

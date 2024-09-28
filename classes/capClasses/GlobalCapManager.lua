@@ -58,4 +58,5 @@ do
     end
 end
 
+if not Spearhead.internal then Spearhead.internal = {} end
 Spearhead.internal.GlobalCapManager = GlobalCapManager
