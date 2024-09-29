@@ -152,6 +152,8 @@ On the right click `TextBox` and click somewhere inside the zone to which you wa
 Give the briefing a name (It's not used, but can be nice to use to reference the briefing later) and add the briefing. <br/>
 The text box is quite small, but can have a lot of text. Easiest is to edit the text in an editor of choice and paste it into the box afterwards. <br/>
 
+Keep the binding layer to "Author" only. That way it doesn't show up for anyone other than in the mission editor. 
+
 See the two images below. The left shows the `Text Box` drawing. The right shows the briefing as shown in the mission.
 
 > **_TIP:_** You can make both the `Color` and `Fill` have a `0` value for `a`. This will make the weird box be invisible. Make sure to add the name of the mission to the text box name to easily find it back.   
@@ -168,3 +170,21 @@ See the two images below. The left shows the `Text Box` drawing. The right shows
 
 ## Airbase and Miscelaneous units.
 
+You don't have to place units inside of mission zones only. Misc units and Airbase units are also managed. <br/>
+But use these smartly as they can add up very quickly. <br/>
+As with the other zones, static units are just as supported as normal groups.
+
+### Airbase units
+
+On top of `SAM` units that get activated when CAP bases are activated in a zone the airbase itself also gets activated. <br/>
+All units inside of the ring (about 6600m) around the airfield will be registered as Airbase units. <br/>
+
+### Misc units
+
+All units in a `Stage` zone that are not in an `Airbase` will be registered as miscelaneous units. <br/>
+These will be activated the moment a stage gets "Active". (Not pre-activated) <br/>
+It can be friendly forces driving around. A FARP with surrounding units and tents. 
+
+## Airbases, Farps and Carriers 
+
+On top of units and missions, airbases, farps and carriers are big parts of a mission. 
