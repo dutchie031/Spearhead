@@ -105,7 +105,14 @@ On top of this there was a sort of control center added with walls, vehicles and
 
 On the right you can see the end result. Which is a very nice SA-2 site with static units spawned. <br/>
 
-<img src="./img/sa2_mission_editor.png" width="50%"/><img src="./img/sa2_result.png" width="50%"/> <br/>
+<div style="display: flex">
+    <div style = "flex: 50%">
+        <img src="./img/sa2_mission_editor.png"/>
+    </div>
+     <div style = "flex: 50%">
+        <img src="./img/sa2_result.png"/>
+    </div>
+</div>
 
 Important to note. It's all inside the triggerzone `MISSION_DEAD_BYRON`. Which means it's a `MISSION` of type `DEAD` and with name `BYRON`. <br/>
 At the start Spearhead will detect the triggerzone, take all units and despawn them and only spawn when needed for better performance. <br/>
@@ -149,7 +156,14 @@ See the two images below. The left shows the `Text Box` drawing. The right shows
 
 > **_TIP:_** You can make both the `Color` and `Fill` have a `0` value for `a`. This will make the weird box be invisible. Make sure to add the name of the mission to the text box name to easily find it back.   
 
-<img src="./img/briefing_me.png" width="50%"/><img src="./img/briefing_mission.png" width="50%"/> <br/>
+<div style="display: flex">
+    <div style = "flex: 50%">
+        <img src="./img/briefing_me.png"/>
+    </div>
+     <div style = "flex: 50%">
+        <img src="./img/briefing_mission.png"/>
+    </div>
+</div>
 
 
 ## Airbase and Miscelaneous units.
