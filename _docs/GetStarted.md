@@ -19,6 +19,8 @@ Please do exactly as it's done below. <br/>
 
 ![Spearhead install](./img/script_install.png)
 
+> Spearhead does not require any dependencies (eg. MIST or MOOSE). Compatibility with other frameworks is not tested at this time, so cannot be guaranteed, but there should be no conflicts if they are not controlling the same units. 
+
 ## Stages
 
 So first of all think about the stages. Read the details about them here: [Stages](./Reference.html#stage)<br/>
@@ -83,7 +85,72 @@ Well, nice, we're don setting up the initial CAP effort. <br/>
 If you want to change values for the CAP routes please read about how to configure it here: [Cap Config](./Reference.html#cap-config)
 
 
-> **_NOTE:_**  Stages that have CAP units active on their airbases will have all Airbases and `SAM` missions activated. This is to give the possibility to protect the enemy CAP units
+> **_NOTE:_**  Stages that have CAP units active on their airbases will have all Airbase units and `SAM` missions activated. This is to give the possibility to protect the enemy CAP units
 
 ## Setting up the Missions
+
+Now the part where you as a mission maker can really get into the nitty gritty. <br/>
+Missions are managed and monitored by Spearhead. <br/>
+Statics, groups and single units all alike. <br/>
+
+> **_NOTE:_** While static are the same as groups in this context, they are not within DCS, please refrain from using static groups. A `static` in DCS has a 1:1 relation for group:unit 
+
+For this example I'll set up two missions. The first one is `DEAD` mission and will consist of an SA-2 site with an additional "control center". 
+
+#### Mission 1: DEAD
+
+As you can see on the left image the template of the SA-2 was placed. Then dragged around to only fce south. <br/>
+An additional track radar and search radar was added and all launchers were surrounded by sandbags. <br/>
+On top of this there was a sort of control center added with walls, vehicles and some tents. 
+
+On the right you can see the end result. Which is a very nice SA-2 site with static units spawned. <br/>
+
+<img src="./img/sa2_mission_editor.png" width="50%"/><img src="./img/sa2_result.png" width="50%"/> <br/>
+
+Important to note. It's all inside the triggerzone `MISSION_DEAD_BYRON`. Which means it's a `MISSION` of type `DEAD` and with name `BYRON`. <br/>
+At the start Spearhead will detect the triggerzone, take all units and despawn them and only spawn when needed for better performance. <br/>
+
+The current list of mission types are: 
+```
+DEAD
+BAI
+STRIKE
+
+SAM -- Special type that will also activate on "pre-activated stages" 
+```
+
+Each type has some additional completion logic to it. <br/>
+`DEAD` and `SAM` missions will be marked complete when all air defences are destroyed. This includes Tracking Radars, Self tracking launchers and AAA guns if they are inside the zone. <br/>
+If you want to add the Search radar or another random unit like the command tent to the target list you can add a `TGT_` prefix to the unit or group you want destroyed. <br/>
+Please be aware that adding `TGT_` to a group will make the entire group a target and therefore each unit needs to be destroyed. <br/>
+
+#### Mission 2: STRIKE
+
+To show the power of `TGT_` targets I'll create a strike mission next. 
+ 
+A nice supply strike mission will do. Add a ship, some containers and some additional units. <br/>
+Even some SHORADS to spice the whole thing up. <br/>
+In the picture below all units that are selected and who show up as white (they are actually red) have the prefix `TGT_` in front of their name. <br/>
+
+This will make it so the mission will be marked as complete when those units are destroyed. The rest of the units will exist until the entire stage is cleaned up. <br/>
+
+<img src="./img/strike_target.png"/><br/>
+
+## Mission Briefings
+
+So now we've created some missions we also want to add briefings to them. This is pretty easy with Spearhead. <br/>
+
+To do so click on `draw` on the left hand pane in the mission editor. This opens up the drawing tools in the editor. <br/>
+On the right click `TextBox` and click somewhere inside the zone to which you want to add the briefing. <br/>
+Give the briefing a name (It's not used, but can be nice to use to reference the briefing later) and add the briefing. <br/>
+The text box is quite small, but can have a lot of text. Easiest is to edit the text in an editor of choice and paste it into the box afterwards. <br/>
+
+See the two images below. The left shows the `Text Box` drawing. The right shows the briefing as shown in the mission.
+
+> **_TIP:_** You can make both the `Color` and `Fill` have a `0` value for `a`. This will make the weird box be invisible. Make sure to add the name of the mission to the text box name to easily find it back.   
+
+<img src="./img/briefing_me.png" width="50%"/><img src="./img/briefing_mission.png" width="50%"/> <br/>
+
+
+## Airbase and Miscelaneous units.
 

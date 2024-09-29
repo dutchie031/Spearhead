@@ -19,11 +19,20 @@ The Get Started guide will not show all details and reasoning. <br/>
 
 ## Feature / TODO list
 
-- [x] CAP Manager
+- [ ] CAP Manager
     - [x] RTB flow. Flying out before primary flies back. 
-    - []
+    - [ ] Out of Missile flow 
 - [ ] Stage
+    - [ ] Pre Activate
+      - [x] All SAM Sites
+      - [x] All Red airbase units
+      - [ ] OCA Missions
+    - [ ] Activate
+      - [ ] Activate all DEAD sites. (No surprise pop ups)
+      - [ ] Activate other random mission till 10 max
+    
 - [ ] Mission
+- [ ] Team creation
 - [ ] Airbases
 - [ ] Farps 
 - [ ] Carrier/Fleet routes
