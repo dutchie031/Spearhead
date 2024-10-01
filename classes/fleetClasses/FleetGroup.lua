@@ -6,11 +6,12 @@ local FleetGroup = {}
 function FleetGroup:new(fleetGroupName, database)
 
     local o  = {}
+    
     setmetatable(o, { __index = self })
 
-    
+    o.AnnounceTurn = function(o, self)
 
-
+    end
 
     o.OnStageNumberChanged = function(self, number)
 
