@@ -21,7 +21,7 @@ local stageConfig = {
 
 Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
 Spearhead.internal.GlobalStageManager.start(databaseManager, stageConfig)
-
+Spearhead.internal.GlobalFleetManager.start(databaseManager)
 
 Spearhead.Events.PublishStageNumberChanged(1)
 

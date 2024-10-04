@@ -28,6 +28,7 @@ do -- DB
             o.tables.random_mission_zones = {}
             o.tables.farp_zones = {}
             o.tables.cap_route_zones = {}
+            o.tables.carrier_route_zones = {}
 
             o.tables.stage_zonesByNumer = {}
             o.tables.stage_numberPerzone = {}
@@ -65,6 +66,10 @@ do -- DB
 
                         if string.lower(split_string[1]) == "caproute" then
                             table.insert(o.tables.cap_route_zones, zone_name)
+                        end
+
+                        if string.lower(split_string[1]) == "carrierroute" then
+                            table.insert(o.tables.carrier_route_zones, zone_name)
                         end
                     end
                 end
@@ -181,7 +186,8 @@ do -- DB
                     end
                 end
             end
-
+        
+           
 
             o.tables.farpZonesPerStage = {}
             for _, farpZoneName in pairs(o.tables.farp_zones) do
@@ -437,6 +443,7 @@ do -- DB
                     end
                 end
             end
+
             o.Logger:debug(o.tables.capRoutesPerStageNumber)
             
             o.tables.missionCodes = {}
@@ -515,6 +522,10 @@ do -- DB
         ---@return table result a  list of stage zone names
         o.getStagezoneNames = function (self)
             return self.tables.stage_zones
+        end
+
+        o.getCarrierRouteZones = function (self)
+            return self.tables.carrier_route_zones
         end
 
         o.getMissionsForStage = function (self, stagename)
