@@ -23,7 +23,12 @@ Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfi
 Spearhead.internal.GlobalStageManager.start(databaseManager, stageConfig)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 
-Spearhead.Events.PublishStageNumberChanged(1)
+local SetStageDelayed = function(number, time)
+    Spearhead.Events.PublishStageNumberChanged(number)
+    return nil
+end
+
+timer.scheduleFunction(SetStageDelayed, 1, timer.getTime() + 3)
 
 Spearhead.LoadingDone()
 --Check lines of code in directory per file: 

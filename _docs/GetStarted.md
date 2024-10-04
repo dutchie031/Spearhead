@@ -189,6 +189,46 @@ It can be friendly forces driving around. A FARP with surrounding units and tent
 
 On top of units and missions, airbases, farps and carriers are big parts of a mission. 
 
+### Airbases
+
+Airbases are very important in a flying simulator. Not less so in missions. <br/>
+Spearhead will be able to manage Airbases for you by activating/deactivating and changing it's coalition while stages are completed. <br/>
+
+Ofcourse you don't want all bases to be flipped. So the behaviour is based on the starting coalition. <br/>
+
+Neutral  &emsp;=> Will stay neutral the entire mission. <br/>
+BLUE &emsp;&emsp; => Will turn RED when the stage is red and will turn BLUE when captured <br/>
+RED  &emsp;&emsp;&emsp;=> Will stay RED and when the stage is captured it will turn NEUTRAL <br/>
+
+#### Airbase Units
+
+Units on these airbases are also managed. This gives a very nice opportunity to create dynamic airbases that have a true RED/BLUE feeling. <br/>
+For this example we've setup Kutaisi as a "capturable" Airbase. See the image below (left)<br/>
+As you can see there's a mix and match of RED and BLUE units. Luckily the framework makes sure those cannot be spawned at the same time. <br/>
+On the image on the right you can see the setup of a little loading/unloading ramp. The Neutral objects will be spawned at the start and will be untouched. <br/>
+On the two images below that you can see the before and after of that loading doc after the stage was taken. <br/>
+
+Ofcourse all other blue units will also be spawned. <br/>
+This way you can have a blue SAM site, EWR, some blue static aircraft scattered around and the correct refueling and rearming trucks. <br/>
+This hopefully will make the Airbases feel less desolate on longer campaigns. <br/>
+
+<div style="display: flex">
+    <div style = "flex: 50%">
+        <img src="./img/kutaisi_me.png"/>
+    </div>
+     <div style = "flex: 50%">
+        <img src="./img/kutaisi_loading_dock.png"/>
+    </div>
+</div>
+<div style="display: flex">
+    <div style = "flex: 50%">
+        <img src="./img/kutaisi_dock_before.png"/>
+    </div>
+     <div style = "flex: 50%">
+        <img src="./img/kutaisi_dock_after.png"/>
+    </div>
+</div>
+
 
 ### Carriers
 
@@ -199,6 +239,8 @@ To let the framework know where you want the carrier to be at which stages of th
 In the image below we have 2 zones. `CARRIERROUTE_ALPHA_[1-2]_ROUTE` and `CARRIERROUTE_ALPHA_[3-4]_ROUTE`. <br/>
 This tells the framework where carriergroup `ALPHA` should go so you can have multiple smaller subfleets. <br/>
 
-
-
 ![carrierroutes](img/carrierroutes.png)
+
+### Farps
+
+Farp logic is in the works, but still needs some refinement. 
