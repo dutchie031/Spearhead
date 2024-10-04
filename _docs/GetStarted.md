@@ -208,7 +208,7 @@ As you can see there's a mix and match of RED and BLUE units. Luckily the framew
 On the image on the right you can see the setup of a little loading/unloading ramp. The Neutral objects will be spawned at the start and will be untouched. <br/>
 On the two images below that you can see the before and after of that loading doc after the stage was taken. <br/>
 
-Ofcourse all other blue units will also be spawned. <br/>
+Of course all other blue units will also be spawned. <br/>
 This way you can have a blue SAM site, EWR, some blue static aircraft scattered around and the correct refueling and rearming trucks. <br/>
 This hopefully will make the Airbases feel less desolate on longer campaigns. <br/>
 
