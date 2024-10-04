@@ -188,3 +188,17 @@ It can be friendly forces driving around. A FARP with surrounding units and tent
 ## Airbases, Farps and Carriers 
 
 On top of units and missions, airbases, farps and carriers are big parts of a mission. 
+
+
+### Carriers
+
+Aircraft carriers and fleets are very nice, but what use have they if they won't move along with the front line? <br/>
+For a carrier fleet to be managed it needs to abide to the name `CARRIERGROUP_<name>_<freeform>` <br/>
+For example, we have a single carrier here with the groupname: `CARRIERGROUP_ALPHA_fleet` <br/>
+To let the framework know where you want the carrier to be at which stages of the mission you can create `CARRIERROUTE_<name>_[<number>-<number>]_<freeform>` zones. <br/>
+In the image below we have 2 zones. `CARRIERROUTE_ALPHA_[1-2]_ROUTE` and `CARRIERROUTE_ALPHA_[3-4]_ROUTE`. <br/>
+This tells the framework where carriergroup `ALPHA` should go so you can have multiple smaller subfleets. <br/>
+
+
+
+![carrierroutes](img/carrierroutes.png)
