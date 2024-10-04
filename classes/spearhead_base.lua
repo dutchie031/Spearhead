@@ -1,4 +1,3 @@
-
 --- DEFAULT Values
 if Spearhead == nil then Spearhead = {} end
 
@@ -82,6 +81,14 @@ do -- INIT UTIL
     ---@return boolean
     UTIL.startswith = function(str, findable)
         return str:find('^' .. findable) ~= nil
+    end
+
+    ---comment
+    ---@param str string
+    ---@param findable string
+    ---@return boolean
+    UTIL.strContains = function(str, findable)
+        return str:find(findable) ~= nil
     end
 
     ---comment
@@ -1256,13 +1263,85 @@ do --setup route util
             }
         }, ""
     end
+
+    ROUTE_UTIL.CreateCarrierRacetrack = function(pointA, pointB)
+        return {
+            id = "Mission",
+            params = {
+                airborne = false,
+                route = {
+                    points = {
+                        [1] =
+                        {
+                            ["alt"] = -0,
+                            ["type"] = "Turning Point",
+                            ["ETA"] = 0,
+                            ["alt_type"] = "BARO",
+                            ["formation_template"] = "",
+                            ["y"] = pointA.z,
+                            ["x"] = pointA.x,
+                            ["ETA_locked"] = false,
+                            ["speed"] = 13.88888,
+                            ["action"] = "Turning Point",
+                            ["task"] =
+                            {
+                                ["id"] = "ComboTask",
+                                ["params"] =
+                                {
+                                    ["tasks"] = {},
+                                }, -- end of ["params"]
+                            }, -- end of ["task"]
+                            ["speed_locked"] = true,
+                        },
+                        [2] =
+                        {
+                            ["alt"] = -0,
+                            ["type"] = "Turning Point",
+                            ["ETA"] = -0,
+                            ["alt_type"] = "BARO",
+                            ["formation_template"] = "",
+                            ["y"] = pointB.z,
+                            ["x"] = pointB.x,
+                            ["ETA_locked"] = false,
+                            ["speed"] = 13.88888,
+                            ["action"] = "Turning Point",
+                            ["task"] =
+                            {
+                                ["id"] = "ComboTask",
+                                ["params"] =
+                                {
+                                    ["tasks"] =
+                                    {
+                                        [1] =
+                                        {
+                                            ["enabled"] = true,
+                                            ["auto"] = false,
+                                            ["id"] = "GoToWaypoint",
+                                            ["number"] = 1,
+                                            ["params"] =
+                                            {
+                                                ["fromWaypointIndex"] = 2,
+                                                ["nWaypointIndx"] = 1,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                            ["speed_locked"] = true,
+                        }
+                    }
+                }
+            }
+        }, ""
+    end
 end
 
 Spearhead.RouteUtil = ROUTE_UTIL
 
 local SpearheadEvents = {}
 do
-    local SpearheadLogger = Spearhead.LoggerTemplate:new("Spearhead Events", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
+    local SpearheadLogger = Spearhead.LoggerTemplate:new("Spearhead Events",
+        Spearhead.LoggerTemplate.LogLevelOptions.INFO)
 
     do -- STAGE NUMBER CHANGED
         local OnStageNumberChangedListeners = {}
@@ -1455,9 +1534,8 @@ do
         end
     end
 
-    do --COMMANDS 
+    do     --COMMANDS
         do -- status updates
-
             local onStatusRequestReceivedListeners = {}
             ---comment
             ---@param listener table object with OnStatusRequestReceived(self, groupId)
@@ -1470,9 +1548,9 @@ do
                 table.insert(onStatusRequestReceivedListeners, listener)
             end
 
-            local triggerStatusRequestReceived = function (groupId)
+            local triggerStatusRequestReceived = function(groupId)
                 for _, callable in pairs(onStatusRequestReceivedListeners) do
-                    local succ, err = pcall(function ()
+                    local succ, err = pcall(function()
                         callable:OnStatusRequestReceived(groupId)
                     end)
                 end
@@ -1481,7 +1559,8 @@ do
             SpearheadEvents.AddCommandsToGroup = function(groupId)
                 local base = "MISSIONS"
                 if groupId then
-                    missionCommands.addCommandForGroup(groupId, "Stage Status", nil, triggerStatusRequestReceived, groupId)
+                    missionCommands.addCommandForGroup(groupId, "Stage Status", nil, triggerStatusRequestReceived,
+                        groupId)
                 end
             end
 
@@ -1489,7 +1568,7 @@ do
             local id = net.get_my_player_id()
             if id == 0 then
                 SpearheadLogger:info("Single Player detected")
-                 
+
                 local unit = world.getPlayer()
                 if unit then
                     local groupId = unit:getGroup():getID()
@@ -1497,19 +1576,20 @@ do
 
                     --DEBUG COMMANDS
                     do
-                        local activateStage = function (number)
+                        local activateStage = function(number)
                             SpearheadEvents.PublishStageNumberChanged(number)
                         end
 
-                        missionCommands.addSubMenuForGroup(groupId , "debug" , nil)
-                        missionCommands.addSubMenuForGroup(groupId , "Set Stage" , {"debug"})
+                        missionCommands.addSubMenuForGroup(groupId, "debug", nil)
+                        missionCommands.addSubMenuForGroup(groupId, "Set Stage", { "debug" })
 
                         for i = 0, 9 do
                             local menuName = tostring(i) .. ".."
-                            missionCommands.addSubMenuForGroup(groupId , menuName, {"debug", "Set Stage"})
+                            missionCommands.addSubMenuForGroup(groupId, menuName, { "debug", "Set Stage" })
                             for ii = 0, 9 do
-                                local number  = tonumber(tostring(i) .. tostring(ii))
-                                missionCommands.addCommandForGroup(groupId, "Stage " .. tostring(number), { "debug", "Set Stage", menuName }, activateStage, number)
+                                local number = tonumber(tostring(i) .. tostring(ii))
+                                missionCommands.addCommandForGroup(groupId, "Stage " .. tostring(number),
+                                { "debug", "Set Stage", menuName }, activateStage, number)
                             end
                         end
                     end

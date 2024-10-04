@@ -1,0 +1,21 @@
+
+
+local GlobalFleetManager = {}
+
+local fleetGroups = {}
+
+GlobalFleetManager.start = function(database)
+
+    local logger = Spearhead.LoggerTemplate:new("CARRIERFLEET", Spearhead.LoggerTemplate.LogLevelOptions.DEBUG)
+
+    local all_groups = Spearhead.DcsUtil.getAllGroupNames()
+    for _, groupName in pairs(all_groups) do
+        if Spearhead.Util.startswith(string.lower(groupName), "carriergroup" ) == true then
+            logger:info("Registering " .. groupName .. " as a managed fleet")
+            local carrierGroup = Spearhead.internal.FleetGroup:new(groupName, database, logger)
+            table.insert(fleetGroups, carrierGroup)
+        end
+    end
+end
+
+Spearhead.internal.GlobalFleetManager = GlobalFleetManager
