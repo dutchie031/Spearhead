@@ -106,6 +106,25 @@ do --init STAGE DIRECTOR
             if farps ~= nil and type(farps) == "table" then o.db.farps = farps end
         end
 
+        o.StageCompleteListeners = {}
+        ---comment
+        ---@param self table
+        ---@param StageCompleteListener table a Object with tage
+        o.AddStageCompleteListener = function(self, StageCompleteListener)
+
+            if type(StageCompleteListener) ~= "table" then
+                return
+            end
+            table.insert(self.MissionCompleteListeners, StageCompleteListener)
+        end
+
+        local triggerStageCompleteListeners = function(self)
+            --[[
+                TODO: Trigger Stage complete
+            ]]
+        end
+
+
         o.IsComplete = function(self)
             for i, mission in pairs(self.db.missions) do
                 local state = mission:GetState()
@@ -420,19 +439,6 @@ do --init STAGE DIRECTOR
         for _, mission in pairs(o.db.missionsByCode) do
             mission:AddMissionCompleteListener(o)
         end
-
-        o.StageCompleteListeners = {}
-        ---comment
-        ---@param self table
-        ---@param StageCompleteListener table a Object with tage
-        o.AddStageCompleteListener = function(self, StageCompleteListener)
-
-            if type(StageCompleteListener) ~= "table" then
-                return
-            end
-            table.insert(self.MissionCompleteListeners, StageCompleteListener)
-        end
-        
 
         Spearhead.Events.AddOnStatusRequestReceivedListener(o)
         Spearhead.Events.AddStageNumberChangedListener(o)
