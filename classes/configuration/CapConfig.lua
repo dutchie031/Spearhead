@@ -51,4 +51,6 @@ function CapConfig:new()
 
     return o;
 end
+
+if not Spearhead.internal then Spearhead.internal = {} end
 Spearhead.internal.configuration.CapConfig = CapConfig;

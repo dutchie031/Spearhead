@@ -376,18 +376,18 @@ do -- DB
             loadAirbaseGroups()
             loadMiscGroupsInStages()
 
-            local cleanup = function () --CLean up all groups that are now managed inside zones by spearhead 
+            -- local cleanup = function () --CLean up all groups that are now managed inside zones by spearhead 
                 
-                local count = 0
-                for name, taken in pairs(is_group_taken) do
-                    if taken == true then
-                        Spearhead.DcsUtil.DestroyGroup(name)
-                        count = count + 1
-                    end
-                end
-                Logger:info("Destroyed " .. count .. " units that are now managed in zones by Spearhead")
-            end
-            cleanup()
+            --     local count = 0
+            --     for name, taken in pairs(is_group_taken) do
+            --         if taken == true then
+            --             Spearhead.DcsUtil.DestroyGroup(name)
+            --             count = count + 1
+            --         end
+            --     end
+            --     Logger:info("Destroyed " .. count .. " units that are now managed in zones by Spearhead")
+            -- end
+            -- cleanup()
 
             --- key: zoneName value: { current, routes = [ { point1, point2 } ] }
             o.tables.capRoutesPerStageNumber = {}

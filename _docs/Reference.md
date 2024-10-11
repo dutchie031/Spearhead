@@ -118,7 +118,6 @@ TIP: You can click on the type to get more details
 &emsp; <u>Completion logic</u> <br/>
 &emsp; TODO: documentation: Completion logic 
 
-
 </details>
 
 <details> 

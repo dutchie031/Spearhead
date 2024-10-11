@@ -47,7 +47,10 @@ SpearheadConfig = {
         --[[
             TODO: Add manual stage transition documentation
         ]]
-        autoStages = true --default true
+        autoStages = true, --default true
+
+        --Maximum missions per stage (includes all types of missions)
+        maxMissionStage = 10
     }
 }
 

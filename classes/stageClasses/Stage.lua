@@ -203,7 +203,7 @@ do --init STAGE DIRECTOR
                 end
             end
 
-            local max = self.stageConfig.maxMissionsInStage or 10
+            local max = self.stageConfig:getMaxMissionPerStage() or 10
 
             local availableMissionsCount = Spearhead.Util.tableLength(availableMissions)
             if activeCount < max and availableMissionsCount > 0  then

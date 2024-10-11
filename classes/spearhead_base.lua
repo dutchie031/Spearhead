@@ -883,7 +883,7 @@ do --setup route util
         local targetTypes = {
             [1] = "Fighters",
             [2] = "Multirole fighters",
-            [3] = "Bombers",
+            [3] = "Bombers"
         }
 
         if attackHelos then
