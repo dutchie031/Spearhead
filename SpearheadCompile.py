@@ -21,7 +21,7 @@ def compile(root, target):
         Spearhead Compile Time: {datetime.datetime.now().isoformat()}
     ]]"""
 
-    compiled = ""
+    compiled = f"{dateTime}\n"
     compiled += classes
     
     mainFileName = os.path.join(root, "main.lua")
