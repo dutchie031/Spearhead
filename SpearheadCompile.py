@@ -17,7 +17,7 @@ def compile(root, target):
     classPath = os.path.join(root, "classes")
     classes = compileClasses(classPath)
 
-    dateTime = f"""-- [[
+    dateTime = f"""--[[
         Spearhead Compile Time: {datetime.datetime.now().isoformat()}
     ]]"""
 
