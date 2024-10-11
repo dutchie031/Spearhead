@@ -1,6 +1,7 @@
 import os
 import sys
 import glob
+import datetime
 
 def compileClasses(classesPath):
     resultString = ""
@@ -15,7 +16,12 @@ def compileClasses(classesPath):
 def compile(root, target):
     classPath = os.path.join(root, "classes")
     classes = compileClasses(classPath)
-    compiled = ""
+
+    dateTime = f"""--[[
+        Spearhead Compile Time: {datetime.datetime.now().isoformat()}
+    ]]"""
+
+    compiled = f"{dateTime}\n"
     compiled += classes
     
     mainFileName = os.path.join(root, "main.lua")

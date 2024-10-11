@@ -26,7 +26,7 @@ do
             elseif first == "[" then
                 result.isBackup = false
             else
-                table.insert(Spearhead.MissionEditingWarnings, "Could not parse the CAP config for group: " .. groupName)
+                Spearhead.AddMissionEditorWarning("Could not parse the CAP config for group: " .. groupName)
                 return nil
             end
 
@@ -62,8 +62,7 @@ do
             end
             return result
         else
-            table.insert(Spearhead.MissionEditingWarnings,
-                "CAP Group with name: " .. groupName .. "should have at least 3 parts, but has " .. partCount)
+            Spearhead.AddMissionEditorWarning("CAP Group with name: " .. groupName .. "should have at least 3 parts, but has " .. partCount)
             return nil
         end
     end
