@@ -3,8 +3,7 @@ local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.LoggerTempla
 local databaseManager = Spearhead.DB:new(dbLogger)
 
 local capConfig = {
-    maxDeviationRange = 32186, --20NM -- sets max deviation before flight starts pulling back,
-    minSpeed = 400,
+    maxDeviationRange = 46300, --25NM -- max engagement distance
     maxSpeed = 500,
     minAlt = 18000,
     maxAlt = 28000,
