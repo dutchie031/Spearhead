@@ -881,13 +881,11 @@ do --setup route util
     ---@return table
     local function GetCAPTargetTypes(attackHelos)
         local targetTypes = {
-            [1] = "Fighters",
-            [2] = "Multirole fighters",
-            [3] = "Bombers",
+            [1] = "Planes",
         }
 
         if attackHelos then
-            targetTypes[4] = "Helicopters"
+            targetTypes[2] = "Helicopters"
         end
 
         return targetTypes
