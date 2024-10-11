@@ -190,7 +190,7 @@ do --init STAGE DIRECTOR
         end
 
         o.ActivateMissionsIfApplicable = function (self)
-            local activeCount = 0 
+            local activeCount = 0
 
             local availableMissions = {}
             for _, mission in pairs(self.db.missionsByCode) do
@@ -216,6 +216,7 @@ do --init STAGE DIRECTOR
                         if mission then
                             mission:Activate()
                             self:AddCommmandsForMissionToAllPlayers(mission)
+                            activeCount = activeCount + 1;
                         end
                         availableMissionsCount = availableMissionsCount - 1
                     end
@@ -283,25 +284,6 @@ do --init STAGE DIRECTOR
 
             timer.scheduleFunction(ActivateBlueAsync, self, timer.getTime() + 3)
 
-            -- for key, farp in pairs(self.db.farps) do
-            --     if farp.helipadnames then
-            --         for _, helipadName in pairs(farp.helipadnames) do
-            --             local helipad = Airbase.getByName(helipadName)
-            --             if helipad then
-            --                 logger:debug("Enabling: '" .. helipad:getName() .. "'")
-            --                 helipad:setCoalition(2)
-            --             else
-            --                 logger:warn(helipadName .. " not found when spawning farps")
-            --             end
-            --         end
-            --     end
-
-            --     if farp.group_names then
-            --         for _, groupName in pairs(farp.group_names) do
-            --             Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
-            --         end
-            --     end
-            -- end
         end
 
         o.OnStatusRequestReceived = function(self, groupId)
@@ -427,12 +409,30 @@ do --init STAGE DIRECTOR
         
         o.OnMissionComplete = function(self, mission)
             timer.scheduleFunction(removeMissionCommandsDelayed, { self = self, mission = mission}, timer.getTime() + 20)
-            timer.scheduleFunction(activateMissionsIfApplicableAsync, self, timer.getTime() + 10)
+
+            if(self:IsComplete()) then
+                
+            else
+                timer.scheduleFunction(activateMissionsIfApplicableAsync, self, timer.getTime() + 10)
+            end
         end
 
         for _, mission in pairs(o.db.missionsByCode) do
             mission:AddMissionCompleteListener(o)
         end
+
+        o.StageCompleteListeners = {}
+        ---comment
+        ---@param self table
+        ---@param StageCompleteListener table a Object with tage
+        o.AddStageCompleteListener = function(self, StageCompleteListener)
+
+            if type(StageCompleteListener) ~= "table" then
+                return
+            end
+            table.insert(self.MissionCompleteListeners, StageCompleteListener)
+        end
+        
 
         Spearhead.Events.AddOnStatusRequestReceivedListener(o)
         Spearhead.Events.AddStageNumberChangedListener(o)
