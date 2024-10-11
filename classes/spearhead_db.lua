@@ -251,7 +251,7 @@ do -- DB
 
                     o.tables.capGroupsOnAirbase[baseId] = {}
                     local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups,
-                        { x = point.x, z = point.z, radius = 6600 })
+                        { x = point.x, z = point.z, radius = 2048 })
                     for _, groupName in pairs(groups) do
                         is_group_taken[groupName] = true
                         table.insert(o.tables.capGroupsOnAirbase[baseId], groupName)
@@ -314,7 +314,7 @@ do -- DB
                     if isAirbaseInZone[tostring(baseId) or "something" ] == true and airbase:getDesc().category == Airbase.Category.AIRDROME then
                         o.tables.redAirbaseGroupsPerAirbase[baseId] = {}
                         o.tables.blueAirbaseGroupsPerAirbase[baseId] = {}
-                        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, { x = point.x, z = point.z, radius = 6600 })
+                        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, { x = point.x, z = point.z, radius = 2048 })
                         for _, groupName in pairs(groups) do
 
                             if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then

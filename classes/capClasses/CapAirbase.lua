@@ -56,6 +56,7 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
             capGroup:AddOnStateUpdatedListener(o)
         end
     end
+    logger:info("Airbase with Id '" .. airbaseId .. "' has a total of " .. Spearhead.Util.tableLength(o.groupsByName) .. "cap flights registered")
 
     o.SpawnIfApplicable = function(self)
         self.logger:debug("Check spawns for airbase " .. self.airbaseId )
