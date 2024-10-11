@@ -140,17 +140,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     o.markedForDespawn = false
 
     --config
-    o.capConfig = {}
-
-    if not capConfig then capConfig = {} end
-    o.capConfig.maxDeviationRange = capConfig.maxDeviationRange
-    o.capConfig.minSpeed = (capConfig.minSpeed or 400) * 0.514444
-    o.capConfig.maxSpeed = (capConfig.maxSpeed or 500) * 0.514444
-    o.capConfig.minAlt = (capConfig.minAlt or 8000) * 0.3048
-    o.capConfig.maxAlt = (capConfig.maxAlt or 27000) * 0.3048
-    o.capConfig.minDurationOnStation = capConfig.minDurationOnStation or 600
-    o.capConfig.maxDurationOnstation = capConfig.maxDurationOnStation or 1800
-    o.capConfig.rearmDelay = capConfig.rearmDelay or 300
+    o.capConfig = capConfig
 
     ---comment
     ---@param self table
@@ -168,7 +158,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     o.StartRearm = function(self)
         self:SpawnOnTheRamp()
         self:SetState(CapGroup.GroupState.REARMING)
-        timer.scheduleFunction(SetReadyOnRampAsync, self, timer.getTime() + self.capConfig.rearmDelay - RESPAWN_AFTER_TOUCHDOWN_SECONDS)
+        timer.scheduleFunction(SetReadyOnRampAsync, self, timer.getTime() + self.capConfig:getRearmDelay() - RESPAWN_AFTER_TOUCHDOWN_SECONDS)
     end
 
     o.SpawnOnTheRamp = function(self)
@@ -203,7 +193,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     o.SendRTB = function(self)
         local group = Group.getByName(self.groupName)
         if group and group:isExist() then
-            local speed = math.random(self.capConfig.minSpeed, self.capConfig.maxSpeed)
+            local speed = math.random(self.capConfig:getMinSpeed(), self.capConfig:getMaxSpeed())
             local rtbTask, errormessage = Spearhead.RouteUtil.CreateRTBMission(self.groupName, self.airbaseId, speed)
             if rtbTask then
                 timer.scheduleFunction(setTaskAsync, { task = rtbTask, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
@@ -236,21 +226,17 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
             local controller = group:getController()
             local capPoints = database:getCapRouteInZone(stageZoneNumber, self.airbaseId)
 
-            local altitude = math.random(self.capConfig.minAlt, self.capConfig.maxAlt)
-            local speed = math.random(self.capConfig.minSpeed, self.capConfig.maxSpeed)
+            local altitude = math.random(self.capConfig:getMinAlt(), self.capConfig:getMaxAlt())
+            local speed = math.random(self.capConfig:getMinSpeed(), self.capConfig:getMaxSpeed())
             local attackHelos = false
-            local deviationDistance = self.capConfig.maxDeviationRange
+            local deviationDistance = self.capConfig:getMaxDeviationRange()
             local capTask
             if self.state == CapGroup.GroupState.ONRAMP or self.onStationSince == 0 then
                 controller:setCommand({
                     id = 'Start',
                     params = {}
                 })
-                local duration = math.random(self.capConfig.minDurationOnStation, self.capConfig
-                .maxDurationOnstation)
-                self.logger:debug("random schedule min: " ..
-                tostring(self.capConfig.minDurationOnStation or "nil") ..
-                " max: " .. tostring(self.capConfig.maxDurationOnstation or "nil") .. " actual " .. duration)
+                local duration = math.random(self.capConfig:getMinDurationOnStation(), self.capConfig:getmaxDurationOnStation())
                 self.currentCapTaskingDuration = duration
 
                 
@@ -273,7 +259,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     ---@param airdomeId any
     o.SendToAirbase = function(self, airdomeId)
         self.airbaseId = airdomeId
-        local speed = math.random(self.capConfig.minSpeed, self.capConfig.maxSpeed)
+        local speed = math.random(self.capConfig:getMinSpeed(), self.capConfig:getMaxSpeed())
         local rtbTask = Spearhead.RouteUtil.CreateRTBMission(self.groupName, airdomeId, speed)
         local group = Group.getByName(self.groupName)
         local controller = group:getController()
@@ -345,7 +331,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
                 if self.markedForDespawn == true then
                     self:Despawn()
                 else
-                    local delay = self.capConfig.deathDelay - self.capConfig.rearmDelay + RESPAWN_AFTER_TOUCHDOWN_SECONDS
+                    local delay = self.capConfig:getDeathDelay() - self.capConfig:getRearmDelay() + RESPAWN_AFTER_TOUCHDOWN_SECONDS
                     timer.scheduleFunction(DelayedStartRearm, { self = self }, timer.getTime() + delay)
                 end
             end
