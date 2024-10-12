@@ -18,21 +18,6 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
     o.logger = logger
     o.activeStage = 0
     o.capConfig = capConfig
-
-    if capConfig == nil then
-        capConfig = {}
-        Spearhead.AddMissionEditorWarning("CapConfig is nil")
-    else
-        if capConfig.minSpeed == nil then Spearhead.AddMissionEditorWarning("CapConfig.minSpeed is nil") end
-        if capConfig.maxSpeed == nil then Spearhead.AddMissionEditorWarning("CapConfig.maxSpeed is nil") end
-        if capConfig.minAlt == nil then Spearhead.AddMissionEditorWarning("CapConfig.minAlt is nil") end
-        if capConfig.maxAlt == nil then Spearhead.AddMissionEditorWarning("CapConfig.maxAlt is nil") end
-        if capConfig.minDurationOnStation == nil then Spearhead.AddMissionEditorWarning("CapConfig.minDurationOnStation is nil") end
-        if capConfig.maxDurationOnStation == nil then Spearhead.AddMissionEditorWarning("CapConfig.maxDurationOnStation is nil") end
-        if capConfig.rearmDelay == nil then Spearhead.AddMissionEditorWarning("CapConfig.rearmDelay is nil") end
-        if capConfig.deathDelay == nil then Spearhead.AddMissionEditorWarning("CapConfig.deathDelay is nil") end
-    end
-
     o.activeCapStages = (stageConfig or {}).capActiveStages or 10
 
     o.lastStatesByName = {}

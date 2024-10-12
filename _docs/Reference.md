@@ -62,6 +62,12 @@ The initial version with basic functionality
 - [ ] Persistance
 
 
+## Configuration
+
+```lua
+  ##!config!##
+```
+
 ## Stage
 
 A stage is a logical part of a mission. It's isn't anything special per se, but everything revolves around stages in Spearhead. <br/>
@@ -117,7 +123,6 @@ TIP: You can click on the type to get more details
 
 &emsp; <u>Completion logic</u> <br/>
 &emsp; TODO: documentation: Completion logic 
-
 
 </details>
 
