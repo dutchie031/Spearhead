@@ -40,10 +40,12 @@ jobs:
       import os
       with open("./spearhead/config.lua", "r") as luaFile: 
         luaConfig = luaFile.read()
-        with open("./spearhead/_docs/Reference.md", "r+") as mdFile: 
-          text = mdFile.read()
-          text = text.replace("##!config!##", luaConfig)
-          mdFile.write(text)
+        with open("./spearhead/_docs/Reference.md") as f:
+            newText=f.read().replace("##!config!##", luaConfig)
+
+        with open("./spearhead/_docs/Reference.md", "w") as f:
+            f.write(newText)
+
     shell: python
 
   - name: mkdir
