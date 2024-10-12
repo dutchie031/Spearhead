@@ -43,7 +43,7 @@ jobs:
         with open("./spearhead/_docs/Reference.md", "r+") as mdFile: 
           text = mdFile.read()
           text = text.replace("##!config!##", luaConfig)
-          mdFile.write()
+          mdFile.write(text)
     shell: python
 
   - name: mkdir
