@@ -64,7 +64,7 @@ The initial version with basic functionality
 
 ## Configuration
 
-Overwrite the values in your own script (before spearhead runs) or <a download="spearheadConfig.lua" href="./spearheadConfig.lua" target="_blank" rel="noopener noreferrer">Download Config File</a> to edit here
+Overwrite the values in your own script (before spearhead runs) or <a download="spearheadConfig.lua" href="./spearheadConfig.lua" target="_blank" rel="noopener noreferrer">Download Config File</a> to edit
 
 ```lua
   ##!config!##
