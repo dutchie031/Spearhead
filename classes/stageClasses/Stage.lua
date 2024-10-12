@@ -360,7 +360,7 @@ do --init STAGE DIRECTOR
 
             local previousActive = self.activeStage
             self.activeStage = number
-            if Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
+            if Spearhead.capInfo.IsBaseActiveWhenZoneIsActive(self.zoneName, number) == true then
                 self:PreActivate()
             end
 

@@ -13,7 +13,7 @@ local databaseManager = Spearhead.DB:new(dbLogger, debug)
 local capConfig = Spearhead.internal.configuration.CapConfig:new();
 local stageConfig = Spearhead.internal.configuration.StageConfig:new();
 
-Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
+Spearhead.internal.GlobalAirManager.start(databaseManager, capConfig, stageConfig)
 Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 

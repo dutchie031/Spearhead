@@ -15,6 +15,41 @@ do --setup route util
         return targetTypes
     end
 
+    local function GetCasNoTargetTypes()
+        return
+        {
+            [1] = "Fighters",
+            [2] = "Multirole fighters",
+            [3] = "Bombers",
+            [4] = "Helicopters",
+            [5] = "UAVs",
+            [6] = "Infantry",
+            [7] = "Fortifications",
+            [8] = "Tanks",
+            [9] = "IFV",
+            [10] = "APC",
+            [11] = "Artillery",
+            [12] = "Unarmed vehicles",
+            [13] = "AAA",
+            [14] = "SR SAM",
+            [15] = "MR SAM",
+            [16] = "LR SAM",
+            [17] = "Aircraft Carriers",
+            [18] = "Cruisers",
+            [19] = "Destroyers",
+            [20] = "Frigates",
+            [21] = "Corvettes",
+            [22] = "Light armed ships",
+            [23] = "Unarmed ships",
+            [24] = "Submarines",
+            [25] = "Cruise missiles",
+            [26] = "Antiship Missiles",
+            [27] = "AA Missiles",
+            [28] = "AG Missiles",
+            [29] = "SA Missiles",
+        }
+    end
+
     ---comment
     ---@param airdromeId number
     ---@param basePoint table { x, z, y } (y == alt)
@@ -170,6 +205,58 @@ do --setup route util
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    end
+
+    local CasTask = function(groupName, position, altitude, speed, duration, deviationDistance, pattern)
+        return {
+            alt = altitude,
+            action = "Turning Point",
+            alt_type = "BARO",
+            speed = speed,
+            ETA = 0,
+            ETA_locked = false,
+            x = position.x,
+            y = position.z,
+            speed_locked = true,
+            formation_template = "",
+            task = {
+                id = "ComboTask",
+                params = {
+                    tasks = {
+                        [1] = {
+                            id = 'EngageTargets',
+                            params = {
+                                maxDist = deviationDistance,
+                                maxDistEnabled = deviationDistance >= 0, -- required to check maxDist
+                                targetTypes = {},
+                                noTargetTypes = GetCasNoTargetTypes(),
+                                priority = 0
+                            }
+                        },
+                        [2] = {
+                            number = 2,
+                            auto = false,
+                            id = "ControlledTask",
+                            enabled = true,
+                            params = {
+                                task = {
+                                    id = "Orbit",
+                                    params = {
+                                        altitude = altitude,
+                                        pattern = pattern,
+                                        speed = speed,
+                                    }
+                                },
+                                stopCondition = {
+                                    duration = duration,
+                                    condition = "return Spearhead.DcsUtil.IsBingoFuel(\"" .. groupName .. "\", 0.10)",
+                                }
+                            }
+                        },
                     }
                 }
             }
@@ -386,6 +473,35 @@ do --setup route util
         }, ""
     end
 
+
+    ---@return table?, string ComboTask
+    ROUTE_UTIL.CreateCasTask = function(groupName, pointA, pointB, airdromeId, speed, altitude, casDuration, deviationDistance )
+        local base = Spearhead.DcsUtil.getAirbaseById(airdromeId)
+
+        if base == nil then
+            return nil, "No airbase found for ID " .. tostring(airdromeId)
+        end
+
+        local raceTrack = "Race-Track"
+        if pointB == nil then
+            raceTrack = "Circle"
+        end
+
+        return {
+            id = "Mission",
+            params = {
+                airborne = true,
+                route = {
+                    points = {
+                        [1] = CasTask(groupName, pointA,altitude, speed, casDuration, deviationDistance, raceTrack),
+                        [2] = FlyToPointTask(pointB or pointA, speed, altitude, {} ),
+                        [3] = RtbTask(airdromeId,  speed, base:getPoint())
+                    }
+                }
+            }
+        }, ""
+    end
+
     ROUTE_UTIL.CreateCarrierRacetrack = function(pointA, pointB)
         return {
             id = "Mission",
@@ -456,6 +572,9 @@ do --setup route util
             }
         }, ""
     end
+
+   
+
 end
 
 if Spearhead == nil then Spearhead = {} end
