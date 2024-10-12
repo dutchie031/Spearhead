@@ -35,12 +35,24 @@ jobs:
     run: git clone --single-branch --branch $branch https://github.com/$username/$repo 
   - name: ls
     run: ls
+  - name: Replace string in file
+    run: | 
+      import os
+      with open("./spearhead/config.lua", "r") as luaFile: 
+        luaConfig = luaFile.read()
+        with open("./spearhead/_docs/Reference.md", "r+") as mdFile: 
+          text = mdFile.read()
+          text = text.replace("##!config!##", luaConfig)
+          mdFile.write()
+    shell: python
+
   - name: mkdir
     run: mkdir -p ./$repo/Spearhead
   - run: npm i markdown-to-html-cli -g
   - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/$sourcefileA.md --output ./$repo/Spearhead/$sourcefileA.html
   - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/$sourcefileB.md --output ./$repo/Spearhead/$sourcefileB.html
   - run: python3 ./spearhead/SpearheadCompile.py "./spearhead" "./$repo/Spearhead/spearhead.lua"
+  - run: cp "./spearhead/config.lua" "./$repo/Spearhead/spearheadConfig.lua"
   - run: cp -a ./spearhead/_docs/img/. ./$repo/Spearhead/img/
   - name: ls
     run: ls
