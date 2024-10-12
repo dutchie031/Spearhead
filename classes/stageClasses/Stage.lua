@@ -29,6 +29,7 @@ do --init STAGE DIRECTOR
         end
 
         o.stageNumber = orderNumber
+        o.isActive = false
         o.database = database
         o.logger = logger
         o.db = {}
@@ -116,7 +117,7 @@ do --init STAGE DIRECTOR
         o.StageCompleteListeners = {}
         ---comment
         ---@param self table
-        ---@param StageCompleteListener table a Object with tage
+        ---@param StageCompleteListener table an Object with function onStageCompleted(stage)
         o.AddStageCompleteListener = function(self, StageCompleteListener)
 
             if type(StageCompleteListener) ~= "table" then
@@ -126,9 +127,15 @@ do --init STAGE DIRECTOR
         end
 
         local triggerStageCompleteListeners = function(self)
-            --[[
-                TODO: Trigger Stage complete
-            ]]
+            self.isActive = false
+            for _, callable in pairs(self.MissionCompleteListeners) do
+                local succ, err = pcall( function() 
+                    callable:OnMissionComplete(self)
+                end)
+                if err then
+                    self.logger:warn("Error in misstion complete listener:" .. err)
+                end
+            end
         end
 
 
@@ -179,7 +186,7 @@ do --init STAGE DIRECTOR
             end
 
             local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
-            if zone then
+            if zone and self.stageConfig:isDrawStagesEnabled() == true then
                 self.logger:debug("drawing stage")
                 if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
                     trigger.action.circleToAll(-1, self.stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, {0,0,0,0}, {0,0,0,0},4, true)
@@ -194,6 +201,8 @@ do --init STAGE DIRECTOR
         end
         
         o.ActivateStage = function(self)
+            self.isActive = true;
+
             pcall(function()
                 self:MarkStage()
             end)
@@ -437,7 +446,7 @@ do --init STAGE DIRECTOR
             timer.scheduleFunction(removeMissionCommandsDelayed, { self = self, mission = mission}, timer.getTime() + 20)
 
             if(self:IsComplete()) then
-                
+                timer.scheduleFunction(triggerStageCompleteListeners, self, timer.getTime() + 15)
             else
                 timer.scheduleFunction(activateMissionsIfApplicableAsync, self, timer.getTime() + 10)
             end

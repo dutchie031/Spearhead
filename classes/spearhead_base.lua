@@ -663,7 +663,7 @@ do     -- INIT DCS_UTIL
     end
 
     ---comment
-    ---@param zone_name any
+    ---@param airbaseId any
     ---@return table? zone { name,b zone_type, x, z, radius, verts }
     function DCS_UTIL.getAirbaseZoneById(airbaseId)
         local string = tostring(airbaseId)
