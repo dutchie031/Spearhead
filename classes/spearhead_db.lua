@@ -2,13 +2,13 @@
 
 local SpearheadDB = {}
 do -- DB
-
     local singleton = nil
 
     ---comment
     ---@param Logger table
     ---@return table
-    function SpearheadDB:new(Logger)
+    function SpearheadDB:new(Logger, debug)
+        if not debug then debug = false end
         if singleton ~= nil then
             Logger:info("Returning an already initiated instance of SpearheadDB")
             return singleton
@@ -21,7 +21,7 @@ do -- DB
         o.tables = {}
         do --INIT ALL TABLES
             Logger:debug("Initiating tables")
-        
+
             o.tables.all_zones = {}
             o.tables.stage_zones = {}
             o.tables.mission_zones = {}
@@ -34,43 +34,41 @@ do -- DB
             o.tables.stage_numberPerzone = {}
 
             do -- INIT ZONE TABLES
-                if env.mission.triggers and env.mission.triggers.zones then
-                    for zone_ind, zone_data in pairs(env.mission.triggers.zones) do
-                        local zone_name = zone_data.name
-                        local split_string = Spearhead.Util.split_string(zone_name, "_")
-                        table.insert(o.tables.all_zones, zone_name)
+                for zone_ind, zone_data in pairs(Spearhead.DcsUtil.__trigger_zones) do
+                    local zone_name = zone_data.name
+                    local split_string = Spearhead.Util.split_string(zone_name, "_")
+                    table.insert(o.tables.all_zones, zone_name)
 
-                        if string.lower(split_string[1]) == "missionstage" then
-                            table.insert(o.tables.stage_zones, zone_name)
-                            if split_string[2] then
-                                local stringified = tostring(split_string[2]) or "unknown"
-                                if o.tables.stage_zonesByNumer[stringified] == nil then
-                                    o.tables.stage_zonesByNumer[stringified] = {}
-                                end
-                                table.insert(o.tables.stage_zonesByNumer[stringified], zone_name)
-                                o.tables.stage_numberPerzone[zone_name] = stringified
+                    if string.lower(split_string[1]) == "missionstage" then
+                        table.insert(o.tables.stage_zones, zone_name)
+                        if split_string[2] then
+                            local stringified = tostring(split_string[2]) or "unknown"
+                            if o.tables.stage_zonesByNumer[stringified] == nil then
+                                o.tables.stage_zonesByNumer[stringified] = {}
                             end
+                            table.insert(o.tables.stage_zonesByNumer[stringified], zone_name)
+                            o.tables.stage_numberPerzone[zone_name] = stringified
                         end
+                    end
 
-                        if string.lower(split_string[1]) == "mission" then
-                            table.insert(o.tables.mission_zones, zone_name)
-                        end
+                    if string.lower(split_string[1]) == "mission" then
+                        table.insert(o.tables.mission_zones, zone_name)
+                    end
 
-                        if string.lower(split_string[1]) == "randommission" then
-                            table.insert(o.tables.random_mission_zones, zone_name)
-                        end
+                    if string.lower(split_string[1]) == "randommission" then
+                        table.insert(o.tables.random_mission_zones, zone_name)
+                    end
 
-                        if string.lower(split_string[1]) == "farp" then
-                            table.insert(o.tables.farp_zones, zone_name)
-                        end
+                    if string.lower(split_string[1]) == "farp" then
+                        table.insert(o.tables.farp_zones, zone_name)
+                    end
 
-                        if string.lower(split_string[1]) == "caproute" then
-                            table.insert(o.tables.cap_route_zones, zone_name)
-                        end
+                    if string.lower(split_string[1]) == "caproute" then
+                        table.insert(o.tables.cap_route_zones, zone_name)
+                    end
 
-                        if string.lower(split_string[1]) == "carrierroute" then
-                            table.insert(o.tables.carrier_route_zones, zone_name)
-                        end
+                    if string.lower(split_string[1]) == "carrierroute" then
+                        table.insert(o.tables.carrier_route_zones, zone_name)
                     end
                 end
             end
@@ -82,7 +80,8 @@ do -- DB
                     for i, layer in pairs(env.mission.drawings.layers) do
                         if string.lower(layer.name) == "author" then
                             for key, layer_object in pairs(layer.objects) do
-                                local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY, o.tables.mission_zones)
+                                local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
+                                    o.tables.mission_zones)
                                 if Spearhead.Util.tableLength(inZone) >= 1 then
                                     local name = inZone[1]
                                     if name ~= nil then
@@ -90,7 +89,8 @@ do -- DB
                                     end
                                 end
 
-                                local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY, o.tables.random_mission_zones)
+                                local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
+                                    o.tables.random_mission_zones)
                                 if Spearhead.Util.tableLength(inZone) >= 1 then
                                     local name = inZone[1]
                                     if name ~= nil then
@@ -151,7 +151,7 @@ do -- DB
                             isAirbaseInZone[baseIdString] = true
 
                             if airbase:getDesc().category == 0 then
-                                --Airbase 
+                                --Airbase
                                 if Spearhead.DcsUtil.getStartingCoalition(baseId) == 2 then
                                     airbase:setCoalition(1)
                                     airbase:autoCapture(false)
@@ -179,19 +179,19 @@ do -- DB
                                         airbase:autoCapture(false)
                                         table.insert(o.tables.farpIdsInFarpZones[farpZoneName], baseIdString)
                                     end
-                                    i = i +1
+                                    i = i + 1
                                 end
                             end
                         end
                     end
                 end
             end
-        
-           
+
+
 
             o.tables.farpZonesPerStage = {}
             for _, farpZoneName in pairs(o.tables.farp_zones) do
-                local findFirst = function (farpZoneName)
+                local findFirst = function(farpZoneName)
                     for _, stage_zone in pairs(o.tables.stage_zones) do
                         if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stage_zone) then
                             return stage_zone
@@ -202,7 +202,6 @@ do -- DB
 
                 local found = findFirst(farpZoneName)
                 if found then
-                    
                     if o.tables.farpZonesPerStage[found] == nil then
                         o.tables.farpZonesPerStage[found] = {}
                     end
@@ -248,10 +247,10 @@ do -- DB
                 for _, airbase in pairs(airbases) do
                     local baseId = airbase:getID()
                     local point = airbase:getPoint()
-
+                    local zone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or
+                    { x = point.x, z = point.z, radius = 4000 }
                     o.tables.capGroupsOnAirbase[baseId] = {}
-                    local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups,
-                        { x = point.x, z = point.z, radius = 2048 })
+                    local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
                     for _, groupName in pairs(groups) do
                         is_group_taken[groupName] = true
                         table.insert(o.tables.capGroupsOnAirbase[baseId], groupName)
@@ -273,19 +272,19 @@ do -- DB
                 end
             end
 
-           --- missionZoneName <> groupname[]
-           o.tables.groupsInRandomMissions = {}
-           local loadRandomMissionzoneUnits = function()
-               local all_groups = getAvailableGroups()
-               for _, missionZoneName in pairs(o.tables.random_mission_zones) do
-                   o.tables.groupsInRandomMissions[missionZoneName] = {}
-                   local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
-                   for _, groupName in pairs(groups) do
-                       is_group_taken[groupName] = true
-                       table.insert(o.tables.groupsInRandomMissions[missionZoneName], groupName)
-                   end
-               end
-           end
+            --- missionZoneName <> groupname[]
+            o.tables.groupsInRandomMissions = {}
+            local loadRandomMissionzoneUnits = function()
+                local all_groups = getAvailableGroups()
+                for _, missionZoneName in pairs(o.tables.random_mission_zones) do
+                    o.tables.groupsInRandomMissions[missionZoneName] = {}
+                    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
+                    for _, groupName in pairs(groups) do
+                        is_group_taken[groupName] = true
+                        table.insert(o.tables.groupsInRandomMissions[missionZoneName], groupName)
+                    end
+                end
+            end
 
             --- farpZoneName <> groupname[]
             o.tables.groupsInFarpZone = {}
@@ -310,13 +309,37 @@ do -- DB
                 for _, airbase in pairs(airbases) do
                     local baseId = tostring(airbase:getID())
                     local point = airbase:getPoint()
+                    local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or
+                    { x = point.x, z = point.z, radius = 4000 }
 
-                    if isAirbaseInZone[tostring(baseId) or "something" ] == true and airbase:getDesc().category == Airbase.Category.AIRDROME then
+                    if isAirbaseInZone[tostring(baseId) or "something"] == true and airbaseZone and airbase:getDesc().category == Airbase.Category.AIRDROME then
+                        if debug then
+                            if airbaseZone.zone_type == Spearhead.DcsUtil.ZoneType.Polygon then
+                                local functionString = "trigger.action.markupToAll(7, -1, " .. baseId + 300 .. ","
+                                for _, vecpoint in pairs(airbaseZone.verts) do
+                                    functionString = functionString .. " { x=" .. vecpoint.x .. ", y=0,z=" .. vecpoint.z ..
+                                    "},"
+                                end
+                                functionString = functionString .. "{0,1,0,1}, {0,1,0,1}, 1)"
+
+                                env.info(functionString)
+                                local f, err = loadstring(functionString)
+                                if f then
+                                    f()
+                                else
+                                    env.info(err)
+                                end
+                            else
+                                trigger.action.circleToAll(-1, baseId, { x = point.x, y = 0, z = point.z }, 2048,
+                                    { 1, 0, 0, 1 }, { 1, 0, 0, 0 }, 1, true)
+                            end
+                        end
+
+
                         o.tables.redAirbaseGroupsPerAirbase[baseId] = {}
                         o.tables.blueAirbaseGroupsPerAirbase[baseId] = {}
-                        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, { x = point.x, z = point.z, radius = 2048 })
+                        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
                         for _, groupName in pairs(groups) do
-
                             if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
                                 local object = StaticObject.getByName(groupName)
                                 if object then
@@ -346,7 +369,7 @@ do -- DB
             end
 
             o.tables.miscGroupsInStages = {}
-            local loadMiscGroupsInStages = function ()
+            local loadMiscGroupsInStages = function()
                 local all_groups = getAvailableGroups()
                 for _, stage_zone in pairs(o.tables.stage_zones) do
                     o.tables.miscGroupsInStages[stage_zone] = {}
@@ -376,8 +399,8 @@ do -- DB
             loadAirbaseGroups()
             loadMiscGroupsInStages()
 
-            -- local cleanup = function () --CLean up all groups that are now managed inside zones by spearhead 
-                
+            -- local cleanup = function () --CLean up all groups that are now managed inside zones by spearhead
+
             --     local count = 0
             --     for name, taken in pairs(is_group_taken) do
             --         if taken == true then
@@ -406,7 +429,8 @@ do -- DB
                         local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
                         if zone then
                             if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                                table.insert(o.tables.capRoutesPerStageNumber[number].routes, { point1 = { x = zone.x , z = zone.z }, point2 = nil } )
+                                table.insert(o.tables.capRoutesPerStageNumber[number].routes,
+                                    { point1 = { x = zone.x, z = zone.z }, point2 = nil })
                             else
                                 local function getDist(a, b)
                                     return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
@@ -416,12 +440,11 @@ do -- DB
                                 local biggestA = nil
                                 local biggestB = nil
 
-                                for i=1, 3 do
+                                for i = 1, 3 do
                                     for ii = i + 1, 4 do
-                                        
                                         local a = zone.verts[i]
                                         local b = zone.verts[ii]
-                                        local dist = getDist(a,b)
+                                        local dist = getDist(a, b)
 
                                         if biggest == nil or dist > biggest then
                                             biggestA = a
@@ -432,11 +455,11 @@ do -- DB
                                 end
 
                                 if biggestA and biggestB then
-                                    table.insert(o.tables.capRoutesPerStageNumber[number].routes, 
-                                    {
-                                        point1 = { x = biggestA.x , z = biggestA.z },
-                                        point2 = { x = biggestB.x , z = biggestB.z }
-                                    })
+                                    table.insert(o.tables.capRoutesPerStageNumber[number].routes,
+                                        {
+                                            point1 = { x = biggestA.x, z = biggestA.z },
+                                            point2 = { x = biggestB.x, z = biggestB.z }
+                                        })
                                 end
                             end
                         end
@@ -445,7 +468,7 @@ do -- DB
             end
 
             o.Logger:debug(o.tables.capRoutesPerStageNumber)
-            
+
             o.tables.missionCodes = {}
         end
 
@@ -456,7 +479,7 @@ do -- DB
         o.getCapRouteInZone = function(self, stageNumber, baseId)
             local stageNumber = tostring(stageNumber) or "nothing"
             local routeData = self.tables.capRoutesPerStageNumber[stageNumber]
-            if routeData  then
+            if routeData then
                 local count = Spearhead.Util.tableLength(routeData.routes)
                 if count > 0 then
                     routeData.current = routeData.current + 1
@@ -470,49 +493,50 @@ do -- DB
                 local function GetClosestPointOnCircle(pC, radius, p)
                     local vX = p.x - pC.x;
                     local vY = p.z - pC.z;
-                    local magV = math.sqrt(vX*vX + vY*vY);
+                    local magV = math.sqrt(vX * vX + vY * vY);
                     local aX = pC.x + vX / magV * radius;
                     local aY = pC.z + vY / magV * radius;
                     return { x = aX, z = aY }
                 end
-                local stageZoneName = Spearhead.Util.randomFromList(self.tables.stage_zonesByNumer[stageNumber]) or "none"
+                local stageZoneName = Spearhead.Util.randomFromList(self.tables.stage_zonesByNumer[stageNumber]) or
+                "none"
                 local stagezone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
                 if stagezone then
                     local base = Spearhead.DcsUtil.getAirbaseById(baseId)
                     if base then
                         local closest = nil
                         if stagezone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                            closest = GetClosestPointOnCircle({x = stagezone.x, z = stagezone.z}, stagezone.radius, base:getPoint())
+                            closest = GetClosestPointOnCircle({ x = stagezone.x, z = stagezone.z }, stagezone.radius,
+                                base:getPoint())
                         else
                             local function getDist(a, b)
                                 return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
                             end
-    
+
                             local closestDistance = -1
                             for _, vert in pairs(stagezone.verts) do
                                 local distance = getDist(vert, base:getPoint())
                                 if closestDistance == -1 or distance < closestDistance then
-                                   closestDistance = distance
-                                   closest = vert
+                                    closestDistance = distance
+                                    closest = vert
                                 end
                             end
                         end
-                        
-                        if math.random(1,2)%2 == 0 then
-                            return { point1 = closest, point2 = {x = stagezone.x, z = stagezone.z} }
+
+                        if math.random(1, 2) % 2 == 0 then
+                            return { point1 = closest, point2 = { x = stagezone.x, z = stagezone.z } }
                         else
-                            return { point1 = {x = stagezone.x, z = stagezone.z}, point2 = closest }
+                            return { point1 = { x = stagezone.x, z = stagezone.z }, point2 = closest }
                         end
                     end
                 end
             end
-            
         end
         ---comment
         ---@param self table
         ---@param number number
         ---@return string zoneName
-        o.getStageZonesByStageNumber = function (self, number)
+        o.getStageZonesByStageNumber = function(self, number)
             local numberString = tostring(number)
             return self.tables.stage_zonesByNumer[numberString]
         end
@@ -520,15 +544,15 @@ do -- DB
         ---comment
         ---@param self table
         ---@return table result a  list of stage zone names
-        o.getStagezoneNames = function (self)
+        o.getStagezoneNames = function(self)
             return self.tables.stage_zones
         end
 
-        o.getCarrierRouteZones = function (self)
+        o.getCarrierRouteZones = function(self)
             return self.tables.carrier_route_zones
         end
 
-        o.getMissionsForStage = function (self, stagename)
+        o.getMissionsForStage = function(self, stagename)
             return self.tables.missionZonesPerStage[stagename] or {}
         end
 
@@ -536,14 +560,14 @@ do -- DB
             return self.tables.randomMissionZonesPerStage[stagename] or {}
         end
 
-        o.getGroupsForMissionZone = function (self, missionZoneName)
+        o.getGroupsForMissionZone = function(self, missionZoneName)
             if Spearhead.Util.startswith(missionZoneName, "RANDOMMISSION") == true then
-                return self.tables.groupsInRandomMissions[missionZoneName] or  {}
+                return self.tables.groupsInRandomMissions[missionZoneName] or {}
             end
             return self.tables.groupsInMissionZone[missionZoneName] or {}
         end
 
-        o.getMissionBriefingForMissionZone = function (self, missionZoneName)
+        o.getMissionBriefingForMissionZone = function(self, missionZoneName)
             return self.tables.descriptions[missionZoneName] or ""
         end
 
@@ -551,11 +575,11 @@ do -- DB
         ---@param self table
         ---@param stageName string
         ---@return table result airbase IDs. Use Spearhead.DcsUtil.getAirbaseById
-        o.getAirbaseIdsInStage = function (self, stageName)
+        o.getAirbaseIdsInStage = function(self, stageName)
             return self.tables.airbasesPerStage[stageName] or {}
         end
-        
-        o.getFarpZonesInStage = function (self, stageName)
+
+        o.getFarpZonesInStage = function(self, stageName)
             return self.tables.farpZonesPerStage[stageName]
         end
 
@@ -566,13 +590,13 @@ do -- DB
         o.getCapGroupsAtAirbase = function(self, airbaseId)
             return self.tables.capGroupsOnAirbase[airbaseId] or {}
         end
-        
-        o.getRedGroupsAtAirbase = function (self, airbaseId)
+
+        o.getRedGroupsAtAirbase = function(self, airbaseId)
             local baseId = tostring(airbaseId)
             return self.tables.redAirbaseGroupsPerAirbase[baseId] or {}
         end
 
-        o.getBlueGroupsAtAirbase = function (self, airbaseId)
+        o.getBlueGroupsAtAirbase = function(self, airbaseId)
             local baseId = tostring(airbaseId)
             return self.tables.blueAirbaseGroupsPerAirbase[baseId] or {}
         end
@@ -581,7 +605,7 @@ do -- DB
             return self.tables.miscGroupsInStages[stageName] or {}
         end
 
-        o.GetNewMissionCode = function (self)
+        o.GetNewMissionCode = function(self)
             local code = nil
             local tries = 0
             while code == nil and tries < 10 do
@@ -610,16 +634,17 @@ do -- DB
 
             for _, missionZone in pairs(o.tables.mission_zones) do
                 if o.tables.descriptions[missionZone] == nil then
-                    Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
+                    Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
+                    missionZone .. " does not have a briefing")
                 end
             end
 
             for _, randomMission in pairs(o.tables.random_mission_zones) do
                 if o.tables.descriptions[randomMission] == nil then
-                    Spearhead.AddMissionEditorWarning("Mission with zonename: " .. randomMission .. " does not have a briefing")
+                    Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
+                    randomMission .. " does not have a briefing")
                 end
             end
-
         end
         singleton = o
         return o

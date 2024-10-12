@@ -53,4 +53,5 @@ function CapConfig:new()
 end
 
 if not Spearhead.internal then Spearhead.internal = {} end
+if not Spearhead.internal.configuration then Spearhead.internal.configuration = {} end
 Spearhead.internal.configuration.CapConfig = CapConfig;

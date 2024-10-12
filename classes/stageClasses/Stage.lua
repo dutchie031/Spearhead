@@ -94,12 +94,19 @@ do --init STAGE DIRECTOR
                     
                     for _, groupName in pairs(database:getRedGroupsAtAirbase(airbaseId)) do 
                         table.insert(o.db.redAirbasegroups, groupName)
+                        Spearhead.DcsUtil.DestroyGroup(groupName)
                     end
 
                     for _, groupName in pairs(database:getBlueGroupsAtAirbase(airbaseId)) do 
                         table.insert(o.db.blueAirbasegroups, groupName)
+                        Spearhead.DcsUtil.DestroyGroup(groupName)
                     end
                 end
+            end
+
+            local miscGroups = database:getMiscGroupsAtStage(o.zoneName)
+            for _, groupName in pairs(miscGroups) do
+                Spearhead.DcsUtil.DestroyGroup(groupName)
             end
 
             local farps = database:getFarpZonesInStage(o.zoneName)
@@ -178,7 +185,7 @@ do --init STAGE DIRECTOR
                     trigger.action.circleToAll(-1, self.stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, {0,0,0,0}, {0,0,0,0},4, true)
                 else
                     --trigger.action.circleToAll(-1, self.stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, { 1, 0,0, 1 }, {1,0,0,1},4, true)
-                    trigger.action.quadToAll( -1, self.stageDrawingId,  zone.verts[2], zone.verts[1], zone.verts[4],  zone.verts[3], {0,0,0,0}, {0,0,0,0}, 4, true)
+                    trigger.action.quadToAll( -1, self.stageDrawingId,  zone.verts[1], zone.verts[2], zone.verts[3],  zone.verts[4], {0,0,0,0}, {0,0,0,0}, 4, true)
                 end
 
                 trigger.action.setMarkupColorFill(self.stageDrawingId, fillColor)
@@ -222,7 +229,7 @@ do --init STAGE DIRECTOR
                 end
             end
 
-            local max = self.stageConfig:getMaxMissionPerStage() or 10
+            local max = self.stageConfig:getMaxMissionsPerStage() or 10
 
             local availableMissionsCount = Spearhead.Util.tableLength(availableMissions)
             if activeCount < max and availableMissionsCount > 0  then

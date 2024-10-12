@@ -353,6 +353,7 @@ do -- INIT Mission Class
                         end
                     end
                 end
+                Spearhead.DcsUtil.DestroyGroup(group_name)
             end
 
             if Spearhead.Util.tableLength(self.targetAliveStates) > 0 then

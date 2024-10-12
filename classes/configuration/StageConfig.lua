@@ -20,11 +20,12 @@ function StageConfig:new()
     o.isAutoStages = function(self) return autoStages end
 
     local maxMissionsPerStage = SpearheadConfig.StageConfig.maxMissionStage
-    o.getMaxMissionPerStage = function(self) return maxMissionsPerStage end
+    o.getMaxMissionsPerStage = function(self) return maxMissionsPerStage end
 
     o.logLevel  = Spearhead.LoggerTemplate.LogLevelOptions.INFO
     return o;
 end
 
 if not Spearhead.internal then Spearhead.internal = {} end
+if not Spearhead.internal.configuration then Spearhead.internal.configuration = {} end
 Spearhead.internal.configuration.StageConfig = StageConfig;

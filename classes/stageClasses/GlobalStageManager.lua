@@ -9,7 +9,7 @@ GlobalStageManager.start = function (database, stageConfig)
     for _, stageName in pairs(database:getStagezoneNames()) do
 
         local logger = Spearhead.LoggerTemplate:new(stageName, stageConfig.logLevel)
-        local stage = Spearhead.internal.Stage:new(stageName, database, logger)
+        local stage = Spearhead.internal.Stage:new(stageName, database, logger, stageConfig)
 
         StagesByName[stageName]  = stage
 

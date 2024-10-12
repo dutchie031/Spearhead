@@ -116,6 +116,8 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
 
     local RESPAWN_AFTER_TOUCHDOWN_SECONDS = 180
 
+    Spearhead.DcsUtil.DestroyGroup(groupName)
+
     -- initials
     o.groupName = groupName
     o.airbaseId = airbaseId
