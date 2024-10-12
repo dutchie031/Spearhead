@@ -123,14 +123,14 @@ do --init STAGE DIRECTOR
             if type(StageCompleteListener) ~= "table" then
                 return
             end
-            table.insert(self.MissionCompleteListeners, StageCompleteListener)
+            table.insert(self.StageCompleteListeners, StageCompleteListener)
         end
 
         local triggerStageCompleteListeners = function(self)
             self.isActive = false
-            for _, callable in pairs(self.MissionCompleteListeners) do
+            for _, callable in pairs(self.StageCompleteListeners) do
                 local succ, err = pcall( function() 
-                    callable:OnMissionComplete(self)
+                    callable:onStageCompleted(self)
                 end)
                 if err then
                     self.logger:warn("Error in misstion complete listener:" .. err)
