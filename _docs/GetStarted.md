@@ -1,6 +1,7 @@
 
 # Spearhead
 
+> **_Spearhead last updated at:_**  ##!lastupdatetime!##
 
 ## Get Started
 

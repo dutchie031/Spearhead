@@ -1,6 +1,8 @@
 
 # Spearhead Reference
 
+> **_Spearhead last updated at:_**  ##!lastupdatetime!##
+
 ## For the Story tellers
 
 Spearhead. A framework created for the mission maker. <br/>

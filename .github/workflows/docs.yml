@@ -35,17 +35,25 @@ jobs:
     run: git clone --single-branch --branch $branch https://github.com/$username/$repo 
   - name: ls
     run: ls
-  - name: Replace string in file
+  - name: Replace strings in file
     run: | 
       import os
+      import datetime
+
+      def replace(fileName, search, replace):
+          with open(fileName) as f:
+              newText=f.read().replace(search, replace)
+
+          with open(fileName, "w") as f:
+              f.write(newText)
+
       with open("./spearhead/config.lua", "r") as luaFile: 
-        luaConfig = luaFile.read()
-        with open("./spearhead/_docs/Reference.md") as f:
-            newText=f.read().replace("##!config!##", luaConfig)
+          luaConfig = luaFile.read()
+          replace("./spearhead/_docs/Reference.md", "##!config!##", luaConfig)
 
-        with open("./spearhead/_docs/Reference.md", "w") as f:
-            f.write(newText)
-
+      lastUpdateTime = datetime.datetime.now().isoformat()
+      replace("./spearhead/_docs/Reference.md", "##!lastupdatetime!##", lastUpdateTime)
+      replace("./spearhead/_docs/GetStarted.md", "##!lastupdatetime!##", lastUpdateTime)
     shell: python
 
   - name: mkdir
