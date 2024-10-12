@@ -64,6 +64,11 @@ The initial version with basic functionality
 
 ## Configuration
 
+Spearhead will always try to be as configurable as possible. <br/>
+Underneath you can see all configuration values. Be aware there are nested tables. <br/>
+The values are the default values in case no configuration was found. <br/>
+You can also choose to programatically overwrite only the parts that you want, but be aware of `nil` references and order of files. 
+
 Overwrite the values in your own script (before spearhead runs) or <a download="spearheadConfig.lua" href="./spearheadConfig.lua" target="_blank" rel="noopener noreferrer">Download Config File</a> to edit
 
 ```lua
