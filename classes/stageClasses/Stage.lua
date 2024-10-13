@@ -142,7 +142,7 @@ do --init STAGE DIRECTOR
         o.IsComplete = function(self)
             for i, mission in pairs(self.db.missions) do
                 local state = mission:GetState()
-                if state == Spearhead.Mission.MissionState.ACTIVE or state == Spearhead.Mission.MissionState.NEW then
+                if state == Spearhead.internal.Mission.MissionState.ACTIVE or state == Spearhead.internal.Mission.MissionState.NEW then
                     return false
                 end
             end
@@ -229,11 +229,13 @@ do --init STAGE DIRECTOR
 
             local availableMissions = {}
             for _, mission in pairs(self.db.missionsByCode) do
-                if mission.missionState == Spearhead.internal.Mission.MissionState.ACTIVE then
+                local state = mission:GetState()
+
+                if state == Spearhead.internal.Mission.MissionState.ACTIVE then
                     activeCount = activeCount + 1
                 end
 
-                if mission.missionState == Spearhead.internal.Mission.MissionState.NEW then
+                if state == Spearhead.internal.Mission.MissionState.NEW then
                     table.insert(availableMissions, mission)
                 end
             end
