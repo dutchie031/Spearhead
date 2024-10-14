@@ -153,7 +153,7 @@ do --setup route util
                                 },
                                 stopCondition = {
                                     duration = durationBefore10,
-                                    condition = "return Spearhead.DcsUtil.IsBingoFuel(\"" .. groupName .. "\", 0.10)",
+                                    condition = "return Spearhead.internal.Air.IsBingoFuel(\"" .. groupName .. "\", 0.10)",
                                 }
                             }
                         },
@@ -187,7 +187,7 @@ do --setup route util
                                 },
                                 stopCondition = {
                                     duration = durationAfter10,
-                                    condition = "return Spearhead.DcsUtil.IsBingoFuel(\"" .. groupName .. "\")",
+                                    condition = "return Spearhead.internal.Air.IsBingoFuel(\"" .. groupName .. "\")",
                                 }
                             }
                         },
@@ -253,7 +253,7 @@ do --setup route util
                                 },
                                 stopCondition = {
                                     duration = duration,
-                                    condition = "return Spearhead.DcsUtil.IsBingoFuel(\"" .. groupName .. "\", 0.10)",
+                                    condition = "return Spearhead.internal.Air.IsBingoFuel(\"" .. groupName .. "\", 0.10)",
                                 }
                             }
                         },
@@ -261,6 +261,66 @@ do --setup route util
                 }
             }
         }
+    end
+
+    local EscortTask = function(groupName, waitingPos, targetGroupName, engagementDistance, tillWaypoint)
+
+        local group = Group.getByName(targetGroupName)
+        if group then
+            local groupId = group:getID()
+
+            return {
+                alt = 1500,
+                action = "Turning Point",
+                alt_type = "BARO",
+                speed = 138,
+                ETA = 0,
+                ETA_locked = false,
+                x = waitingPos.x,
+                y = waitingPos.z,
+                speed_locked = true,
+                formation_template = "",
+                task = {
+                    id = "ComboTask",
+                    params = {
+                        tasks = {
+                            [1] = {
+                                enabled = true,
+                                auto = false,
+                                id = "Escort",
+                                number = 1,
+                                params = {
+                                    groupId = groupId,
+                                    engagementDistMax = engagementDistance,
+                                    lastWptIndexFlagChangedManually = true,
+                                    lastWptIndex = tillWaypoint,
+                                    targetTypes = {
+                                        [1] = "Fighters",
+                                        [2] = "Multirole fighters",
+                                        [3] = "Interceptors",
+                                    },
+                                    value = "Fighters;Multirole fighters;Interceptors;",
+                                    lastWptIndexFlag = true,
+                                    noTargetTypes = {
+                                        [1] = "Bombers",
+                                        [2] = "Helicopters",
+                                        [3] = "UAVs",
+                                    },
+                                    pos = {
+                                        x = -500,
+                                        y = 0,
+                                        z = 200
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+        end
+
+        
     end
 
     ---comment
@@ -495,7 +555,28 @@ do --setup route util
                     points = {
                         [1] = CasTask(groupName, pointA,altitude, speed, casDuration, deviationDistance, raceTrack),
                         [2] = FlyToPointTask(pointB or pointA, speed, altitude, {} ),
-                        [3] = RtbTask(airdromeId,  speed, base:getPoint())
+                        [3] = RtbTask(airdromeId,base:getPoint(), speed)
+                    }
+                }
+            }
+        }, ""
+    end
+
+    ROUTE_UTIL.CreateEscortTask = function(groupName, tgtGroupName, airdromeId, speed, tillWaypoint, engagementDistance)
+        local base = Spearhead.DcsUtil.getAirbaseById(airdromeId)
+
+        if base == nil then
+            return nil, "No airbase found for ID " .. tostring(airdromeId)
+        end
+
+        return {
+            id = "Mission",
+            params = {
+                airborne = true,
+                route = {
+                    points = {
+                        [1] =EscortTask(groupName,base:getPoint(), tgtGroupName, engagementDistance, tillWaypoint),
+                        [2] = RtbTask(airdromeId,  base:getPoint(), speed)
                     }
                 }
             }

@@ -20,7 +20,6 @@ SpearheadConfig = {
         --Maximum missions per stage (includes all types of missions)
         maxMissionStage = 10
     },
-
     CasConfig = {
 
         -- Sets if there is a CAP unit unit required before a CAS unit is able to go out
@@ -36,7 +35,6 @@ SpearheadConfig = {
         -- unit: seconds
         deathDelay = 1800, -- default 1800
     },
-
     CapConfig = {
         --quickly enable of disable the entire CAP Logic 
         --(you can also just rename all units to not be named "CAP_")
@@ -72,6 +70,23 @@ SpearheadConfig = {
         -- when CasConfig.requireEscort is set to true (default: true) it no CAS units will be going out until there is escort available.
         -- once a unit is attached as escort it will not be applicable for a CAP duty until it has landed and rearmed
         useAvailableGroupsAsEscort = true
+
+    },
+    -- Bingo Fuel and Weapon Settings for each tasking 
+    BingoSettings = {
+
+        CAP = {
+
+        },
+
+        Escort = {
+
+        },
+         
+        CAS = {
+            
+        }
+        
 
     }
 

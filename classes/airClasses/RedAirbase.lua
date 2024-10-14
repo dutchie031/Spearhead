@@ -7,68 +7,137 @@ local RedBase = {}
 ---@param capConfig table
 ---@param stageConfig table
 ---@return table
-function RedBase:new(airbaseId, database, logger, capConfig, stageConfig)
+function RedBase:new(airbaseId, database, logger, capConfig, stageConfig, casConfig)
     local o = {}
     setmetatable(o, { __index = self })
 
-    o.capGroupNames              = database:getCapGroupsAtAirbase(airbaseId)
+    o.airGroupNames              = database:getAirGroupsAtAirbase(airbaseId)
     o.database                   = database
     o.airbaseId                  = airbaseId
     o.logger                     = logger
     o.activeStage                = 0
     o.capConfig                  = capConfig
+    o.casConfig                  = casConfig
     o.activeCapStages            = (stageConfig or {}).capActiveStages or 10
 
     o.lastStatesByName           = {}
-    o.capGroupsByName            = {}
+    o.allGroupsByName            = {}
+
     o.PrimaryCapGroups           = {}
     o.BackupCapGroups            = {}
     o.EscortGroups               = {}
+    o.AttackGroups               = {}
 
     local CheckReschedulingAsync = function(self, time)
-        self:CheckAndScheduleCAP()
+        self:CheckAndScheduleAirbaseGroups()
     end
 
-    o.OnGroupStateUpdated = function(self, capGroup)
+    o.OnGroupStateUpdated        = function(self, capGroup)
         --[[
             There is no update needed for INTRANSIT, ONSTATION or REARMING as the PREVIOUS state already was checked and nothing changes in the actual overal state.
         ]] --
-        if capGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT
-            or capGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION
-            or capGroup.state == Spearhead.internal.CapGroup.GroupState.REARMING
+        if capGroup.state == Spearhead.internal.Air.GroupState.INTRANSIT
+            or capGroup.state == Spearhead.internal.Air.GroupState.ONSTATION
+            or capGroup.state == Spearhead.internal.Air.GroupState.REARMING
         then
             return
         end
         timer.scheduleFunction(CheckReschedulingAsync, self, timer.getTime() + 1)
     end
 
-    for key, name in pairs(o.capGroupNames) do
-        local capGroup = Spearhead.internal.CapGroup:new(name, airbaseId, logger, database, capConfig)
-        if capGroup then
-            o.capGroupsByName[name] = capGroup
+    for key, name in pairs(o.airGroupNames) do
+        if Spearhead.Util.startswith(string.lower(name), "cap_") then
+            local capGroup = Spearhead.internal.CapGroup:new(name, airbaseId, logger, database, capConfig)
+            if capGroup then
+                o.allGroupsByName[name] = capGroup
 
-            if capGroup.groupType == Spearhead.internal.Air.CapGroupType.PRIMARY then
-                table.insert(o.PrimaryCapGroups, capGroup)
-            elseif capGroup.groupType == Spearhead.internal.Air.CapGroupType.SECONDARY then
-                table.insert(o.BackupCapGroups, capGroup)
-            else
-                table.insert(o.EscortGroups, capGroup)
+                if capGroup.groupType == Spearhead.internal.Air.CapGroupType.PRIMARY then
+                    table.insert(o.PrimaryCapGroups, capGroup)
+                elseif capGroup.groupType == Spearhead.internal.Air.CapGroupType.SECONDARY then
+                    table.insert(o.BackupCapGroups, capGroup)
+                else
+                    table.insert(o.EscortGroups, capGroup)
+                end
+
+                capGroup:AddOnStateUpdatedListener(o)
             end
+        end
 
-            capGroup:AddOnStateUpdatedListener(o)
+        if Spearhead.Util.startswith(string.lower(name), "cas_") then
+            local casGroup = Spearhead.internal.AttackGroup:new(name, o, logger, database, casConfig)
+            if casGroup then
+                o.allGroupsByName[name] = casGroup
+                table.insert(o.AttackGroups, casGroup)
+                casGroup:AddOnStateUpdatedListener(o)
+            end
         end
     end
     logger:info("Airbase with Id '" ..
-        airbaseId .. "' has a total of " .. Spearhead.Util.tableLength(o.capGroupsByName) .. "cap flights registered")
+        airbaseId .. "' has a total of " .. Spearhead.Util.tableLength(o.allGroupsByName) .. " flights. ".. 
+        Spearhead.Util.tableLength(o.PrimaryCapGroups) + Spearhead.Util.tableLength(o.BackupCapGroups) .. "[CAP] " .. 
+        Spearhead.Util.tableLength(o.EscortGroups) .. "[Escort] " ..
+        Spearhead.Util.tableLength(o.AttackGroups) .. "[Attack]" )
 
     o.SpawnIfApplicable = function(self)
         self.logger:debug("Check spawns for airbase " .. self.airbaseId)
-        for groupName, capGroup in pairs(self.capGroupsByName) do
+        for groupName, airGroup in pairs(self.allGroupsByName) do
             local activeStage = tostring(self.activeStage)
-            local targetStage = capGroup:GetTargetZone(activeStage)
+            local targetStage = airGroup:GetTargetZone(activeStage)
+            logger:debug("Trying to Spawn " .. groupName .. " with tgt stage: " .. tostring(targetStage or "nil"))
+            if targetStage ~= nil and airGroup.state == Spearhead.internal.Air.GroupState.UNSPAWNED then
+                airGroup:SpawnOnTheRamp()
+            end
+        end
+    end
 
-            if targetStage ~= nil and capGroup.state == Spearhead.internal.CapGroup.GroupState.UNSPAWNED then
-                capGroup:SpawnOnTheRamp()
+    o.CheckAndScheduleAirbaseGroups = function(self)
+        if capConfig:useAvailableGroupsAsEscort() == true then
+            self:CheckAndScheduleCas()
+            self:CheckAndScheduleCAP()
+        else
+            self:CheckAndScheduleCAP()
+            self:CheckAndScheduleCas()
+        end
+    end
+
+    o.TryGetEscortUnit = function(self)
+        for _, group in pairs(self.EscortGroups) do
+            if group.state == Spearhead.internal.Air.GroupState.READYONRAMP then
+                return group
+            end
+        end
+
+        if self.capConfig:useAvailableGroupsAsEscort() == true then
+            for _, group in pairs(self.PrimaryCapGroups) do
+                if group.state == Spearhead.internal.Air.GroupState.READYONRAMP then
+                    return group
+                end
+            end
+
+            for _, group in pairs(self.BackupCapGroups) do
+                if group.state == Spearhead.internal.Air.GroupState.READYONRAMP then
+                    return group
+                end
+            end
+        end
+
+        return nil
+    end
+
+    o.CheckAndScheduleCas = function(self)
+        for _, casGroup in pairs(self.AttackGroups) do
+            local supposedTargetStage = casGroup:GetTargetZone(self.activeStage)
+            if supposedTargetStage and casGroup.state == Spearhead.internal.Air.GroupState.READYONRAMP then
+                local escortGroup = self:TryGetEscortUnit()
+                if escortGroup then
+                    escortGroup:SendOutForEscort(casGroup.groupName)
+                    casGroup:SetWaitingForEscort()
+                    Spearhead.Events.AddOnEscortReadyListener(casGroup.groupName, self)
+
+                elseif self.casConfig:requireEscort() == false then
+                    self.logger:debug("No escort unit available")
+                    casGroup:SendOutForCas(supposedTargetStage)
+                end
             end
         end
     end
@@ -81,11 +150,11 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig)
 
         --Count back up groups that are active or reassign to the new zone if that's needed
         for _, backupGroup in pairs(self.BackupCapGroups) do
-            if backupGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT or backupGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION then
+            if backupGroup.state == Spearhead.internal.Air.GroupState.INTRANSIT or backupGroup.state == Spearhead.internal.Air.GroupState.ONSTATION then
                 local supposedTargetStage = backupGroup:GetTargetZone(self.activeStage)
                 if supposedTargetStage then
                     if supposedTargetStage ~= backupGroup.assignedStageNumber then
-                        backupGroup:SendToStage(supposedTargetStage)
+                        backupGroup:SendToStageForCap(supposedTargetStage)
                     end
 
                     if countPerStage[supposedTargetStage] == nil then
@@ -95,7 +164,7 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig)
                 else
                     backupGroup:SendRTBAndDespawn()
                 end
-            elseif backupGroup.state == Spearhead.internal.CapGroup.GroupState.RTBINTEN and backupGroup:GetTargetZone(self.activeStage) ~= backupGroup.assignedStageNumber then
+            elseif backupGroup.state == Spearhead.internal.Air.GroupState.RTBINTEN and backupGroup:GetTargetZone(self.activeStage) ~= backupGroup.assignedStageNumber then
                 backupGroup:SendRTB()
             end
         end
@@ -115,22 +184,22 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig)
 
                 requiredPerStage[supposedTargetStage] = requiredPerStage[supposedTargetStage] + 1
 
-                if primaryGroup.state == Spearhead.internal.CapGroup.GroupState.READYONRAMP then
+                if primaryGroup.state == Spearhead.internal.Air.GroupState.READYONRAMP then
                     if countPerStage[supposedTargetStage] < requiredPerStage[supposedTargetStage] then
-                        primaryGroup:SendToStage(supposedTargetStage)
+                        primaryGroup:SendToStageForCap(supposedTargetStage)
                         countPerStage[supposedTargetStage] = countPerStage[supposedTargetStage] + 1
                     end
-                elseif primaryGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT or primaryGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION then
+                elseif primaryGroup.state == Spearhead.internal.Air.GroupState.INTRANSIT or primaryGroup.state == Spearhead.internal.Air.GroupState.ONSTATION then
                     if supposedTargetStage ~= primaryGroup.assignedStageNumber then
                         if countPerStage[supposedTargetStage] < requiredPerStage[supposedTargetStage] then
-                            primaryGroup:SendToStage(supposedTargetStage)
+                            primaryGroup:SendToStageForCap(supposedTargetStage)
                         else
                             countPerStage[supposedTargetStage] = countPerStage[supposedTargetStage] + 1
                             primaryGroup:SendRTB()
                         end
                     end
                     countPerStage[supposedTargetStage] = countPerStage[supposedTargetStage] + 1
-                elseif primaryGroup.state == Spearhead.internal.CapGroup.GroupState.RTBINTEN and primaryGroup:GetTargetZone(self.activeStage) ~= primaryGroup.assignedStageNumber then
+                elseif primaryGroup.state == Spearhead.internal.Air.GroupState.RTBINTEN and primaryGroup:GetTargetZone(self.activeStage) ~= primaryGroup.assignedStageNumber then
                     primaryGroup:SendRTB()
                 end
             else
@@ -139,7 +208,7 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig)
         end
 
         for _, backupGroup in pairs(self.BackupCapGroups) do
-            if backupGroup.state == Spearhead.internal.CapGroup.GroupState.READYONRAMP then
+            if backupGroup.state == Spearhead.internal.Air.GroupState.READYONRAMP then
                 local supposedTargetStage = backupGroup:GetTargetZone(self.activeStage)
                 if supposedTargetStage then
                     if countPerStage[supposedTargetStage] == nil then
@@ -147,13 +216,26 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig)
                     end
 
                     if countPerStage[supposedTargetStage] < requiredPerStage[supposedTargetStage] then
-                        backupGroup:SendToStage(supposedTargetStage)
+                        backupGroup:SendToStageForCap(supposedTargetStage)
                         countPerStage[supposedTargetStage] = countPerStage[supposedTargetStage] + 1
                     end
                 else
                     backupGroup:SendRTBAndDespawn()
                 end
             end
+        end
+    end
+
+    o.OnEscortReady = function(self, groupName)
+        if self.allGroupsByName[groupName] == nil then
+            return
+        end
+
+        self.logger:debug("Received ready for escort for group ".. groupName)
+
+        local group = self.allGroupsByName[groupName]
+        if group and group.state == Spearhead.internal.Air.GroupState.WAITINGFORESCORT then
+            group:SendOutForCas(self.activeStage)
         end
     end
 
@@ -168,7 +250,7 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig)
     ---@param stageNumber number
     ---@return boolean
     o.IsBaseActiveWhenStageIsActive = function(self, stageNumber)
-        for _, group in pairs(self.PrimaryGroups) do
+        for _, group in pairs(self.PrimaryCapGroups) do
             local target = group:GetTargetZone(stageNumber)
             if target ~= nil then
                 return true

@@ -7,7 +7,7 @@ do
 
     local initiated = false
 
-    function GlobalAirManager.start(database, capConfig, stageConfig)
+    function GlobalAirManager.start(database, capConfig, stageConfig, casConfig)
         if initiated == true then return end
 
         local logger = Spearhead.LoggerTemplate:new("AirbaseManager", capConfig.logLevel)
@@ -25,7 +25,7 @@ do
                         local airbaseName = Spearhead.DcsUtil.getAirbaseName(id)
                         if airbaseName then
                             local airbaseSpecificLogger = Spearhead.LoggerTemplate:new("CAP_" .. airbaseName, capConfig.logLevel)
-                            local airbase = Spearhead.internal.CapAirbase:new(id, database, airbaseSpecificLogger, capConfig, stageConfig)
+                            local airbase = Spearhead.internal.RedBase:new(id, database, airbaseSpecificLogger, capConfig, stageConfig, casConfig)
                             if airbase then
                                 table.insert(airbasesPerStage[stageName], airbase)
                                 allAirbasesByName[airbaseName] = airbase
@@ -40,7 +40,6 @@ do
         initiated = true
 
         local InfoFunctions = {}
-
         ---returns if there is CAP active 
         ---@param zoneName any
         ---@param activeZoneNumber number

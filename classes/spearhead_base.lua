@@ -856,20 +856,6 @@ do     -- INIT DCS_UTIL
         end
     end
 
-    function DCS_UTIL.IsBingoFuel(groupName, offset)
-        if offset == nil then offset = 0 end
-        local bingoSetting = 0.20
-        bingoSetting = bingoSetting + offset
-
-        local group = Group.getByName(groupName)
-        for _, unit in pairs(group:getUnits()) do
-            if unit and unit:isExist() == true and unit:inAir() == true and unit:getFuel() < bingoSetting then
-                return true
-            end
-        end
-        return false
-    end
-
     DCS_UTIL.__INIT();
 end
 Spearhead.DcsUtil = DCS_UTIL

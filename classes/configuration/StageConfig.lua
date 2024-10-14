@@ -22,7 +22,7 @@ function StageConfig:new()
     local maxMissionsPerStage = SpearheadConfig.StageConfig.maxMissionStage
     o.getMaxMissionsPerStage = function(self) return maxMissionsPerStage end
 
-    o.logLevel  = Spearhead.LoggerTemplate.LogLevelOptions.DEBUG
+    o.logLevel  = Spearhead.LoggerTemplate.LogLevelOptions.INFO
     return o;
 end
 

@@ -1,5 +1,3 @@
-
-
 ---comment
 ---@param input table { groupName, task, logger }
 ---@param time number
@@ -54,6 +52,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     o.onStationSince = 0
     o.currentCapTaskingDuration = 0
     o.markedForDespawn = false
+    o.escortingGroupName  = nil
 
     --config
     o.capConfig = capConfig
@@ -62,7 +61,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     ---@param self table
     ---@param currentActive number
     ---@return table
-    o.GetTargetZone = function (self, currentActive)
+    o.GetTargetZone = function(self, currentActive)
         return self.capZonesConfig[tostring(currentActive)]
     end
 
@@ -79,7 +78,8 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     o.StartRearm = function(self)
         self:SpawnOnTheRamp()
         self:SetState(Spearhead.internal.Air.GroupState.REARMING)
-        timer.scheduleFunction(SetReadyOnRampAsync, self, timer.getTime() + self.capConfig:getRearmDelay() - RESPAWN_AFTER_TOUCHDOWN_SECONDS)
+        timer.scheduleFunction(SetReadyOnRampAsync, self,
+            timer.getTime() + self.capConfig:getRearmDelay() - RESPAWN_AFTER_TOUCHDOWN_SECONDS)
     end
 
     o.SpawnOnTheRamp = function(self)
@@ -117,9 +117,11 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
             local speed = math.random(self.capConfig:getMinSpeed(), self.capConfig:getMaxSpeed())
             local rtbTask, errormessage = Spearhead.RouteUtil.CreateRTBMission(self.groupName, self.airbaseId, speed)
             if rtbTask then
-                timer.scheduleFunction(setTaskAsync, { task = rtbTask, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
+                timer.scheduleFunction(setTaskAsync, { task = rtbTask, groupName = self.groupName, logger = self.logger },
+                    timer.getTime() + 3)
             else
-                self.logger:error("No RTB task could be created for group: " .. self.groupName .. " due to " .. errormessage)
+                self.logger:error("No RTB task could be created for group: " ..
+                self.groupName .. " due to " .. errormessage)
                 if self.markedForDespawn == true then
                     self:Despawn()
                 end
@@ -132,10 +134,36 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
         o.SendRTB(self)
     end
 
+
+    o.SendOutForEscort = function(self, tgtGroupName)
+        if self.state == Spearhead.internal.Air.GroupState.DEAD or self.state == Spearhead.internal.Air.GroupState.RTB then
+            return --Can't task a unit that's dead or RTB
+        end
+
+        
+        local group = Group.getByName(self.groupName)
+        if group and group:isExist() then
+            self.logger:debug("Sending group out for escort " .. self.groupName)
+            self.state = Spearhead.internal.Air.GroupState.ESCORTING
+            self.escortingGroupName = tgtGroupName
+        
+            group:getController():setCommand({
+                id = 'Start',
+                params = {}
+            })
+
+            local task = Spearhead.RouteUtil.CreateEscortTask(self.groupName, tgtGroupName, self.airbaseId, 150, 2, 18520)
+            if task then
+                timer.scheduleFunction(setTaskAsync,
+                    { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
+            end
+        end
+    end
+
     ---Starts and send this group to perform CAP at a stage
     ---@param self any
     ---@param stageZoneNumber string
-    o.SendToStage = function(self, stageZoneNumber)
+    o.SendToStageForCap = function(self, stageZoneNumber)
         if self.state == Spearhead.internal.Air.GroupState.DEAD or self.state == Spearhead.internal.Air.GroupState.RTB then
             return --Can't task a unit that's dead or RTB
         end
@@ -145,26 +173,38 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
         if group and group:isExist() then
             self.logger:debug("Sending group out " .. self.groupName)
             local controller = group:getController()
-            local capPoints = database:getCapRouteInZone(stageZoneNumber, self.airbaseId)
 
+            local zoneName = Spearhead.Util.randomFromList(self.database:getStageZonesByStageNumber(stageZoneNumber))
+            local capPoints = Spearhead.internal.Air.Routing.GetOrCreateCapRoute(database, stageZoneNumber, zoneName, self.airbaseId)
+            if capPoints == nil then return end
+            local point1, point2 = capPoints[1], capPoints[2]
+
+            if point1 == nil then
+                self.logger:error("Could not create a cap route for zone: " .. zoneName)
+                return nil
+            end
+            
             local altitude = math.random(self.capConfig:getMinAlt(), self.capConfig:getMaxAlt())
             local speed = math.random(self.capConfig:getMinSpeed(), self.capConfig:getMaxSpeed())
             local attackHelos = false
             local deviationDistance = self.capConfig:getMaxDeviationRange()
             local capTask
-            if self.state == Spearhead.internal.Air.GroupState.ONRAMP or self.onStationSince == 0 then
+            if self.state == Spearhead.internal.Air.GroupState.READYONRAMP or self.onStationSince == 0 then
                 controller:setCommand({
                     id = 'Start',
                     params = {}
                 })
-                local duration = math.random(self.capConfig:getMinDurationOnStation(), self.capConfig:getmaxDurationOnStation())
+                local duration = math.random(self.capConfig:getMinDurationOnStation(),
+                    self.capConfig:getmaxDurationOnStation())
                 self.currentCapTaskingDuration = duration
 
-                
-                capTask = Spearhead.RouteUtil.createCapMission(self.groupName, self.airbaseId, capPoints.point1, capPoints.point2, altitude, speed, duration, attackHelos, deviationDistance)
+
+                capTask = Spearhead.RouteUtil.createCapMission(self.groupName, self.airbaseId, point1,
+                    point2, altitude, speed, duration, attackHelos, deviationDistance)
             else
                 local duration = self.currentCapTaskingDuration - (timer.getTime() - o.onStationSince)
-                capTask = Spearhead.RouteUtil.createCapMission(self.groupName, self.airbaseId, capPoints.point1, capPoints.point2, altitude, speed, duration, attackHelos, deviationDistance)
+                capTask = Spearhead.RouteUtil.createCapMission(self.groupName, self.airbaseId, point1,
+                    point2, altitude, speed, duration, attackHelos, deviationDistance)
             end
 
             if capTask then
@@ -195,9 +235,9 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     o.OnGroupRTB = function(self, groupName)
         if groupName == self.groupName then
             self.logger:debug("Setting group " ..
-            groupName ..
-            " to state RTB after a total of " ..
-            timer.getTime() - self.onStationSince .. "s of the " .. self.currentCapTaskingDuration .. "s")
+                groupName ..
+                " to state RTB after a total of " ..
+                timer.getTime() - self.onStationSince .. "s of the " .. self.currentCapTaskingDuration .. "s")
             self:SetState(Spearhead.internal.Air.GroupState.RTB)
         end
     end
@@ -246,13 +286,15 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
                 if self.markedForDespawn == true then
                     self:Despawn()
                 else
-                    timer.scheduleFunction(DelayedStartRearm, { self = self }, timer.getTime() + RESPAWN_AFTER_TOUCHDOWN_SECONDS)
+                    timer.scheduleFunction(DelayedStartRearm, { self = self },
+                        timer.getTime() + RESPAWN_AFTER_TOUCHDOWN_SECONDS)
                 end
             else
                 if self.markedForDespawn == true then
                     self:Despawn()
                 else
-                    local delay = self.capConfig:getDeathDelay() - self.capConfig:getRearmDelay() + RESPAWN_AFTER_TOUCHDOWN_SECONDS
+                    local delay = self.capConfig:getDeathDelay() - self.capConfig:getRearmDelay() +
+                    RESPAWN_AFTER_TOUCHDOWN_SECONDS
                     timer.scheduleFunction(DelayedStartRearm, { self = self }, timer.getTime() + delay)
                 end
             end
@@ -299,6 +341,19 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
         self:UpdateState(false)
     end
 
+    o.OnUnitTakenOff = function(self, initiatorUnit, airbase)
+        if airbase then
+            local airdomeId = airbase:getID()
+            self.airbaseId = airdomeId
+        end
+        local name = initiatorUnit:getName()
+        self.logger:debug("Received unit takeoff event for unit " .. name .. " of group " .. self.groupName)
+
+        if self.state == Spearhead.internal.Air.GroupState.ESCORTING then
+            Spearhead.Events.TriggerReadyForEscort(self.escortingGroupName)
+        end
+    end
+
     o.OnUnitLost = function(self, initiatorUnit)
         self.logger:debug("Received unit lost event for group " .. self.groupName)
         if initiatorUnit then
@@ -312,6 +367,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
     Spearhead.Events.addOnGroupOnStationListener(o.groupName, o)
     local units = Group.getByName(groupName):getUnits()
     for key, unit in pairs(units) do
+        Spearhead.Events.addOnUnitTakenOffListener(unit:getName(), o)
         Spearhead.Events.addOnUnitLandEventListener(unit:getName(), o)
         Spearhead.Events.addOnUnitLostEventListener(unit:getName(), o)
     end

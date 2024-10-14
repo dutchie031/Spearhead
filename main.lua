@@ -1,19 +1,28 @@
 
 --Single player purpose
 
+
+local unit = Unit.getByName("CAP_A[1-4]A_MIG29CAP-1-1")
+
+local ammo = unit:getAmmo()
+
+env.info(Spearhead.Util.toString(ammo))
+
+
 local debug = false
 local id = net.get_my_player_id()
 if id == 0 then
     debug = true
 end
 
-local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
+local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.LoggerTemplate.LogLevelOptions.DEBUG)
 local databaseManager = Spearhead.DB:new(dbLogger, debug)
 
 local capConfig = Spearhead.internal.configuration.CapConfig:new();
 local stageConfig = Spearhead.internal.configuration.StageConfig:new();
+local casConfig = Spearhead.internal.configuration.CasConfig:new();
 
-Spearhead.internal.GlobalAirManager.start(databaseManager, capConfig, stageConfig)
+Spearhead.internal.GlobalAirManager.start(databaseManager, capConfig, stageConfig, casConfig)
 Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 
@@ -21,6 +30,7 @@ local SetStageDelayed = function(number, time)
     Spearhead.Events.PublishStageNumberChanged(number)
     return nil
 end
+
 
 timer.scheduleFunction(SetStageDelayed, 1, timer.getTime() + 3)
 

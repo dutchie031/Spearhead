@@ -2,7 +2,7 @@
 local SpearheadEvents = {}
 do
     local SpearheadLogger = Spearhead.LoggerTemplate:new("Spearhead Events",
-        Spearhead.LoggerTemplate.LogLevelOptions.INFO)
+        Spearhead.LoggerTemplate.LogLevelOptions.DEBUG)
 
     do -- STAGE NUMBER CHANGED
         local OnStageNumberChangedListeners = {}
@@ -66,6 +66,24 @@ do
         table.insert(onLandEventListeners[unitName], landListener)
     end
 
+    local onUnitTakenOffListeners = {}
+    ---Add an event listener to a specific unit
+    ---@param unitName string to call when the unit lands
+    ---@param takeOffListener table table with function OnUnitTakenOff(self, initiatorUnit, airbase)
+    SpearheadEvents.addOnUnitTakenOffListener = function(unitName, takeOffListener)
+        if type(takeOffListener) ~= "table" then
+            SpearheadLogger:warn("Event handler not of type table/object")
+            return
+        end
+
+        SpearheadLogger:debug("Added Land event handler for unit: " .. unitName)
+        if onUnitTakenOffListeners[unitName] == nil then
+            onUnitTakenOffListeners[unitName] = {}
+        end
+
+        table.insert(onUnitTakenOffListeners[unitName], takeOffListener)
+    end
+
     local OnUnitLostListeners = {}
     ---This listener gets fired for any event that can indicate a loss of a unit.
     ---Such as: Eject, Crash, Dead, Unit_Lost,
@@ -82,6 +100,40 @@ do
         end
 
         table.insert(OnUnitLostListeners[unitName], unitLostListener)
+    end
+
+    do --on Escort Ready
+
+        
+        local onEscortReadyListeners = {}
+        ---comment
+        ---@param groupName any the groupname FOR who the escort is 
+        ---@param handlingObject any an object with a callable function 'OnEscordReady(groupName)'
+        SpearheadEvents.AddOnEscortReadyListener = function(groupName, handlingObject)
+            if type(handlingObject) ~= "table" then
+                SpearheadLogger:warn("Event handler not of type table/object")
+                return
+            end
+
+            if onEscortReadyListeners[groupName] == nil then
+                onEscortReadyListeners[groupName] = {}
+            end
+
+            table.insert(onEscortReadyListeners[groupName], handlingObject)
+        end
+
+        SpearheadEvents.TriggerReadyForEscort = function(groupName)
+            if groupName ~= nil and onEscortReadyListeners[groupName] then
+                for _, listener in pairs(onEscortReadyListeners[groupName]) do
+                    local succ, err = pcall(function()
+                        listener:OnEscortReady(groupName)
+                    end)
+                    if err then
+                        SpearheadLogger:error(err)
+                    end
+                end
+            end
+        end
     end
 
     do -- ON RTB
@@ -268,6 +320,24 @@ do
                     for _, callable in pairs(onLandEventListeners[name]) do
                         local succ, err = pcall(function()
                             callable:OnUnitLanded(unit, airbase)
+                        end)
+                        if err then
+                            SpearheadLogger:error(err)
+                        end
+                    end
+                end
+            end
+        end
+
+        if event.id == world.event.S_EVENT_RUNWAY_TAKEOFF then
+            local unit = event.initiator
+            local airbase = event.place
+            if unit ~= nil then
+                local name = unit:getName()
+                if onUnitTakenOffListeners[name] then
+                    for _, callable in pairs(onUnitTakenOffListeners[name]) do
+                        local succ, err = pcall(function()
+                            callable:OnUnitTakenOff(unit, airbase)
                         end)
                         if err then
                             SpearheadLogger:error(err)
