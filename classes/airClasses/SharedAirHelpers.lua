@@ -225,12 +225,51 @@ end
 
 do -- bingo settings
 
+    local function GetBaseProfileSettings()
+
+        local ww2 = {
+            CAP = {
+                NoRadarMissiles = false,
+                NoHeatSeekingMissiles = false,
+                NoBullets = true
+            },
+            ESCORT = {
+                NoRadarMissiles = false,
+                NoHeatSeekingMissiles = false,
+                NoBullets = true
+            }
+        }
+
+        local modern = {
+            CAP = {
+                NoRadarMissiles = false,
+                NoHeatSeekingMissiles = true,
+                NoBullets = true
+            },
+            ESCORT = {
+                NoRadarMissiles = false,
+                NoHeatSeekingMissiles = true,
+                NoBullets = true
+            }
+        }
+
+        local profile = SpearheadConfig.BingoSettings.baseProfile or "modern"
+
+        if profile == "ww2" then
+            return ww2
+        end
+
+        return modern
+
+
+    end
+
 
     if SpearheadConfig == nil then SpearheadConfig = {} end
-    if SpearheadConfig.BingoConfig == nil then SpearheadConfig.BingoConfig = {} end
+    if SpearheadConfig.BingoSettings == nil then SpearheadConfig.BingoSettings = {} end
     local BingoSettings = {
 
-        
+
 
     }
 

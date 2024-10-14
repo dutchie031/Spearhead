@@ -75,16 +75,20 @@ SpearheadConfig = {
     -- Bingo Fuel and Weapon Settings for each tasking 
     BingoSettings = {
 
+        baseProfile = "modern", -- oneOf( "modern", "ww2" )
+
         CAP = {
+
+            NoRadarMissiles = true, 
 
         },
 
-        Escort = {
+        ESCORT = {
 
         },
          
         CAS = {
-            
+
         }
         
 
