@@ -164,11 +164,10 @@ do -- Name Parsers
     end
 end
 
-do --routes
+do  --routes
     if Spearhead.internal.Air.Routing == nil then Spearhead.internal.Air.Routing = {} end
 
-    Spearhead.internal.Air.Routing.GetOrCreateCapRoute = function (database, stageNumber, stageName, baseId)
-        
+    Spearhead.internal.Air.Routing.GetOrCreateCapRoute = function(database, stageNumber, stageName, baseId)
         local dbPoint = database:getCapRouteInZone(stageNumber)
         if dbPoint then return dbPoint end
 
@@ -193,7 +192,7 @@ do --routes
                         local function getDist(a, b)
                             return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
                         end
-    
+
                         local closestDistance = -1
                         for _, vert in pairs(stagezone.verts) do
                             local distance = getDist(vert, base:getPoint())
@@ -203,9 +202,9 @@ do --routes
                             end
                         end
                     end
-    
+
                     if math.random(1, 2) % 2 == 0 then
-                        return { [1] =  closest, [2] = { x = stagezone.x, z = stagezone.z } }
+                        return { [1] = closest, [2] = { x = stagezone.x, z = stagezone.z } }
                     else
                         return { [1] = { x = stagezone.x, z = stagezone.z }, [2] = closest }
                     end
@@ -215,74 +214,128 @@ do --routes
         end
     end
 
-    Spearhead.internal.Air.Routing.GetOrCreateCasRoute = function (database, stageNumber, stageName, baseId)
+    Spearhead.internal.Air.Routing.GetOrCreateCasRoute = function(database, stageNumber, stageName, baseId)
 
-
+        
 
     end
-
 end
 
 do -- bingo settings
+    if SpearheadConfig == nil then SpearheadConfig = {} end
+    if SpearheadConfig.BingoSettings == nil then SpearheadConfig.BingoSettings = {} end
 
-    local function GetBaseProfileSettings()
+    local validProfiles = { ["modern"] = true, ["ww2"] = true }
+    local profile = SpearheadConfig.BingoSettings.baseProfile or "modern"
+    if validProfiles[profile] ~= true then
+        profile = "modern"
+    end
 
-        local ww2 = {
-            CAP = {
-                NoRadarMissiles = false,
-                NoHeatSeekingMissiles = false,
-                NoBullets = true
-            },
-            ESCORT = {
-                NoRadarMissiles = false,
-                NoHeatSeekingMissiles = false,
-                NoBullets = true
-            }
-        }
+    local baseConfig = {}
+    baseConfig["fuel"] = 0.2
+    baseConfig["noradarmissiles"] = false
+    baseConfig["noheatseekingmissiles"] = false
+    baseConfig["nobullets"] = false
+    baseConfig["noseadmissiles"] = false
+    baseConfig["norockets"] = false
+    baseConfig["nobombs"] = false
 
-        local modern = {
-            CAP = {
-                NoRadarMissiles = false,
-                NoHeatSeekingMissiles = true,
-                NoBullets = true
-            },
-            ESCORT = {
-                NoRadarMissiles = false,
-                NoHeatSeekingMissiles = true,
-                NoBullets = true
-            }
-        }
+    local CopyBaseConfig = function()
+        local config = {}
+        for key, value in pairs(baseConfig) do
+            config[key] = value
+        end
+        return config
+    end
 
-        local profile = SpearheadConfig.BingoSettings.baseProfile or "modern"
+    local allConfigTable = {}
 
+    local function InsertConfigIntoTable(dictKey, configValues)
+        if type(configValues) ~= "table" then return end
+        local config = CopyBaseConfig()
+        for key, value in pairs(configValues) do
+            config[string.lower(key)] = value
+        end
+        allConfigTable[string.lower(dictKey)] = config
+    end
+
+    do -- Default Spearhead configurations
         if profile == "ww2" then
-            return ww2
+            InsertConfigIntoTable("CAP", {
+                ["nobullets"] = true
+            })
+
+            InsertConfigIntoTable("ESCORT", {
+                ["nobullets"] = true
+            })
+        else
+            InsertConfigIntoTable("CAP", {
+                ["noheatseekingmissiles"] = true,
+                ["nobullets"] = true
+            })
+
+            InsertConfigIntoTable("ESCORT", {
+                ["noheatseekingmissiles"] = true,
+                ["nobullets"] = true
+            })
+        end
+    end
+
+    do -- Overwrite settings with custom types
+        if SpearheadConfig.BingoSettings.CustomProfiles == nil then SpearheadConfig.BingoSettings.CustomProfiles = {} end
+        for key, value in pairs(SpearheadConfig.BingoSettings.CustomProfiles) do
+            InsertConfigIntoTable(key, value)
+        end
+    end
+
+    local function GetBingoSetting(groupName, groupType, taskingType)
+        groupName = string.lower(groupName)
+        if allConfigTable[groupName] then
+            return allConfigTable[groupName]
         end
 
-        return modern
+        if groupType and type(groupType) == "string" then
+            groupType = string.lower(groupType)
+            if allConfigTable[groupType] then
+                return allConfigTable[groupType]
+            end
+        end
 
+        if taskingType and type(taskingType) == "string" then
+            taskingType = string.lower(taskingType)
+            if allConfigTable[taskingType] then
+                return allConfigTable[taskingType]
+            end
+        end
 
+        return baseConfig
+    end
+
+    function Spearhead.internal.Air.IsBingo(groupName, taskingType, fuelOffset)
+        return (Spearhead.internal.Air.IsBingoFuel(groupName, taskingType, fuelOffset) or Spearhead.internal.Air.IsBingoWeapons(groupName, taskingType))
     end
 
 
-    if SpearheadConfig == nil then SpearheadConfig = {} end
-    if SpearheadConfig.BingoSettings == nil then SpearheadConfig.BingoSettings = {} end
-    local BingoSettings = {
-
-
-
-    }
-
     local checkBingoTime = {}
     local lastBingoResult = {}
-    function Spearhead.internal.Air.IsBingoFuel(groupName, offset)
-
+    ---comment
+    ---@param groupName string
+    ---@param taskingType string
+    ---@param offset number
+    ---@return boolean
+    function Spearhead.internal.Air.IsBingoFuel(groupName, taskingType, offset)
         if checkBingoTime[groupName] == nil or checkBingoTime[groupName] < timer.getTime() - 10 then
+            local group = Group.getByName(groupName)
+            local typeName = nil
+            local unit = group:getUnit(1)
+            if unit then
+                typeName = unit:getTypeName()
+            end
+            local bingoConfig = GetBingoSetting(groupName, typeName, taskingType)
             if offset == nil then offset = 0 end
-            local bingoSetting = 0.20
+            local bingoSetting = bingoConfig["fuel"] or 0.2
             bingoSetting = bingoSetting + offset
 
-            local group = Group.getByName(groupName)
             for _, unit in pairs(group:getUnits()) do
                 if unit and unit:isExist() == true and unit:inAir() == true and unit:getFuel() < bingoSetting then
                     lastBingoResult[groupName] = true
@@ -290,32 +343,64 @@ do -- bingo settings
                 end
             end
         end
-        
         return lastBingoResult[groupName] or false
     end
 
     local checkWeaponTime = {}
     local lastWeaponResult = {}
-    function Spearhead.internal.Air.IsBingoWeapons(groupName, type)
+    ---comment
+    ---@param groupName string
+    ---@param taskingType string
+    ---@return boolean
+    function Spearhead.internal.Air.IsBingoWeapons(groupName, taskingType)
         if checkWeaponTime[groupName] == nil or checkWeaponTime[groupName] < timer.getTime() - 10 then
             checkWeaponTime[groupName] = timer.getTime()
 
-            if type == "CAP" then
-                
-
-                
+            local group = Group.getByName(groupName)
+            local typeName = nil
+            local unit = group:getUnit(1)
+            if unit then
+                typeName = unit:getTypeName()
             end
+            local bingoConfig = GetBingoSetting(groupName, typeName, taskingType)
 
-            if type == "ESCORT" then
-                
-            end
+            for _, unit in pairs(group:getUnits()) do
 
-            if type == "CAS" then
-                
+                local ammo = unit:getAmmo()
+
+                for _, weapon in pairs(ammo) do
+                    local count = weapon["count"] or 0
+                    if count <= 0 then
+                        if weapon["category"] == 0 then
+                            -- guns
+                            if bingoConfig["nobullets"] == true then return true end
+                        elseif weapon["category"] == 1 then
+                            -- missiles
+                            if weapon["missileCategory"] == 2 then
+                                -- AA Missiles
+                                if weapon["guidance"] == 2 then
+                                    --IR
+                                    if bingoConfig["noheatseekingmissiles"] == true then return true end
+                                elseif weapon["guidance"] == 3 or weapon["guidance"] == 4 then
+                                    --Active and Semi-Active radar missiles
+                                    if bingoConfig["noradarmissiles"] == true then return true end
+                                end
+                            end
+                        elseif weapon["category"] == 2 then
+                            -- rockets
+                            --[[
+                                TODO: Add Bingo settings for AG missions
+                            ]]
+                        elseif weapon["category"] == 3 then
+                            -- bombs
+                            
+                        end
+                    end 
+                end
             end
+            return false
         end
-        
+
         return lastWeaponResult[groupName] or false
     end
-
 end

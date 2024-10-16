@@ -153,7 +153,7 @@ do --setup route util
                                 },
                                 stopCondition = {
                                     duration = durationBefore10,
-                                    condition = "return Spearhead.internal.Air.IsBingoFuel(\"" .. groupName .. "\", 0.10)",
+                                    condition = "return Spearhead.internal.Air.IsBingo(\"" .. groupName .. "\", 'CAP', 0.10)",
                                 }
                             }
                         },
@@ -187,7 +187,7 @@ do --setup route util
                                 },
                                 stopCondition = {
                                     duration = durationAfter10,
-                                    condition = "return Spearhead.internal.Air.IsBingoFuel(\"" .. groupName .. "\")",
+                                    condition = "return Spearhead.internal.Air.IsBingo(\"" .. groupName .. "\",'CAP')",
                                 }
                             }
                         },
@@ -253,7 +253,7 @@ do --setup route util
                                 },
                                 stopCondition = {
                                     duration = duration,
-                                    condition = "return Spearhead.internal.Air.IsBingoFuel(\"" .. groupName .. "\", 0.10)",
+                                    condition = "return Spearhead.internal.Air.IsBingo(\"" .. groupName .. "\", 'CAP', 0.10)",
                                 }
                             }
                         },

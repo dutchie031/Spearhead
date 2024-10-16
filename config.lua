@@ -75,25 +75,46 @@ SpearheadConfig = {
     -- Bingo Fuel and Weapon Settings for each tasking 
     BingoSettings = {
 
+        --- IMPORTANT NOTE!!
+        --- As a general recommedation please do not set the units RTB values inside the ME. 
+        --- While Spearhead tries to overwrite as little ME settings the RTB task in the ME is flawed to say the least. 
+        --- "RTB ON FUEL" and "RTB ON NO WEAPONS" will have AI fly to a neutral base or to the closest red base. 
+        --- Not to it's homeplate as expected. Spearhead will have them fly back to their original base, but cannot take control of AI if they are in the "RTB state"
+        --- Generally AI will RTB way to late and crash due to no fuel anyway. So it's best to let Spearhead (or another script) manage this.
+        --- With the BingoSettings Spearhead gives you options to customise the weapons and fuel settings for RTB SOPs
+
+        --Defines the base profile used.
         baseProfile = "modern", -- oneOf( "modern", "ww2" )
-
-        CAP = {
-
-            NoRadarMissiles = true, 
-
-        },
-
-        ESCORT = {
-
-        },
-         
-        CAS = {
-
-        }
+        --The major difference between modern and ww2 settings are the existance of A/A missiles. 
+        --Default settings will already reflect this.
         
+        --- CustomProfiles are profiles overwriting the default profiles.
+        --- Spearhead will do a lookup in order from big to small.
+        --- Overwriting is on a per value basis. You can easily only overwrite 1 value and the rest will be kept default.
+        --- You're free to overwrite any and all settings, but be aware that AI behaviour might significantly change.
+        --- If for instance you do not give an aircraft heatseekers, but still set "NoHeatSeekers" to "true" an aircraft will RTB immediately.
+        --- Possible keys: 
+        ---     groupName   => Set specific settings for a specific groupName (groupNames are unchanged by spearhead)
+        ---     typeName    => Set specific configuration for an aircraft type (use the type that is used by the scripting environment 
+        ---                    check here:  https://github.com/Quaggles/dcs-lua-datamine/tree/d812189547cc01a757a59f29031cd29d6d4704c8/_G/db/Units/Planes/Plane)
+        ---     taskingType => Already set based on baseProfile and general logical defaults. (No modern cap with guns only etc.)
+        ---                    Can be overwritten. Types currently are: "CAP", "ESCORT", "CAS"
+        CustomProfiles = {}
 
+        ---Possible custom profile values (best to only set those settings you want to make 100% are set differently)
+        --- ["key"] = Value 
+        --- ["Fuel"] = 0.2 
+        ---  
+        --- A/A Settings
+        --- ["NoRadarMissiles"] = false -- Send RTB when no radar missiles are remaining
+        --- ["NoHeatSeekingMissiles"] = false -- Send RTB Wen no heatseekers remaining
+        --- ["NoBullets"] = false
+        --- 
+        --- A/G Settings
+        --- For now by default all need to evaluate true. So no HARMs, no Bombs, AND no rockets to RTB
+        --- ["NoSeadMissiles"] = false -- no missiles like HARMs available
+        --- ["NoRockets"] = false -- no rockets available 
+        --- ["NoBombs"] = false -- no bombs available
     }
-
-   
 }
 

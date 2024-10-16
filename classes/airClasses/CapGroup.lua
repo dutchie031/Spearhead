@@ -131,7 +131,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
 
     o.SendRTBAndDespawn = function(self)
         self.markedForDespawn = true
-        o.SendRTB(self)
+        self:SendRTB()
     end
 
 

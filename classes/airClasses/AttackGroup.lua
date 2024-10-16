@@ -61,6 +61,24 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
         self.state = Spearhead.internal.Air.GroupState.WAITINGFORESCORT
     end
 
+    ---comment
+    ---@param input table { groupName, task, logger }
+    ---@param time number
+    ---@return nil
+    local function setTaskAsync(input, time)
+        local task = input.task
+        local groupName = input.groupName
+        local group = Group.getByName(groupName)
+
+        if task then
+            group:getController():setTask(task)
+            if input.logger ~= nil then
+                input.logger:debug("task set succesfully to group " .. groupName)
+            end
+        end
+        return nil
+    end
+
     o.SendOutForCas = function(self, stageNumber)
 
         self.logger:debug("Sending cas group out. GroupName: " .. self.groupName)
@@ -74,12 +92,31 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
                 params = {}
             })
         end
-    end
+
+        
+
+    end 
 
     o.SendRTB = function(self)
-        --[[
-            TODO
-        ]]
+        local group = Group.getByName(self.groupName)
+        if group and group:isExist() then
+            local speed = math.random(self.casConfig:getMinSpeed(), self.casConfig:getMaxSpeed())
+            local task, error = Spearhead.RouteUtil.CreateRTBMission(self.groupName, self.airbaseId, speed)
+            if task then
+                timer.scheduleFunction(setTaskAsync, { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
+            else 
+                self.logger:error("No RTB task could be created for group: " ..
+                self.groupName .. " due to " .. error)
+                if self.markedForDespawn == true then
+                    self:Despawn()
+                end
+            end
+        end
+    end
+
+    o.SendRTBAndDespawn = function(self)
+        self.markedForDespawn = true
+        self:SendRTB()
     end
 
     o.eventListeners = {}
@@ -109,8 +146,6 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
             end
         end
     end
-
-
     return o
 end
 
