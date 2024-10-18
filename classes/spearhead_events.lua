@@ -48,6 +48,43 @@ do
         end
     end
 
+    do -- Custom notification trigger
+        
+        local customAlerts = {}
+
+        ---comment
+        ---@param alertId string
+        ---@param listener table object with function HandleAlert(alertName, additionalParamObject ) where additionalParamObject is a table {} 
+        SpearheadEvents.AddAlertListener = function (alertId, listener)
+            if type(listener) ~= "table" then
+                SpearheadLogger:warn("Event handler not of type table/object")
+                return
+            end
+
+            if customAlerts[alertId] == nil then
+                customAlerts[alertId] = {}
+            end
+
+            local alert = { listener = listener, triggered = false}
+            table.insert(customAlerts, alert)
+        end
+
+        SpearheadEvents.TriggerAlert = function(alertId)
+            for _, alert in pairs(customAlerts[alertId]) do
+                if alert.triggered == false then
+                    local succ, err = pcall(function()
+                        alert.listener:HandleAlert(alertId)
+                    end)
+                    alert.triggered = true
+                    if err then
+                        SpearheadLogger:error(err)
+                    end
+                end
+            end
+
+        end
+    end
+
     local onLandEventListeners = {}
     ---Add an event listener to a specific unit
     ---@param unitName string to call when the unit lands
@@ -100,40 +137,6 @@ do
         end
 
         table.insert(OnUnitLostListeners[unitName], unitLostListener)
-    end
-
-    do --on Escort Ready
-
-        
-        local onEscortReadyListeners = {}
-        ---comment
-        ---@param groupName any the groupname FOR who the escort is 
-        ---@param handlingObject any an object with a callable function 'OnEscordReady(groupName)'
-        SpearheadEvents.AddOnEscortReadyListener = function(groupName, handlingObject)
-            if type(handlingObject) ~= "table" then
-                SpearheadLogger:warn("Event handler not of type table/object")
-                return
-            end
-
-            if onEscortReadyListeners[groupName] == nil then
-                onEscortReadyListeners[groupName] = {}
-            end
-
-            table.insert(onEscortReadyListeners[groupName], handlingObject)
-        end
-
-        SpearheadEvents.TriggerReadyForEscort = function(groupName)
-            if groupName ~= nil and onEscortReadyListeners[groupName] then
-                for _, listener in pairs(onEscortReadyListeners[groupName]) do
-                    local succ, err = pcall(function()
-                        listener:OnEscortReady(groupName)
-                    end)
-                    if err then
-                        SpearheadLogger:error(err)
-                    end
-                end
-            end
-        end
     end
 
     do -- ON RTB

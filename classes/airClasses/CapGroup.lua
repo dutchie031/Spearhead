@@ -134,31 +134,42 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
         self:SendRTB()
     end
 
+    ---Sets a task to the group for finer grained control of missions
+    ---@param self table
+    ---@param task any
+    o.SetTask = function(self, task)
+        local groupName = self.groupName
+        local group = Group.getByName(groupName)
 
-    o.SendOutForEscort = function(self, tgtGroupName)
-        if self.state == Spearhead.internal.Air.GroupState.DEAD or self.state == Spearhead.internal.Air.GroupState.RTB then
-            return --Can't task a unit that's dead or RTB
-        end
-
-        
-        local group = Group.getByName(self.groupName)
-        if group and group:isExist() then
-            self.logger:debug("Sending group out for escort " .. self.groupName)
-            self.state = Spearhead.internal.Air.GroupState.ESCORTING
-            self.escortingGroupName = tgtGroupName
-        
-            group:getController():setCommand({
-                id = 'Start',
-                params = {}
-            })
-
-            local task = Spearhead.RouteUtil.CreateEscortTask(self.groupName, tgtGroupName, self.airbaseId, 150, 2, 18520)
-            if task then
-                timer.scheduleFunction(setTaskAsync,
-                    { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
-            end
+        if group and task then
+            group:getController():setTask(task)
+            self.logger:debug("task set succesfully to group " .. groupName)
         end
     end
+
+    -- o.SendOutForEscort = function(self, tgtGroupName)
+    --     if self.state == Spearhead.internal.Air.GroupState.DEAD or self.state == Spearhead.internal.Air.GroupState.RTB then
+    --         return --Can't task a unit that's dead or RTB
+    --     end
+
+    --     local group = Group.getByName(self.groupName)
+    --     if group and group:isExist() then
+    --         self.logger:debug("Sending group out for escort " .. self.groupName)
+    --         self.state = Spearhead.internal.Air.GroupState.ESCORTING
+    --         self.escortingGroupName = tgtGroupName
+        
+    --         group:getController():setCommand({
+    --             id = 'Start',
+    --             params = {}
+    --         })
+
+    --         local task = Spearhead.RouteUtil.CreateEscortTask(self.groupName, tgtGroupName, self.airbaseId, 150, 2, 37040)
+    --         if task then
+    --             timer.scheduleFunction(setTaskAsync,
+    --                 { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
+    --         end
+    --     end
+    -- end
 
     ---Starts and send this group to perform CAP at a stage
     ---@param self any

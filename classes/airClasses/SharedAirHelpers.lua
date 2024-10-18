@@ -2,6 +2,8 @@ if not Spearhead.internal then Spearhead.internal = {} end
 
 if Spearhead.internal.Air == nil then Spearhead.internal.Air = {} end
 
+local logger = Spearhead.LoggerTemplate:new("SharedAirHelpers", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
+
 Spearhead.internal.Air.GroupState = {
     UNSPAWNED = 0,
     READYONRAMP = 1,
@@ -16,6 +18,7 @@ Spearhead.internal.Air.GroupState = {
 }
 
 
+
 Spearhead.internal.Air.CapGroupType = {
     PRIMARY = 1,
     SECONDARY = 2,
@@ -25,6 +28,7 @@ Spearhead.internal.Air.CapGroupType = {
 Spearhead.internal.Air.AttackGroupType = {
     CAS = 1,
     SEAD = 2,
+    STRIKE = 3
 }
 
 do -- Name Parsers
@@ -214,10 +218,24 @@ do  --routes
         end
     end
 
-    Spearhead.internal.Air.Routing.GetOrCreateCasRoute = function(database, stageNumber, stageName, baseId)
+    Spearhead.internal.Air.Routing.GetOrCreateCasRoute = function(casTargetZone, groupName, stageNumber, speed, altitude, baseId, duration)
+        local errorMessage = ""
+        if casTargetZone then
+            local zone = Spearhead.DcsUtil.getZoneByName(casTargetZone)
+            if zone ~= nil then
+                local task, error = Spearhead.RouteUtil.CreateCasInZoneTask(groupName, {x = zone.x, z = zone.z, y = 0}, zone.radius, baseId, speed, altitude, duration)
+                logger:info(task)
+                errorMessage = error
+                return task
+            else
+                errorMessage = "Could not get zone with name " .. casTargetZone
+            end
+        else
+            errorMessage = "Could not get zone with for stageNumber " .. stageNumber
+        end
 
-        
-
+        logger:warn("Could not create CasInZoneTasking for group ".. groupName .. " due to: " .. errorMessage)
+        return nil
     end
 end
 
@@ -339,6 +357,7 @@ do -- bingo settings
             for _, unit in pairs(group:getUnits()) do
                 if unit and unit:isExist() == true and unit:inAir() == true and unit:getFuel() < bingoSetting then
                     lastBingoResult[groupName] = true
+                    logger:info(groupName .. "Is Bingo Fuel")
                     return true
                 end
             end
@@ -380,10 +399,16 @@ do -- bingo settings
                                 -- AA Missiles
                                 if weapon["guidance"] == 2 then
                                     --IR
-                                    if bingoConfig["noheatseekingmissiles"] == true then return true end
+                                    if bingoConfig["noheatseekingmissiles"] == true then 
+                                        logger:info(groupName .. "Is Bingo Weapons")
+                                        return true
+                                    end
                                 elseif weapon["guidance"] == 3 or weapon["guidance"] == 4 then
                                     --Active and Semi-Active radar missiles
-                                    if bingoConfig["noradarmissiles"] == true then return true end
+                                    if bingoConfig["noradarmissiles"] == true then 
+                                        logger:info(groupName .. "Is Bingo Weapons")
+                                        return true 
+                                    end
                                 end
                             end
                         elseif weapon["category"] == 2 then

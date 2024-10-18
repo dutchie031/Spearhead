@@ -1,7 +1,6 @@
 
 --Single player purpose
 
-
 local unit = Unit.getByName("CAP_A[1-4]A_MIG29CAP-1-1")
 
 local ammo = unit:getAmmo()
@@ -38,9 +37,6 @@ Spearhead.LoadingDone()
 --Check lines of code in directory per file: 
 -- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }; && GCI . -Include *.lua* -Recurse | foreach{(GC $_).Count} | measure-object -sum |  % Sum  
 -- find . -name '*.lua' | xargs wc -l
-
-
-
 
 --- ==================== DEBUG ORDER OR ZONE VEC ===========================
 -- local zone = Spearhead.DcsUtil.getZoneByName("MISSIONSTAGE_99")

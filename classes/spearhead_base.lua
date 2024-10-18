@@ -206,6 +206,24 @@ do -- INIT UTIL
 
         return UTIL.getConvexHull(allpoints)
     end
+
+    function UTIL.getClosestPointOnCircle(pC, radius, p)
+        local vX = p.x - pC.x;
+        local vY = p.z - pC.z;
+        local magV = math.sqrt(vX * vX + vY * vY);
+        local aX = pC.x + vX / magV * radius;
+        local aY = pC.z + vY / magV * radius;
+        return { x = aX, z = aY }
+    end
+
+    function UTIL.createUUID()
+        local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+        return string.gsub(template, '[xy]', function (c)
+            local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
+            return string.format('%x', v)
+        end)
+    end
+
 end
 Spearhead.Util = UTIL
 
@@ -735,7 +753,7 @@ do     -- INIT DCS_UTIL
         return DCS_UTIL.__redGroupNames
     end
 
-    ---comment Get all units that are players
+    ---Get all units that are players
     ---@return table units
     function DCS_UTIL.getAllPlayerUnits()
         local units = {}

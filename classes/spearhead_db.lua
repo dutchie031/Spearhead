@@ -28,6 +28,11 @@ do -- DB
             o.tables.random_mission_zones = {}
             o.tables.farp_zones = {}
             o.tables.cap_route_zones = {}
+
+            o.tables.cas_zones = {}
+            o.tables.sead_zones = {} 
+            o.tables.strike_zones = {}
+
             o.tables.carrier_route_zones = {}
 
             o.tables.stage_zonesByNumber = {}
@@ -69,6 +74,18 @@ do -- DB
 
                     if string.lower(split_string[1]) == "carrierroute" then
                         table.insert(o.tables.carrier_route_zones, zone_name)
+                    end
+
+                    if string.lower(split_string[1]) == "castarget" then
+                        table.insert(o.tables.cas_zones, zone_name)
+                    end
+
+                    if string.lower(split_string[1]) == "seadtarget" then
+                        table.insert(o.tables.cas_zones, zone_name)
+                    end
+
+                    if string.lower(split_string[1]) == "striketarget" then
+                        table.insert(o.tables.cas_zones, zone_name)
                     end
                 end
             end
@@ -186,8 +203,6 @@ do -- DB
                     end
                 end
             end
-
-
 
             o.tables.farpZonesPerStage = {}
             for _, farpZoneName in pairs(o.tables.farp_zones) do
@@ -466,10 +481,42 @@ do -- DB
                 end
             end
 
-            o.Logger:debug(o.tables.capRoutesPerStageNumber)
+            o.tables.casTargetsPerStageNumber = {}
+            o.tables.strikeStargetsPerStageNumber = {}
+            o.tables.seadTargetsPerStageNumber = {}
+
+            do --fill cas strike and sead targets
+                for _, stageZone in pairs(o.tables.stage_zones) do
+                    
+                    local stageNumber = tostring(o.tables.stage_numberPerzone[stageZone]) or "unknown"
+                    o.tables.casTargetsPerStageNumber[stageNumber] = {}
+                    for _, zone in pairs(o.tables.cas_zones) do
+                        if Spearhead.DcsUtil.isZoneInZone(zone, stageZone) == true then
+                            o.tables.casTargetsPerStageNumber[stageNumber][zone] = true
+                        end
+                    end
+
+                    o.tables.strikeStargetsPerStageNumber[stageNumber] = {}
+                    for _, zone in pairs(o.tables.cas_zones) do
+                        if Spearhead.DcsUtil.isZoneInZone(zone, stageZone) == true then
+                            o.tables.strikeStargetsPerStageNumber[stageNumber][zone] = true
+                        end
+                    end
+
+                    o.tables.seadTargetsPerStageNumber[stageNumber] = {}
+                    for _, zone in pairs(o.tables.cas_zones) do
+                        if Spearhead.DcsUtil.isZoneInZone(zone, stageZone) == true then
+                            o.tables.seadTargetsPerStageNumber[stageNumber][zone] = true
+                        end
+                    end
+
+                end
+            end
 
             o.tables.missionCodes = {}
         end
+
+        o.Logger:info(o.tables.casTargetsPerStageNumber)    
 
         o.GetDescriptionForMission = function(self, missionZoneName)
             return self.tables.descriptions[missionZoneName]
@@ -494,6 +541,29 @@ do -- DB
                 end
             end
             return nil
+        end
+
+        o.getCasTargetInZone = function(self, stageNumber)
+            local stageNumber = tostring(stageNumber)
+            local allTargetsInZone = o.tables.casTargetsPerStageNumber[stageNumber]
+            if Spearhead.Util.tableLength(allTargetsInZone) <= 0 then return nil, "no cas zones inside of stage " .. stageNumber end
+
+            local availableTargets = {}
+            for name, value in pairs(allTargetsInZone) do
+                if value == true then
+                    table.insert(availableTargets, name)
+                end
+            end
+
+            if Spearhead.Util.tableLength(availableTargets) <= 0 then
+                for name, value in pairs(allTargetsInZone) do
+                    allTargetsInZone[name] = true
+                end
+
+                return self:getCasTargetInZone(stageNumber)
+            end
+            
+            return Spearhead.Util.randomFromList(availableTargets)
         end
 
         ---comment

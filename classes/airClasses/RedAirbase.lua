@@ -128,16 +128,24 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig, casCon
         for _, casGroup in pairs(self.AttackGroups) do
             local supposedTargetStage = casGroup:GetTargetZone(self.activeStage)
             if supposedTargetStage and casGroup.state == Spearhead.internal.Air.GroupState.READYONRAMP then
-                local escortGroup = self:TryGetEscortUnit()
-                if escortGroup then
-                    escortGroup:SendOutForEscort(casGroup.groupName)
-                    casGroup:SetWaitingForEscort()
-                    Spearhead.Events.AddOnEscortReadyListener(casGroup.groupName, self)
 
-                elseif self.casConfig:requireEscort() == false then
-                    self.logger:debug("No escort unit available")
-                    casGroup:SendOutForCas(supposedTargetStage)
-                end
+                local casTargetZoneInZone = database:getCasTargetInZone(supposedTargetStage)
+                local base = Spearhead.DcsUtil.getAirbaseById(self.airbaseId)
+
+                
+
+                local marshAllpoint = Spearhead.Util.getClosestPointOnCircle(self.ai  )
+
+                -- local escortGroup = self:TryGetEscortUnit()
+                -- if escortGroup then
+                --     escortGroup:SendOutForEscort(casGroup.groupName)
+                --     casGroup:SetWaitingForEscort()
+                --     Spearhead.Events.AddOnEscortReadyListener(casGroup.groupName, self)
+
+                -- elseif self.casConfig:requireEscort() == false then
+                --     self.logger:debug("No escort unit available")
+                --     casGroup:SendOutForCas(supposedTargetStage)
+                -- end
             end
         end
     end

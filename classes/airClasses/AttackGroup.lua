@@ -10,7 +10,6 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
 
     o.groupName = groupName
     o.airbaseId = redAirbase.airbaseId
-    o.parentManager = redAirbase
     o.logger = logger
     o.database = database
     o.casConfig = casConfig
@@ -85,17 +84,32 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
         self:SetState(Spearhead.internal.Air.GroupState.INTRANSIT)
 
         local group = Group.getByName(self.groupName)
-        if group and group:isExist() then
+        local task = Spearhead.internal.Air.Routing.GetOrCreateCasRoute(self.database, self.groupName, stageNumber, 150, 3000, self.airbaseId, 600)
+        if group and group:isExist() and task then
             self.state = Spearhead.internal.Air.GroupState.INTRANSIT
             group:getController():setCommand({
                 id = 'Start',
                 params = {}
             })
+            timer.scheduleFunction(setTaskAsync, { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 1)
+            return true
+        else
+            return false
         end
-
-        
-
     end 
+
+    ---Sets a task to the group for finer grained control of missions
+    ---@param self table
+    ---@param task any
+    o.SetTask = function(self, task)
+        local groupName = self.groupName
+        local group = Group.getByName(groupName)
+
+        if group and task then
+            group:getController():setTask(task)
+            self.logger:debug("task set succesfully to group " .. groupName)
+        end
+    end
 
     o.SendRTB = function(self)
         local group = Group.getByName(self.groupName)

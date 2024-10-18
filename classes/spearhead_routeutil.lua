@@ -1,4 +1,7 @@
 local ROUTE_UTIL = {}
+ROUTE_UTIL.Tasks = {}
+
+
 do --setup route util
     ---comment
     ---@param attackHelos boolean
@@ -25,13 +28,7 @@ do --setup route util
             [5] = "UAVs",
             [6] = "Infantry",
             [7] = "Fortifications",
-            [8] = "Tanks",
-            [9] = "IFV",
-            [10] = "APC",
             [11] = "Artillery",
-            [12] = "Unarmed vehicles",
-            [13] = "AAA",
-            [14] = "SR SAM",
             [15] = "MR SAM",
             [16] = "LR SAM",
             [17] = "Aircraft Carriers",
@@ -55,7 +52,7 @@ do --setup route util
     ---@param basePoint table { x, z, y } (y == alt)
     ---@param speed number the speed
     ---@return table task
-    local RtbTask = function(airdromeId, basePoint, speed)
+    ROUTE_UTIL.Tasks.RtbTask = function(airdromeId, basePoint, speed)
         if basePoint == nil then
             basePoint = Spearhead.Util.getAirbaseById(airdromeId):getPoint()
         end
@@ -81,6 +78,7 @@ do --setup route util
             }
         }
     end
+    
 
     ---comment
     ---@param groupName string
@@ -91,7 +89,7 @@ do --setup route util
     ---@param engageHelos boolean
     ---@param pattern string ["Race-Track"|"Circle"]
     ---@return table
-    local CapTask = function(groupName, position, altitude, speed, duration, engageHelos, deviationdistance, pattern)
+    ROUTE_UTIL.Tasks.CapTask = function(groupName, position, altitude, speed, duration, engageHelos, deviationdistance, pattern)
         local durationBefore10 = duration - 600
         if durationBefore10 < 0 then durationBefore10 = 0 end
         local durationAfter10 = 600
@@ -210,17 +208,20 @@ do --setup route util
             }
         }
     end
+    
 
-    local CasTask = function(groupName, position, altitude, speed, duration, deviationDistance, pattern)
+
+    ROUTE_UTIL.Tasks.CasInZoneTask = function(groupName, attackPosition, attackZoneRadius , altitude, speed, duration, orbitPointA, pattern)
         return {
             alt = altitude,
-            action = "Turning Point",
+            action = "Fly Over Point",
+            type = "Turning Point",
             alt_type = "BARO",
             speed = speed,
             ETA = 0,
             ETA_locked = false,
-            x = position.x,
-            y = position.z,
+            x = orbitPointA.x,
+            y = orbitPointA.z,
             speed_locked = true,
             formation_template = "",
             task = {
@@ -228,11 +229,18 @@ do --setup route util
                 params = {
                     tasks = {
                         [1] = {
-                            id = 'EngageTargets',
+                            id = 'EngageTargetsInZone',
+                            number = 1,
+                            enabled = true,
+                            auto = false,
                             params = {
-                                maxDist = deviationDistance,
-                                maxDistEnabled = deviationDistance >= 0, -- required to check maxDist
-                                targetTypes = {},
+                                x = attackPosition.x,
+                                y = attackPosition.z,
+                                zoneRadius = attackZoneRadius,
+                                targetTypes = {
+                                    [1] = "Ground Units"
+                                },
+                                --noTargetTypes = {},
                                 noTargetTypes = GetCasNoTargetTypes(),
                                 priority = 0
                             }
@@ -263,7 +271,8 @@ do --setup route util
         }
     end
 
-    local EscortTask = function(groupName, waitingPos, targetGroupName, engagementDistance, tillWaypoint)
+
+    ROUTE_UTIL.Tasks.EscortTask = function(groupName, waitingPos, targetGroupName, engagementDistance, tillWaypoint)
 
         local group = Group.getByName(targetGroupName)
         if group then
@@ -324,6 +333,53 @@ do --setup route util
     end
 
     ---comment
+    ---@param groupName string
+    ---@param point any
+    ---@param speed any
+    ---@param alt any
+    ---@return table
+    ROUTE_UTIL.Tasks.OrbitAtPointTask = function(groupName, point, speed, alt)
+
+        return {
+            alt = alt,
+            action = "Turning Point",
+            alt_type = "BARO",
+            speed = speed,
+            ETA = 0,
+            ETA_locked = false,
+            x = point.x,
+            y = point.z,
+            speed_locked = true,
+            formation_template = "",
+            task = {
+                id = "ComboTask",
+                params = {
+                    [1] = {
+                        number = 1,
+                        auto = false,
+                        id = "ControlledTask",
+                        enabled = true,
+                        params = {
+                            task = {
+                                id = "Orbit",
+                                params = {
+                                    altitude = alt,
+                                    pattern = "Circle",
+                                    speed = speed,
+                                }
+                            },
+                            stopCondition = {
+                                condition = "return Spearhead.internal.Air.IsBingo(\"" .. groupName .. "\", 'CAP', 0.10)",
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    end
+
+    ---comment
     ---@param position table { x, y}
     ---@param altitude number
     ---@param speed number
@@ -333,6 +389,33 @@ do --setup route util
         return {
             alt = altitude,
             action = "Turning Point",
+            alt_type = "BARO",
+            speed = speed,
+            ETA = 0,
+            ETA_locked = false,
+            x = position.x,
+            y = position.z,
+            speed_locked = true,
+            formation_template = "",
+            task = {
+                id = "ComboTask",
+                params = {
+                    tasks = childTasks or {}
+                }
+            }
+        }
+    end
+
+    ---comment
+    ---@param position table { x, y}
+    ---@param altitude number
+    ---@param speed number
+    ---@param childTasks table
+    ---@return table
+    ROUTE_UTIL.Tasks.FlyOverPointTask = function(position, altitude, speed, childTasks)
+        return {
+            alt = altitude,
+            action = "Fly Over Point",
             alt_type = "BARO",
             speed = speed,
             ETA = 0,
@@ -406,17 +489,17 @@ do --setup route util
         if racetrackSecondPoint == nil then
             points = {
                 [1] = FlyToPointTask(capPoint, altitude, speed, additionalFlyOverTasks),
-                [2] = CapTask(groupName, capPoint, altitude, speed, durationOnStation, attackHelos, deviationDistance,
+                [2] = ROUTE_UTIL.Tasks.CapTask(groupName, capPoint, altitude, speed, durationOnStation, attackHelos, deviationDistance,
                     orbitType),
-                [3] = RtbTask(airdromeId, basePoint, speed)
+                [3] = ROUTE_UTIL.Tasks.RtbTask(airdromeId, basePoint, speed)
             }
         else
             points = {
                 [1] = FlyToPointTask(capPoint, altitude, speed, additionalFlyOverTasks),
-                [2] = CapTask(groupName, capPoint, altitude, speed, durationOnStation, attackHelos, deviationDistance,
+                [2] = ROUTE_UTIL.Tasks.CapTask(groupName, capPoint, altitude, speed, durationOnStation, attackHelos, deviationDistance,
                     orbitType),
                 [3] = FlyToPointTask(racetrackSecondPoint, altitude, speed, {}),
-                [4] = RtbTask(airdromeId, basePoint, speed)
+                [4] = ROUTE_UTIL.Tasks.RtbTask(airdromeId, basePoint, speed)
             }
         end
 
@@ -526,7 +609,7 @@ do --setup route util
                             }
                         },
                         [2] = FlyToPointTask(base:getPoint(), 600, speed, additionalFlyOverTasks),
-                        [3] = RtbTask(airdromeId, base:getPoint(), speed)
+                        [3] = ROUTE_UTIL.Tasks.RtbTask(airdromeId, base:getPoint(), speed)
                     }
                 }
             }
@@ -534,54 +617,6 @@ do --setup route util
     end
 
 
-    ---@return table?, string ComboTask
-    ROUTE_UTIL.CreateCasTask = function(groupName, pointA, pointB, airdromeId, speed, altitude, casDuration, deviationDistance )
-        local base = Spearhead.DcsUtil.getAirbaseById(airdromeId)
-
-        if base == nil then
-            return nil, "No airbase found for ID " .. tostring(airdromeId)
-        end
-
-        local raceTrack = "Race-Track"
-        if pointB == nil then
-            raceTrack = "Circle"
-        end
-
-        return {
-            id = "Mission",
-            params = {
-                airborne = true,
-                route = {
-                    points = {
-                        [1] = CasTask(groupName, pointA,altitude, speed, casDuration, deviationDistance, raceTrack),
-                        [2] = FlyToPointTask(pointB or pointA, speed, altitude, {} ),
-                        [3] = RtbTask(airdromeId,base:getPoint(), speed)
-                    }
-                }
-            }
-        }, ""
-    end
-
-    ROUTE_UTIL.CreateEscortTask = function(groupName, tgtGroupName, airdromeId, speed, tillWaypoint, engagementDistance)
-        local base = Spearhead.DcsUtil.getAirbaseById(airdromeId)
-
-        if base == nil then
-            return nil, "No airbase found for ID " .. tostring(airdromeId)
-        end
-
-        return {
-            id = "Mission",
-            params = {
-                airborne = true,
-                route = {
-                    points = {
-                        [1] =EscortTask(groupName,base:getPoint(), tgtGroupName, engagementDistance, tillWaypoint),
-                        [2] = RtbTask(airdromeId,  base:getPoint(), speed)
-                    }
-                }
-            }
-        }, ""
-    end
 
     ROUTE_UTIL.CreateCarrierRacetrack = function(pointA, pointB)
         return {
@@ -654,7 +689,6 @@ do --setup route util
         }, ""
     end
 
-   
 
 end
 
