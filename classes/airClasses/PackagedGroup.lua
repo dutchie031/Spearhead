@@ -134,8 +134,6 @@ function PackagedGroup:newAttackPackage(AttackGroup, EscortGroup, attackZone, at
         if alertId == self.AlertIDs.EscortOnMarshalAlertId then
             trigger.action.outText("Escort is now at the Marshalling point", 30)
         end
-
-
     end
 
     return o
