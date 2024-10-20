@@ -147,30 +147,6 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
         end
     end
 
-    -- o.SendOutForEscort = function(self, tgtGroupName)
-    --     if self.state == Spearhead.internal.Air.GroupState.DEAD or self.state == Spearhead.internal.Air.GroupState.RTB then
-    --         return --Can't task a unit that's dead or RTB
-    --     end
-
-    --     local group = Group.getByName(self.groupName)
-    --     if group and group:isExist() then
-    --         self.logger:debug("Sending group out for escort " .. self.groupName)
-    --         self.state = Spearhead.internal.Air.GroupState.ESCORTING
-    --         self.escortingGroupName = tgtGroupName
-        
-    --         group:getController():setCommand({
-    --             id = 'Start',
-    --             params = {}
-    --         })
-
-    --         local task = Spearhead.RouteUtil.CreateEscortTask(self.groupName, tgtGroupName, self.airbaseId, 150, 2, 37040)
-    --         if task then
-    --             timer.scheduleFunction(setTaskAsync,
-    --                 { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
-    --         end
-    --     end
-    -- end
-
     ---Starts and send this group to perform CAP at a stage
     ---@param self any
     ---@param stageZoneNumber string

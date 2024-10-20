@@ -13,8 +13,7 @@ Spearhead.internal.Air.GroupState = {
     RTB = 5,
     DEAD = 6,
     REARMING = 7,
-    ESCORTING = 8,
-    WAITINGFORESCORT = 9
+    PACKAGED = 8, -- status for fighters that are managed by a packaged group and should not be picked up for any other tasking.
 }
 
 

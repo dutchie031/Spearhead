@@ -13,6 +13,9 @@ function PackagedGroup:newAttackPackage(AttackGroup, EscortGroup, attackZone, at
     local o = {}
     setmetatable(o, { __index = self })
 
+    AttackGroup.state = Spearhead.internal.Air.GroupState.PACKAGED
+    EscortGroup.state = Spearhead.internal.Air.GroupState.PACKAGED
+
     o.AttackGroup = AttackGroup
     o.EscortGroup = EscortGroup
     o.attackZone = attackZone
@@ -39,13 +42,22 @@ function PackagedGroup:newAttackPackage(AttackGroup, EscortGroup, attackZone, at
         distance = 56327 --35 miles max
     end
 
+    local intitialPointDistance = 14816 -- 8 nm
+    if o.attackType == Spearhead.internal.Air.AttackGroupType.SEAD then
+        intitialPointDistance = 27780 -- 15nm
+    end
+
+    if o.attackType == Spearhead.internal.Air.AttackGroupType.STRIKE then
+        intitialPointDistance = 9260 --5nm
+    end
+
+
     o.marshalPoint = Spearhead.Util.getClosestPointOnCircle(attackZone, marshalPointOffset, o.base:getPoint())
+    o.initialAttackPoint = Spearhead.Util.getClosestPointOnCircle(attackZone, intitialPointDistance, o.base:getPoint())
 
     o.SendOut = function (self)
-
         self.isActive = true
-
-
+        self:SendToMarshal(self.EscortGroup, self.AlertIDs.OnEscortTakenOffAlertId, self.AlertIDs.AttackOnMarshalAlertId)
     end
 
     o.SendToMarshal = function(self, group, takeOffAlertId, onMarshalAlertId)
@@ -116,6 +128,19 @@ function PackagedGroup:newAttackPackage(AttackGroup, EscortGroup, attackZone, at
         end
     end
 
+    o.SendFighterFromMarshalPoint = function(self)
+
+
+
+    end
+
+    o.SendAttackerToStation = function(self)
+
+        
+
+    end
+
+
 
     o.SendRtb = function(self)
         pcall(function() self.AttackGroup:SendRTB() end)
@@ -124,17 +149,25 @@ function PackagedGroup:newAttackPackage(AttackGroup, EscortGroup, attackZone, at
 
     o.HandleAlert = function(self, alertId)
         if self.isActive == false then
+            -- don't handle an alert if the package is already inactive
             return 
         end
-        
+
         if alertId == self.AlertIDs.OnEscortTakenOffAlertId then
             self:SendToMarshal(self.AttackGroup, self.AlertIDs.AttackTakeoffAlertId, self.AlertIDs.AttackOnMarshalAlertId)
-        end
-
-        if alertId == self.AlertIDs.EscortOnMarshalAlertId then
+        elseif alertId == self.AlertIDs.EscortOnMarshalAlertId then
             trigger.action.outText("Escort is now at the Marshalling point", 30)
+        elseif  alertId == self.AlertIDs.AttackTakeoffAlertId then
+            -- do nothing
+        elseif alertId == self.AlertIDs.AttackOnMarshalAlertId then
+
+            -- START fighter track
+            -- START attack track with X seconds delay
         end
     end
 
     return o
 end
+
+if not Spearhead.internal then Spearhead.internal = {} end
+Spearhead.internal.PackagedGroup = PackagedGroup

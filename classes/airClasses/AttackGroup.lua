@@ -56,10 +56,6 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
         end
     end
 
-    o.SetWaitingForEscort = function (self)
-        self.state = Spearhead.internal.Air.GroupState.WAITINGFORESCORT
-    end
-
     ---comment
     ---@param input table { groupName, task, logger }
     ---@param time number
