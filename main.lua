@@ -30,7 +30,6 @@ local SetStageDelayed = function(number, time)
     return nil
 end
 
-
 timer.scheduleFunction(SetStageDelayed, 1, timer.getTime() + 3)
 
 Spearhead.LoadingDone()

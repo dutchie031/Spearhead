@@ -34,6 +34,7 @@ do -- DB
             o.tables.strike_zones = {}
 
             o.tables.carrier_route_zones = {}
+            o.tables.blue_sams = {}
 
             o.tables.stage_zonesByNumber = {}
             o.tables.stage_numberPerzone = {}
@@ -87,6 +88,10 @@ do -- DB
                     if string.lower(split_string[1]) == "striketarget" then
                         table.insert(o.tables.cas_zones, zone_name)
                     end
+
+                    if string.lower(split_string[1]) == "bluesam" then
+                        table.insert(o.tables.blue_sams, zone_name)
+                    end
                 end
             end
 
@@ -120,6 +125,21 @@ do -- DB
                 end
             end
 
+            o.tables.blueSamZonesPerStage = {}
+            for _, stageZoneName in pairs(o.tables.stage_zones) do
+            
+                if o.tables.blueSamZonesPerStage[stageZoneName] == nil then
+                    o.tables.blueSamZonesPerStage[stageZoneName] = {}
+                end
+                
+                for _, blueSamStageName in pairs(o.tables.blue_sams) do
+                   
+                    if Spearhead.DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
+                        table.insert(o.tables.blueSamZonesPerStage[stageZoneName], blueSamStageName)
+                    end
+                end
+            end
+            
             o.tables.missionZonesPerStage = {}
             for key, missionZone in pairs(o.tables.mission_zones) do
                 local found = false
@@ -272,6 +292,21 @@ do -- DB
                 end
             end
 
+
+            o.tables.samUnitsPerSamZone = {}
+            local loadBlueSamUnits = function()
+                local all_groups = getAvailableGroups()
+                for _, blueSamZone in pairs(o.tables.blue_sams) do
+                    o.tables.samUnitsPerSamZone[blueSamZone] = {}
+                    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
+                    for _, groupName in pairs(groups) do
+                        is_group_taken[groupName] = true
+                        table.insert(o.tables.samUnitsPerSamZone[blueSamZone], groupName)
+                    end
+                end
+            end
+
+
             --- missionZoneName <> groupname[]
             o.tables.groupsInMissionZone = {}
             local loadMissionzoneUnits = function()
@@ -407,6 +442,7 @@ do -- DB
             end
 
             loadCapUnits()
+            loadBlueSamUnits()
             loadMissionzoneUnits()
             loadRandomMissionzoneUnits()
             loadFarpGroups()
@@ -605,7 +641,6 @@ do -- DB
             return self.tables.descriptions[missionZoneName] or ""
         end
 
-        ---comment
         ---@param self table
         ---@param stageName string
         ---@return table result airbase IDs. Use Spearhead.DcsUtil.getAirbaseById
@@ -617,12 +652,25 @@ do -- DB
             return self.tables.farpZonesPerStage[stageName]
         end
 
-        ---comment
         ---@param self table
         ---@param airbaseId number
         ---@return table
         o.getAirGroupsAtAirbase = function(self, airbaseId)
             return self.tables.airGroupsOnAirbase[airbaseId] or {}
+        end
+
+        ---@param self table
+        ---@param stageName string
+        ---@return table
+        o.getBlueSamsInStage = function(self, stageName)
+            return self.tables.blueSamZonesPerStage[stageName] or {}
+        end
+
+        ---@param self table
+        ---@param samZone string
+        ---@return table
+        o.getBlueSamGroupsInZone = function(self, samZone)
+            return self.tables.samUnitsPerSamZone[samZone] or {}
         end
 
         o.getRedGroupsAtAirbase = function(self, airbaseId)
