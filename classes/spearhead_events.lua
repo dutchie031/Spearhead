@@ -5,11 +5,20 @@ do
         local OnStageNumberChangedListeners = {}
         local OnStageNumberChangedHandlers = {}
 
+
+        local warn = function(text)
+            env.warn("[Spearhead][Events] " .. (text or "nil"))
+        end
+    
+        local error = function(text)
+            env.error("[Spearhead][Events] " .. (text or "nil"))
+        end
+
         ---Add a stage zone number changed listener
         ---@param listener table object with function OnStageNumberChanged(self, number)
         SpearheadEvents.AddStageNumberChangedListener = function(listener)
             if type(listener) ~= "table" then
-                SpearheadLogger:warn("Event listener not of type table, did you mean to use handler?")
+                warn("Event listener not of type table, did you mean to use handler?")
                 return
             end
             table.insert(OnStageNumberChangedListeners, listener)
@@ -19,7 +28,7 @@ do
         ---@param handler function function(number)
         SpearheadEvents.AddStageNumberChangedHandler = function(handler)
             if type(handler) ~= "function" then
-                SpearheadLogger:warn("Event handler not of type function, did you mean to use listener?")
+                warn("Event handler not of type function, did you mean to use listener?")
                 return
             end
             table.insert(OnStageNumberChangedHandlers, handler)
@@ -32,26 +41,20 @@ do
                     callable:OnStageNumberChanged(newStageNumber)
                 end)
                 if err then
-                    SpearheadLogger:error(err)
+                    error(err)
                 end
             end
 
             for _, callable in pairs(OnStageNumberChangedHandlers) do
                 local succ, err = pcall(callable, newStageNumber)
                 if err then
-                    SpearheadLogger:error(err)
+                    error(err)
                 end
             end
         end
     end
 
-    local warn = function(text)
-        env.warn("[Spearhead][Events] " .. (text or "nil"))
-    end
-
-    local error = function(text)
-        env.error("[Spearhead][Events] " .. (text or "nil"))
-    end
+   
 
     local onLandEventListeners = {}
     ---Add an event listener to a specific unit
