@@ -18,4 +18,5 @@ GlobalFleetManager.start = function(database)
     end
 end
 
+if not Spearhead.internal then Spearhead.internal = {} end
 Spearhead.internal.GlobalFleetManager = GlobalFleetManager
