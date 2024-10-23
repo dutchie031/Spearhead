@@ -8,7 +8,8 @@ function CapConfig:new()
     if SpearheadConfig == nil then SpearheadConfig = {} end
     if SpearheadConfig.CapConfig == nil then SpearheadConfig.CapConfig = {} end
 
-    local enabled = SpearheadConfig.CapConfig.enabled or true
+    local enabled = SpearheadConfig.CapConfig.enabled
+    if enabled == nil then enabled = true end
     ---@return boolean
     o.isEnabled = function(self) return enabled == true end
 

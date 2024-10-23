@@ -14,14 +14,16 @@ if id == 0 then
     debug = true
 end
 
-local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.LoggerTemplate.LogLevelOptions.DEBUG)
+local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
+local standardLogger = Spearhead.LoggerTemplate:new("", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
 local databaseManager = Spearhead.DB:new(dbLogger, debug)
 
 local capConfig = Spearhead.internal.configuration.CapConfig:new();
 local stageConfig = Spearhead.internal.configuration.StageConfig:new();
 local casConfig = Spearhead.internal.configuration.CasConfig:new();
 
-Spearhead.internal.GlobalAirManager.start(databaseManager, capConfig, stageConfig, casConfig)
+standardLogger:info("Using StageConfig: ".. stageConfig:toString())
+Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
 Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 
@@ -30,7 +32,7 @@ local SetStageDelayed = function(number, time)
     return nil
 end
 
-timer.scheduleFunction(SetStageDelayed, 1, timer.getTime() + 3)
+timer.scheduleFunction(SetStageDelayed, 0, timer.getTime() + 3)
 
 Spearhead.LoadingDone()
 --Check lines of code in directory per file: 
