@@ -157,11 +157,19 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig, casCon
             local supposedTargetStage = casGroup:GetTargetZone(self.activeStage)
             if supposedTargetStage and casGroup.state == Spearhead.internal.Air.GroupState.READYONRAMP then
 
-                local casTargetZone = getCasTargetZone(self.database, supposedTargetStage)
+                
                 local escortGroup = self:TryGetEscortUnit()
                 if escortGroup then
                     if casGroup.type == Spearhead.internal.Air.AttackGroupType.CAS then
+                        local casTargetZone = getCasTargetZone(self.database, supposedTargetStage)
                         local package = Spearhead.internal.PackagedGroup:newAttackPackage(casGroup, escortGroup, casTargetZone, Spearhead.internal.Air.AttackGroupType.CAS, self.logger)
+                        if package then
+                            table.insert(self.packages, package)
+                            package:SendOut()
+                        end
+                    elseif casGroup.type == Spearhead.internal.Air.AttackGroupType.SEAD then
+                        local casTargetZone = getCasTargetZone(self.database, supposedTargetStage)
+                        local package = Spearhead.internal.PackagedGroup:newAttackPackage(casGroup, escortGroup, casTargetZone, Spearhead.internal.Air.AttackGroupType.SEAD, self.logger)
                         if package then
                             table.insert(self.packages, package)
                             package:SendOut()
@@ -169,7 +177,11 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig, casCon
                     end
                 elseif self.casConfig:requireEscort() == false then
                     self.logger:debug("No escort unit available")
-                    casGroup:SendOutForCas(supposedTargetStage)
+                    if casGroup.type == Spearhead.internal.Air.AttackGroupType.CAS then
+                        casGroup:SendOutForCas(supposedTargetStage)
+                    elseif casGroup.type == Spearhead.internal.Air.AttackGroupType.SEAD then
+                        casGroup:SendOutForSead(supposedTargetStage)
+                    end
                 end
             end
         end

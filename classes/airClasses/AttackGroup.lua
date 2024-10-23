@@ -116,7 +116,7 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
         end
     end 
 
-    o.SendoutForSead = function(self, targetZoneName, initialPoint)
+    o.SendOutForSead = function(self, targetZoneName, initialPoint)
         self.logger:debug("Sending sead group out. GroupName: " .. self.groupName)
         self:SetState(Spearhead.internal.Air.GroupState.INTRANSIT)
 
