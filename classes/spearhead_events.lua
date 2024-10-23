@@ -76,7 +76,7 @@ do
     ---@param unitLostListener table Object with function: OnUnitLost(initiatorUnit)
     SpearheadEvents.addOnUnitLostEventListener = function(unitName, unitLostListener)
         if type(unitLostListener) ~= "table" then
-            SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+            warn("Unit lost Event listener not of type table/object")
             return
         end
 
