@@ -1,18 +1,25 @@
 
 local SpearheadEvents = {}
 do
-    local SpearheadLogger = Spearhead.LoggerTemplate:new("Spearhead Events",
-        Spearhead.LoggerTemplate.LogLevelOptions.DEBUG)
 
     do -- STAGE NUMBER CHANGED
         local OnStageNumberChangedListeners = {}
         local OnStageNumberChangedHandlers = {}
 
+
+        local warn = function(text)
+            env.warn("[Spearhead][Events] " .. (text or "nil"))
+        end
+    
+        local error = function(text)
+            env.error("[Spearhead][Events] " .. (text or "nil"))
+        end
+
         ---Add a stage zone number changed listener
         ---@param listener table object with function OnStageNumberChanged(self, number)
         SpearheadEvents.AddStageNumberChangedListener = function(listener)
             if type(listener) ~= "table" then
-                SpearheadLogger:warn("Event listener not of type table, did you mean to use handler?")
+                warn("Event listener not of type table, did you mean to use handler?")
                 return
             end
             table.insert(OnStageNumberChangedListeners, listener)
@@ -22,7 +29,7 @@ do
         ---@param handler function function(number)
         SpearheadEvents.AddStageNumberChangedHandler = function(handler)
             if type(handler) ~= "function" then
-                SpearheadLogger:warn("Event handler not of type function, did you mean to use listener?")
+                warn("Event handler not of type function, did you mean to use listener?")
                 return
             end
             table.insert(OnStageNumberChangedHandlers, handler)
@@ -35,14 +42,14 @@ do
                     callable:OnStageNumberChanged(newStageNumber)
                 end)
                 if err then
-                    SpearheadLogger:error(err)
+                    error(err)
                 end
             end
 
             for _, callable in pairs(OnStageNumberChangedHandlers) do
                 local succ, err = pcall(callable, newStageNumber)
                 if err then
-                    SpearheadLogger:error(err)
+                    error(err)
                 end
             end
         end
@@ -57,7 +64,7 @@ do
         ---@param listener table object with function HandleAlert(alertName, additionalParamObject ) where additionalParamObject is a table {} 
         SpearheadEvents.AddAlertListener = function (alertId, listener)
             if type(listener) ~= "table" then
-                SpearheadLogger:warn("Event handler not of type table/object")
+                warn("Event handler not of type table/object")
                 return
             end
 
@@ -77,12 +84,12 @@ do
                         end)
                         alert.triggered = true
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
             else 
-                SpearheadLogger:warn("alert was triggered without a listener registered: '" .. alertId .."'")
+                warn("alert was triggered without a listener registered: '" .. alertId .."'")
             end
             
 
@@ -95,11 +102,9 @@ do
     ---@param landListener table table with function OnUnitLanded(self, initiatorUnit, airbase)
     SpearheadEvents.addOnUnitLandEventListener = function(unitName, landListener)
         if type(landListener) ~= "table" then
-            SpearheadLogger:warn("Event handler not of type table/object")
+            warn("Event handler not of type table/object")
             return
         end
-
-        SpearheadLogger:debug("Added Land event handler for unit: " .. unitName)
 
         if onLandEventListeners[unitName] == nil then
             onLandEventListeners[unitName] = {}
@@ -113,11 +118,10 @@ do
     ---@param takeOffListener table table with function OnUnitTakenOff(self, initiatorUnit, airbase)
     SpearheadEvents.addOnUnitTakenOffListener = function(unitName, takeOffListener)
         if type(takeOffListener) ~= "table" then
-            SpearheadLogger:warn("Event handler not of type table/object")
+            warn("Event handler not of type table/object")
             return
         end
 
-        SpearheadLogger:debug("Added Land event handler for unit: " .. unitName)
         if onUnitTakenOffListeners[unitName] == nil then
             onUnitTakenOffListeners[unitName] = {}
         end
@@ -132,7 +136,7 @@ do
     ---@param unitLostListener table Object with function: OnUnitLost(initiatorUnit)
     SpearheadEvents.addOnUnitLostEventListener = function(unitName, unitLostListener)
         if type(unitLostListener) ~= "table" then
-            SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+            warn("Unit lost Event listener not of type table/object")
             return
         end
 
@@ -151,7 +155,7 @@ do
         ---@param handlingObject table object with OnGroupRTB(self, groupName)
         SpearheadEvents.addOnGroupRTBListener = function(groupName, handlingObject)
             if type(handlingObject) ~= "table" then
-                SpearheadLogger:warn("Event handler not of type table/object")
+                warn("Event handler not of type table/object")
                 return
             end
 
@@ -165,7 +169,6 @@ do
         ---Publish the Group to RTB
         ---@param groupName string
         SpearheadEvents.PublishRTB = function(groupName)
-            SpearheadLogger:debug("Publishing RTB event for group " .. groupName)
             if groupName ~= nil then
                 if OnGroupRTBListeners[groupName] then
                     for _, callable in pairs(OnGroupRTBListeners[groupName]) do
@@ -173,7 +176,7 @@ do
                             callable:OnGroupRTB(groupName)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -187,7 +190,7 @@ do
         ---@param handlingObject table object with OnGroupRTBInTen(self, groupName)
         SpearheadEvents.addOnGroupRTBInTenListener = function(groupName, handlingObject)
             if type(handlingObject) ~= "table" then
-                SpearheadLogger:warn("Event handler not of type table/object")
+                warn("Event handler not of type table/object")
                 return
             end
 
@@ -201,7 +204,6 @@ do
         ---Publish the Group is RTB
         ---@param groupName string
         SpearheadEvents.PublishRTBInTen = function(groupName)
-            SpearheadLogger:debug("Publishing RTB in TEN event for group " .. groupName)
             if groupName ~= nil then
                 if OnGroupRTBInTenListeners[groupName] then
                     for _, callable in pairs(OnGroupRTBInTenListeners[groupName]) do
@@ -209,7 +211,7 @@ do
                             callable:OnGroupRTBInTen(groupName)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -224,7 +226,7 @@ do
         ---@param groupName string the groupname to expect
         SpearheadEvents.addOnGroupOnStationListener = function(groupName, handlingObject)
             if type(handlingObject) ~= "table" then
-                SpearheadLogger:warn("Event handler not of type table/object")
+                warn("Event handler not of type table/object")
                 return
             end
 
@@ -238,7 +240,6 @@ do
         ---Publish the Group to RTB
         ---@param groupName string
         SpearheadEvents.PublishOnStation = function(groupName)
-            SpearheadLogger:debug("Publishing onStation event for group " .. groupName)
             if groupName ~= nil then
                 if OnGroupOnStationListeners[groupName] then
                     for _, callable in pairs(OnGroupOnStationListeners[groupName]) do
@@ -246,7 +247,7 @@ do
                             callable:OnGroupOnStation(groupName)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -261,7 +262,7 @@ do
             ---@param listener table object with OnStatusRequestReceived(self, groupId)
             SpearheadEvents.AddOnStatusRequestReceivedListener = function(listener)
                 if type(listener) ~= "table" then
-                    SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+                    warn("Unit lost Event listener not of type table/object")
                     return
                 end
 
@@ -293,7 +294,7 @@ do
         ---@param listener table object with OnPlayerEnterUnit(self, unit)
         SpearheadEvents.AddOnPlayerEnterUnitListener = function(listener)
             if type(listener) ~= "table" then
-                SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+                warn("Unit lost Event listener not of type table/object")
                 return
             end
 
@@ -308,7 +309,7 @@ do
                             callable:OnPlayerEnterUnit(unit)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                           error(err)
                         end
                     end
                 end
@@ -329,7 +330,7 @@ do
                             callable:OnUnitLanded(unit, airbase)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -347,7 +348,7 @@ do
                             callable:OnUnitTakenOff(unit, airbase)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -366,7 +367,7 @@ do
                     end)
 
                     if err then
-                        SpearheadLogger:error(err)
+                        error(err)
                     end
                 end
             end
