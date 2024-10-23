@@ -328,6 +328,138 @@ do --setup route util
         }
     end
 
+    ROUTE_UTIL.Tasks.SeadInZonePoints = function(groupName, attackPosition, attackZoneRadius, altitude, speed, duration, orbitPointA, pattern)
+
+        return {
+            [1] = {
+                alt = altitude,
+                action = "Turning Point",
+                type = "Turning Point",
+                alt_type = "BARO",
+                speed = speed,
+                ETA = 0,
+                ETA_locked = false,
+                x = orbitPointA.x,
+                y = orbitPointA.z,
+                speed_locked = true,
+                formation_template = "",
+                task = {
+                    id = "ComboTask",
+                    params = {
+                        tasks = {
+                        }
+                    }
+                }
+            },
+            [2] = {
+                alt = altitude,
+                action = "Fly Over Point",
+                type = "Turning Point",
+                alt_type = "BARO",
+                speed = speed,
+                ETA = 0,
+                ETA_locked = false,
+                x = orbitPointA.x,
+                y = orbitPointA.z,
+                speed_locked = true,
+                formation_template = "",
+                task = {
+                    id = "ComboTask",
+                    params = {
+                        tasks = {
+                            [1] = {
+                                enabled = true,
+                                id = "WrappedAction",
+                                number = 1,
+                                auto = false,
+                                params = {
+                                    action = {
+                                        id = "Option",
+                                        params = {
+                                            value = true,
+                                            name = 15
+                                        }
+                                    }
+                                }
+                            },
+                            [2] = {
+                                id = 'EngageTargetsInZone',
+                                number = 2,
+                                enabled = true,
+                                auto = false,
+                                params = {
+                                    x = attackPosition.x,
+                                    y = attackPosition.z,
+                                    zoneRadius = attackZoneRadius,
+                                    value = "Air Defence;",
+                                    targetTypes = {
+                                        [1] = "Air Defence",
+                                    },
+                                    noTargetTypes = {
+                                    },
+                                    priority = 0
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            [3] = {
+                alt = altitude,
+                action = "Turning Point",
+                type = "Turning Point",
+                alt_type = "BARO",
+                speed = speed,
+                ETA = 0,
+                ETA_locked = false,
+                x = orbitPointA.x,
+                y = orbitPointA.z,
+                speed_locked = true,
+                formation_template = "",
+                task = {
+                    id = "ComboTask",
+                    params = {
+                        tasks = {
+                            [1] = {
+                                number = 1,
+                                auto = false,
+                                id = "ControlledTask",
+                                enabled = true,
+                                params = {
+                                    task = {
+                                        id = "Orbit",
+                                        params = {
+                                            altitude = altitude,
+                                            pattern = pattern,
+                                            speed = speed,
+                                        }
+                                    },
+                                    stopCondition = {
+                                        duration = duration,
+                                        condition = "return Spearhead.internal.Air.IsBingo('" .. groupName .. "', 'CAP', 0.10)",
+                                    }
+                                }
+                            },
+                            [2] = {
+                                number = 2,
+                                auto = false,
+                                id = "WrappedAction",
+                                enabled = "true",
+                                params = {
+                                    action = {
+                                        id = "Script",
+                                        params = {
+                                            command = "pcall(Spearhead.Events.PublishRTB, '" .. groupName .. "')"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    end
 
     ROUTE_UTIL.Tasks.EscortTask = function(groupName, waitingPos, targetGroupName, engagementDistance, tillWaypoint)
 

@@ -112,12 +112,48 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
 
             timer.scheduleFunction(setTaskAsync, { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 2)
         else
-            self.logger:warn("Could not send group out. " .. self.groupName .. " to " .. targetZoneName)
+            self.logger:warn("Could not send group out for cas. " .. self.groupName .. " to " .. targetZoneName)
         end
     end 
 
     o.SendoutForSead = function(self, targetZoneName, initialPoint)
+        self.logger:debug("Sending sead group out. GroupName: " .. self.groupName)
+        self:SetState(Spearhead.internal.Air.GroupState.INTRANSIT)
 
+        local attackZone = Spearhead.DcsUtil.getZoneByName(targetZoneName)
+        local group = Group.getByName(self.groupName)
+        local base = Spearhead.DcsUtil.getAirbaseById(self.airbaseId)
+
+        if group and attackZone and group:isExist() == true and base then
+            local points = {}
+            local seadInZoneTasks = Spearhead.RouteUtil.Tasks.SeadInZonePoints(self.groupName, {x = attackZone.x, z = attackZone.z}, attackZone.radius or 1000, 2000, 180, 600, initialPoint, "Circle")
+            for _, seadInZoneTask in pairs(seadInZoneTasks) do
+                table.insert(points, seadInZoneTask)
+            end
+            
+            table.insert(points, Spearhead.RouteUtil.Tasks.RtbTask(self.airbaseId, base:getPoint(), 250))
+            
+            local task = {
+                id = "Mission",
+                params = {
+                    airborne = true,
+                    route = {
+                        points = points
+                    }
+                }
+            }
+
+            self.logger:debug(task)
+
+            group:getController():setCommand({
+                id = 'Start',
+                params = {}
+            })
+
+            timer.scheduleFunction(setTaskAsync, { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 2)
+        else
+            self.logger:warn("Could not send group out for sead. " .. self.groupName .. " to " .. targetZoneName)
+        end
     end
     
     ---Sets a task to the group for finer grained control of missions
