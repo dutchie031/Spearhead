@@ -25,8 +25,6 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
 
     end
 
-    
-
     for _, stageName in pairs(database:getStagezoneNames()) do
 
         local stagelogger = Spearhead.LoggerTemplate:new(stageName, stageConfig.logLevel)
