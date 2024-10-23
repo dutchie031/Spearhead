@@ -65,22 +65,26 @@ do
                 customAlerts[alertId] = {}
             end
 
-            local alert = { listener = listener, triggered = false}
-            table.insert(customAlerts, alert)
+            table.insert(customAlerts[alertId], { listener = listener, triggered = false })
         end
 
         SpearheadEvents.TriggerAlert = function(alertId)
-            for _, alert in pairs(customAlerts[alertId]) do
-                if alert.triggered == false then
-                    local succ, err = pcall(function()
-                        alert.listener:HandleAlert(alertId)
-                    end)
-                    alert.triggered = true
-                    if err then
-                        SpearheadLogger:error(err)
+            if customAlerts[alertId] then
+                for _, alert in pairs(customAlerts[alertId]) do
+                    if alert.triggered == false then
+                        local succ, err = pcall(function()
+                            alert.listener:HandleAlert(alertId)
+                        end)
+                        alert.triggered = true
+                        if err then
+                            SpearheadLogger:error(err)
+                        end
                     end
                 end
+            else 
+                SpearheadLogger:warn("alert was triggered without a listener registered: '" .. alertId .."'")
             end
+            
 
         end
     end

@@ -18,6 +18,7 @@ assert(loadfile(basePath .. "stageClasses\\Mission.lua"))()
 assert(loadfile(basePath .. "stageClasses\\Stage.lua"))()
 
 assert(loadfile(basePath .. "airClasses\\AttackGroup.lua"))()
+assert(loadfile(basePath .. "airClasses\\PackagedGroup.lua"))()
 assert(loadfile(basePath .. "airClasses\\CapGroup.lua"))()
 assert(loadfile(basePath .. "airClasses\\GlobalAirManager.lua"))()
 assert(loadfile(basePath .. "airClasses\\RedAirbase.lua"))()

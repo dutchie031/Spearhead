@@ -26,24 +26,22 @@ do --setup route util
             [3] = "Bombers",
             [4] = "Helicopters",
             [5] = "UAVs",
-            [6] = "Infantry",
-            [7] = "Fortifications",
-            [11] = "Artillery",
-            [15] = "MR SAM",
-            [16] = "LR SAM",
-            [17] = "Aircraft Carriers",
-            [18] = "Cruisers",
-            [19] = "Destroyers",
-            [20] = "Frigates",
-            [21] = "Corvettes",
-            [22] = "Light armed ships",
-            [23] = "Unarmed ships",
-            [24] = "Submarines",
-            [25] = "Cruise missiles",
-            [26] = "Antiship Missiles",
-            [27] = "AA Missiles",
-            [28] = "AG Missiles",
-            [29] = "SA Missiles",
+            [6] = "Fortifications",
+            [7] = "SA Missiles",
+            [8] = "MR SAM",
+            [9] = "LR SAM",
+            [10] = "Aircraft Carriers",
+            [11] = "Cruisers",
+            [12] = "Destroyers",
+            [13] = "Frigates",
+            [14] = "Corvettes",
+            [15] = "Light armed ships",
+            [16] = "Unarmed ships",
+            [17] = "Submarines",
+            [18] = "Cruise missiles",
+            [19] = "Antiship Missiles",
+            [20] = "AA Missiles",
+            [21] = "AG Missiles",
         }
     end
 
@@ -151,7 +149,7 @@ do --setup route util
                                 },
                                 stopCondition = {
                                     duration = durationBefore10,
-                                    condition = "return Spearhead.internal.Air.IsBingo(\"" .. groupName .. "\", 'CAP', 0.10)",
+                                    condition = "return Spearhead.internal.Air.IsBingo('" .. groupName .. "', 'CAP', 0.10)",
                                 }
                             }
                         },
@@ -164,7 +162,7 @@ do --setup route util
                                 action = {
                                     id = "Script",
                                     params = {
-                                        command = "pcall(Spearhead.Events.PublishRTBInTen, \"" .. groupName .. "\")"
+                                        command = "pcall(Spearhead.Events.PublishRTBInTen, '" .. groupName .. "')"
                                     }
                                 }
                             }
@@ -185,7 +183,7 @@ do --setup route util
                                 },
                                 stopCondition = {
                                     duration = durationAfter10,
-                                    condition = "return Spearhead.internal.Air.IsBingo(\"" .. groupName .. "\",'CAP')",
+                                    condition = "return Spearhead.internal.Air.IsBingo('" .. groupName .. "','CAP')",
                                 }
                             }
                         },
@@ -198,7 +196,7 @@ do --setup route util
                                 action = {
                                     id = "Script",
                                     params = {
-                                        command = "pcall(Spearhead.Events.PublishRTB, \"" .. groupName .. "\")"
+                                        command = "pcall(Spearhead.Events.PublishRTB, '" .. groupName .. "')"
                                     }
                                 }
                             }
@@ -211,60 +209,119 @@ do --setup route util
     
 
 
-    ROUTE_UTIL.Tasks.CasInZoneTask = function(groupName, attackPosition, attackZoneRadius , altitude, speed, duration, orbitPointA, pattern)
+    ROUTE_UTIL.Tasks.CasInZonePoints = function(groupName, attackPosition, attackZoneRadius , altitude, speed, duration, orbitPointA, pattern)
         return {
-            alt = altitude,
-            action = "Fly Over Point",
-            type = "Turning Point",
-            alt_type = "BARO",
-            speed = speed,
-            ETA = 0,
-            ETA_locked = false,
-            x = orbitPointA.x,
-            y = orbitPointA.z,
-            speed_locked = true,
-            formation_template = "",
-            task = {
-                id = "ComboTask",
-                params = {
-                    tasks = {
-                        [1] = {
-                            id = 'EngageTargetsInZone',
-                            number = 1,
-                            enabled = true,
-                            auto = false,
-                            params = {
-                                x = attackPosition.x,
-                                y = attackPosition.z,
-                                zoneRadius = attackZoneRadius,
-                                targetTypes = {
-                                    [1] = "Ground Units"
-                                },
-                                --noTargetTypes = {},
-                                noTargetTypes = GetCasNoTargetTypes(),
-                                priority = 0
-                            }
-                        },
-                        [2] = {
-                            number = 2,
-                            auto = false,
-                            id = "ControlledTask",
-                            enabled = true,
-                            params = {
-                                task = {
-                                    id = "Orbit",
-                                    params = {
-                                        altitude = altitude,
-                                        pattern = pattern,
-                                        speed = speed,
-                                    }
-                                },
-                                stopCondition = {
-                                    duration = duration,
-                                    condition = "return Spearhead.internal.Air.IsBingo(\"" .. groupName .. "\", 'CAP', 0.10)",
+            [1] = {
+                alt = altitude,
+                action = "Turning Point",
+                type = "Turning Point",
+                alt_type = "BARO",
+                speed = speed,
+                ETA = 0,
+                ETA_locked = false,
+                x = orbitPointA.x,
+                y = orbitPointA.z,
+                speed_locked = true,
+                formation_template = "",
+                task = {
+                    id = "ComboTask",
+                    params = {
+                        tasks = {
+                        }
+                    }
+                }
+            },
+            [2] = {
+                alt = altitude,
+                action = "Fly Over Point",
+                type = "Turning Point",
+                alt_type = "BARO",
+                speed = speed,
+                ETA = 0,
+                ETA_locked = false,
+                x = orbitPointA.x,
+                y = orbitPointA.z,
+                speed_locked = true,
+                formation_template = "",
+                task = {
+                    id = "ComboTask",
+                    params = {
+                        tasks = {
+                            [1] = {
+                                id = 'EngageTargetsInZone',
+                                number = 1,
+                                enabled = true,
+                                auto = false,
+                                params = {
+                                    x = attackPosition.x,
+                                    y = attackPosition.z,
+                                    zoneRadius = attackZoneRadius,
+                                    value = "Ground Units;",
+                                    targetTypes = {
+                                        [1] = "Ground Units"
+                                    },
+                                    noTargetTypes = {
+                                        [1] = "Helicopters",
+                                        [2] = "Light armed ships",
+                                    },
+                                    priority = 0
                                 }
                             }
-                        },
+                        }
+                    }
+                }
+            },
+            [3] = {
+                alt = altitude,
+                action = "Turning Point",
+                type = "Turning Point",
+                alt_type = "BARO",
+                speed = speed,
+                ETA = 0,
+                ETA_locked = false,
+                x = orbitPointA.x,
+                y = orbitPointA.z,
+                speed_locked = true,
+                formation_template = "",
+                task = {
+                    id = "ComboTask",
+                    params = {
+                        tasks = {
+                            [1] = {
+                                number = 1,
+                                auto = false,
+                                id = "ControlledTask",
+                                enabled = true,
+                                params = {
+                                    task = {
+                                        id = "Orbit",
+                                        params = {
+                                            altitude = altitude,
+                                            pattern = pattern,
+                                            speed = speed,
+                                        }
+                                    },
+                                    stopCondition = {
+                                        duration = duration,
+                                        condition = "return Spearhead.internal.Air.IsBingo('" .. groupName .. "', 'CAP', 0.10)",
+                                    }
+                                }
+                            },
+                            [2] = {
+                                number = 2,
+                                auto = false,
+                                id = "WrappedAction",
+                                enabled = "true",
+                                params = {
+                                    action = {
+                                        id = "Script",
+                                        params = {
+                                            command = "pcall(Spearhead.Events.PublishRTB, '" .. groupName .. "')"
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -354,22 +411,24 @@ do --setup route util
             task = {
                 id = "ComboTask",
                 params = {
-                    [1] = {
-                        number = 1,
-                        auto = false,
-                        id = "ControlledTask",
-                        enabled = true,
-                        params = {
-                            task = {
-                                id = "Orbit",
-                                params = {
-                                    altitude = alt,
-                                    pattern = "Circle",
-                                    speed = speed,
+                    tasks = {
+                        [1] = {
+                            number = 1,
+                            auto = false,
+                            id = "ControlledTask",
+                            enabled = true,
+                            params = {
+                                task = {
+                                    id = "Orbit",
+                                    params = {
+                                        altitude = alt,
+                                        pattern = "Circle",
+                                        speed = speed,
+                                    }
+                                },
+                                stopCondition = {
+                                    condition = "return Spearhead.internal.Air.IsBingo('" .. groupName .. "', 'CAP', 0.10)",
                                 }
-                            },
-                            stopCondition = {
-                                condition = "return Spearhead.internal.Air.IsBingo(\"" .. groupName .. "\", 'CAP', 0.10)",
                             }
                         }
                     }
@@ -407,7 +466,7 @@ do --setup route util
     end
 
     ---comment
-    ---@param position table { x, y}
+    ---@param position table { x, z }
     ---@param altitude number
     ---@param speed number
     ---@param childTasks table

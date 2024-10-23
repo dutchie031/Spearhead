@@ -14,7 +14,7 @@ function CasConfig:new()
     local requireEscort = (SpearheadConfig.CasConfig.requireEscort == true) or false
     ---@param self table
     ---@return boolean
-    CasConfig.requireEscort = function(self)
+    o.requireEscort = function(self)
         return requireEscort == true
     end
 
@@ -24,6 +24,14 @@ function CasConfig:new()
 
     local maxSpeed = (tonumber(SpearheadConfig.CasConfig.maxSpeed) or tonumber(SpearheadConfig.CapConfig.maxSpeed) or 400) * 0.514444
     o.getMaxSpeed = function(self) return maxSpeed end
+
+    local rearmDelay = tonumber(SpearheadConfig.CasConfig.rearmDelay) or 600
+    ---@return number
+    o.getRearmDelay = function(self) return rearmDelay end
+
+    local deathDelay = tonumber(SpearheadConfig.CasConfig.deathDelay) or 1800
+    ---@return number
+    o.getDeathDelay = function(self) return deathDelay end
 
     return o
 

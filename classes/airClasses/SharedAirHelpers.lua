@@ -118,9 +118,12 @@ do -- Name Parsers
             if first == "C" then
                 result.attackGroupType = Spearhead.internal.Air.AttackGroupType.CAS
                 configPart = string.sub(configPart, 2, #configPart)
-            elseif first == "S" then
+            elseif first == "D" then
                 configPart = string.sub(configPart, 2, #configPart)
                 result.attackGroupType = Spearhead.internal.Air.AttackGroupType.SEAD
+            elseif first == "S" then
+                configPart = string.sub(configPart, 2, #configPart)
+                result.attackGroupType = Spearhead.internal.Air.AttackGroupType.STRIKE
             elseif first == "[" then
                 result.attackGroupType = Spearhead.internal.Air.AttackGroupType.CAS
             else

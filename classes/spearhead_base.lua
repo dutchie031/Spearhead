@@ -351,7 +351,7 @@ do     -- INIT DCS_UTIL
                 for i, trigger_zone in pairs(env.mission.triggers.zones) do
 
                     -- reorder verts as they are not ordered correctly in the ME
-                    verts = {}
+                    local verts = {}
                     if Spearhead.Util.tableLength(trigger_zone.verticies) >=4 then
                         table.insert(verts, { x = trigger_zone.verticies[4].x , z = trigger_zone.verticies[4].y })
                         table.insert(verts, { x = trigger_zone.verticies[3].x , z = trigger_zone.verticies[3].y })

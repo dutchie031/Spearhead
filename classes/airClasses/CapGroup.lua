@@ -142,8 +142,13 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
         local group = Group.getByName(groupName)
 
         if group and task then
-            group:getController():setTask(task)
-            self.logger:debug("task set succesfully to group " .. groupName)
+
+            group:getController():setCommand({
+                id = 'Start',
+                params = {}
+            })
+
+            timer.scheduleFunction(setTaskAsync, { task = task, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
         end
     end
 
@@ -157,7 +162,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
 
         self.assignedStageNumber = stageZoneNumber
         local group = Group.getByName(self.groupName)
-        if group and group:isExist() then
+        if group and group:isExist() == true then
             self.logger:debug("Sending group out " .. self.groupName)
             local controller = group:getController()
 
@@ -195,8 +200,7 @@ function CapGroup:new(groupName, airbaseId, logger, database, capConfig)
             end
 
             if capTask then
-                timer.scheduleFunction(setTaskAsync,
-                    { task = capTask, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
+                timer.scheduleFunction(setTaskAsync, { task = capTask, groupName = self.groupName, logger = self.logger }, timer.getTime() + 3)
             end
             self:SetState(Spearhead.internal.Air.GroupState.INTRANSIT)
         end

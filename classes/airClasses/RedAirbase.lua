@@ -94,11 +94,11 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig, casCon
 
     o.CheckAndScheduleAirbaseGroups = function(self)
         if capConfig:useAvailableGroupsAsEscort() == true then
-            self:CheckAndScheduleCas()
+            self:CheckAndScheduleAttackers()
             self:CheckAndScheduleCAP()
         else
             self:CheckAndScheduleCAP()
-            self:CheckAndScheduleCas()
+            self:CheckAndScheduleAttackers()
         end
     end
 
@@ -126,14 +126,47 @@ function RedBase:new(airbaseId, database, logger, capConfig, stageConfig, casCon
         return nil
     end
 
-    o.CheckAndScheduleCas = function(self)
+    ---comment
+    ---@param database any
+    ---@param targetStageNumber any
+    ---@return unknown
+    local getCasTargetZone = function(database, targetStageNumber)
+        local casZone = database:getCasTargetInZone(targetStageNumber)
+        if casZone == nil then
+            local zones = database:getStageZonesByStageNumber(targetStageNumber)
+            return Spearhead.Util.randomFromList(zones)
+        end
+        return casZone
+    end
+
+    ---comment
+    ---@param database any
+    ---@param targetStageNumber any
+    ---@return unknown
+    local getSeadTargetZone = function(database, targetStageNumber)
+        local casZone = database:getCasTargetInZone(targetStageNumber)
+        if casZone == nil then
+            local zones = database:getStageZonesByStageNumber(targetStageNumber)
+            return Spearhead.Util.randomFromList(zones)
+        end
+        return casZone
+    end
+
+    o.CheckAndScheduleAttackers = function(self)
         for _, casGroup in pairs(self.AttackGroups) do
             local supposedTargetStage = casGroup:GetTargetZone(self.activeStage)
             if supposedTargetStage and casGroup.state == Spearhead.internal.Air.GroupState.READYONRAMP then
+
+                local casTargetZone = getCasTargetZone(self.database, supposedTargetStage)
                 local escortGroup = self:TryGetEscortUnit()
                 if escortGroup then
-                    local package = Spearhead.internal.PackagedGroup:newAttackPackage(casGroup, escortGroup, )
-
+                    if casGroup.type == Spearhead.internal.Air.AttackGroupType.CAS then
+                        local package = Spearhead.internal.PackagedGroup:newAttackPackage(casGroup, escortGroup, casTargetZone, Spearhead.internal.Air.AttackGroupType.CAS, self.logger)
+                        if package then
+                            table.insert(self.packages, package)
+                            package:SendOut()
+                        end
+                    end
                 elseif self.casConfig:requireEscort() == false then
                     self.logger:debug("No escort unit available")
                     casGroup:SendOutForCas(supposedTargetStage)
