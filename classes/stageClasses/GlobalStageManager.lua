@@ -6,12 +6,13 @@ local StagesByIndex = {}
 
 GlobalStageManager = {}
 function GlobalStageManager:NewAndStart(database, stageConfig)
-
+    local logger = Spearhead.LoggerTemplate:new("StageManager", stageConfig.logLevel)
     local o = {}
     setmetatable(o, { __index = self })
 
-    o.onStageCompleted = function(stage) 
+    o.logger = logger
 
+    o.onStageCompleted = function(self, stage) 
         local stageNumber = tostring(stage.stageNumber)
         local anyActive = false
         for _, stage in pairs(StagesByIndex[stageNumber] or {}) do
@@ -24,7 +25,7 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
 
     end
 
-    local logger = Spearhead.LoggerTemplate:new("StageManager", stageConfig.logLevel)
+    
 
     for _, stageName in pairs(database:getStagezoneNames()) do
 

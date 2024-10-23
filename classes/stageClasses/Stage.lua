@@ -40,7 +40,7 @@ do --init STAGE DIRECTOR
         o.db.blueAirbasegroups = {}
         o.db.airbaseIds = {}
         o.db.farps = {}
-        o.activeStage = 0
+        o.activeStage = -99
         o.preActivated = false
         o.stageConfig = stageConfig or {}
         o.stageDrawingId = stageDrawingId + 1
@@ -138,7 +138,6 @@ do --init STAGE DIRECTOR
             end
         end
 
-
         o.IsComplete = function(self)
             for i, mission in pairs(self.db.missions) do
                 local state = mission:GetState()
@@ -147,6 +146,19 @@ do --init STAGE DIRECTOR
                 end
             end
             return true
+        end
+
+        local CheckContinuousAsync = function(self, time)
+            self.logger:info("Checking stage completion for stage: " .. self.zoneName)
+            if self.activeStage == self.stageNumber then
+                return nil -- stop looping if this stage is not even active
+            end
+
+            if self:IsComplete() == true then
+                triggerStageCompleteListeners(self)
+                return nil
+            end
+            return time + 60
         end
 
         ---Activates all SAMS, Airbase units etc all at once.
@@ -222,6 +234,8 @@ do --init STAGE DIRECTOR
                 end
             end
             timer.scheduleFunction(activateMissionsIfApplicableAsync, self, timer.getTime() + 5)
+
+            timer.scheduleFunction(CheckContinuousAsync, self, timer.getTime() + 60)
         end
 
         o.ActivateMissionsIfApplicable = function (self)
@@ -258,6 +272,10 @@ do --init STAGE DIRECTOR
                         availableMissionsCount = availableMissionsCount - 1
                     end
                 end
+            end
+
+            if activeCount <= 0 and availableMissions <= 0 then
+                
             end
         end
 

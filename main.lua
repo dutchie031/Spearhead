@@ -22,15 +22,12 @@ local SetStageDelayed = function(number, time)
     return nil
 end
 
-timer.scheduleFunction(SetStageDelayed, 1, timer.getTime() + 3)
+timer.scheduleFunction(SetStageDelayed, 0, timer.getTime() + 3)
 
 Spearhead.LoadingDone()
 --Check lines of code in directory per file: 
 -- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }; && GCI . -Include *.lua* -Recurse | foreach{(GC $_).Count} | measure-object -sum |  % Sum  
 -- find . -name '*.lua' | xargs wc -l
-
-
-
 
 --- ==================== DEBUG ORDER OR ZONE VEC ===========================
 -- local zone = Spearhead.DcsUtil.getZoneByName("MISSIONSTAGE_99")
