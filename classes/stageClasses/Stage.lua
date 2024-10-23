@@ -274,9 +274,6 @@ do --init STAGE DIRECTOR
                 end
             end
 
-            if activeCount <= 0 and availableMissions <= 0 then
-                
-            end
         end
 
         ---Cleans up all missions
