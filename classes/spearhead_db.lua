@@ -372,6 +372,7 @@ do -- DB
                                 functionString = functionString .. "{0,1,0,1}, {0,1,0,1}, 1)"
 
                                 env.info(functionString)
+---@diagnostic disable-next-line: deprecated
                                 local f, err = loadstring(functionString)
                                 if f then
                                     f()
@@ -561,7 +562,6 @@ do -- DB
         ---Gets a preset route or creates a generic cap route inside of the zone
         ---@param self table
         ---@param stageNumber number
-        ---@param baseId number homeplate
         ---@return unknown
         o.getCapRouteInZone = function(self, stageNumber)
             local stageNumber = tostring(stageNumber) or "nothing"
