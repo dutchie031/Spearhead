@@ -1,10 +1,11 @@
 #start
 
-name: update newsletters
+name: Release
 on:
   push:
     branches:
       - main
+      - develop
 
 jobs:
  buildandpush:
@@ -61,8 +62,13 @@ jobs:
   - run: npm i markdown-to-html-cli -g
   - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/$sourcefileA.md --output ./$repo/Spearhead/$sourcefileA.html
   - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/$sourcefileB.md --output ./$repo/Spearhead/$sourcefileB.html
+   
   - run: python3 ./spearhead/SpearheadCompile.py "./spearhead" "./$repo/Spearhead/spearhead.lua"
-  - run: cp "./spearhead/config.lua" "./$repo/Spearhead/spearheadConfig.lua"
+    if: github.ref == 'refs/heads/master'
+
+  - run: python3 ./spearhead/SpearheadCompile.py "./spearhead" "./$repo/Spearhead/beta/spearhead.lua"
+    if: github.ref == 'refs/heads/develop'
+
   - run: cp -a ./spearhead/_docs/img/. ./$repo/Spearhead/img/
   - name: ls
     run: ls

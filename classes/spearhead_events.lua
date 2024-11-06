@@ -298,10 +298,36 @@ do
             end
         end
 
-        if event.id == world.event.S_EVENT_PLAYER_ENTER_UNIT then
-            env.info("blaat player entering unit")
-            local groupId = event.initiator:getGroup():getID()
-            SpearheadEvents.AddCommandsToGroup(groupId)
+        local AI_GROUPS = {}
+
+        if event.id == world.event.S_EVENT_BIRTH then
+
+            local function isPlayer(unit)
+                if Spearhead.DcsUtil.IsGroupStatic(unit:getName()) == true then
+                    return false
+                end
+
+                if AI_GROUPS[unit:getGroup():getName()] == true then
+                    return false
+                end
+
+                local players = Spearhead.DcsUtil.getAllPlayerUnits()
+                local unitName = unit:getName()
+                for i, unit in (players) do
+                    if unit:getName() == unitName then
+                        return true
+                    end
+                end
+
+                AI_GROUPS[unit:getGroup():getName()] = true
+                return false
+            end
+
+            if isPlayer(event.initiator) == true then
+                local groupId = event.initiator:getGroup():getID()
+                SpearheadEvents.AddCommandsToGroup(groupId)
+                SpearheadEvents.TriggerPlayerEntersUnit(event.initiator)
+            end
         end
     end
 
