@@ -1,18 +1,24 @@
 
 local SpearheadEvents = {}
 do
-    local SpearheadLogger = Spearhead.LoggerTemplate:new("Spearhead Events",
-        Spearhead.LoggerTemplate.LogLevelOptions.INFO)
-
     do -- STAGE NUMBER CHANGED
         local OnStageNumberChangedListeners = {}
         local OnStageNumberChangedHandlers = {}
+
+
+        local warn = function(text)
+            env.warn("[Spearhead][Events] " .. (text or "nil"))
+        end
+    
+        local error = function(text)
+            env.error("[Spearhead][Events] " .. (text or "nil"))
+        end
 
         ---Add a stage zone number changed listener
         ---@param listener table object with function OnStageNumberChanged(self, number)
         SpearheadEvents.AddStageNumberChangedListener = function(listener)
             if type(listener) ~= "table" then
-                SpearheadLogger:warn("Event listener not of type table, did you mean to use handler?")
+                warn("Event listener not of type table, did you mean to use handler?")
                 return
             end
             table.insert(OnStageNumberChangedListeners, listener)
@@ -22,7 +28,7 @@ do
         ---@param handler function function(number)
         SpearheadEvents.AddStageNumberChangedHandler = function(handler)
             if type(handler) ~= "function" then
-                SpearheadLogger:warn("Event handler not of type function, did you mean to use listener?")
+                warn("Event handler not of type function, did you mean to use listener?")
                 return
             end
             table.insert(OnStageNumberChangedHandlers, handler)
@@ -35,18 +41,20 @@ do
                     callable:OnStageNumberChanged(newStageNumber)
                 end)
                 if err then
-                    SpearheadLogger:error(err)
+                    error(err)
                 end
             end
 
             for _, callable in pairs(OnStageNumberChangedHandlers) do
                 local succ, err = pcall(callable, newStageNumber)
                 if err then
-                    SpearheadLogger:error(err)
+                    error(err)
                 end
             end
         end
     end
+
+   
 
     local onLandEventListeners = {}
     ---Add an event listener to a specific unit
@@ -54,11 +62,9 @@ do
     ---@param landListener table table with function OnUnitLanded(self, initiatorUnit, airbase)
     SpearheadEvents.addOnUnitLandEventListener = function(unitName, landListener)
         if type(landListener) ~= "table" then
-            SpearheadLogger:warn("Event handler not of type table/object")
+            warn("Event handler not of type table/object")
             return
         end
-
-        SpearheadLogger:debug("Added Land event handler for unit: " .. unitName)
 
         if onLandEventListeners[unitName] == nil then
             onLandEventListeners[unitName] = {}
@@ -73,7 +79,7 @@ do
     ---@param unitLostListener table Object with function: OnUnitLost(initiatorUnit)
     SpearheadEvents.addOnUnitLostEventListener = function(unitName, unitLostListener)
         if type(unitLostListener) ~= "table" then
-            SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+            warn("Unit lost Event listener not of type table/object")
             return
         end
 
@@ -92,7 +98,7 @@ do
         ---@param handlingObject table object with OnGroupRTB(self, groupName)
         SpearheadEvents.addOnGroupRTBListener = function(groupName, handlingObject)
             if type(handlingObject) ~= "table" then
-                SpearheadLogger:warn("Event handler not of type table/object")
+                warn("Event handler not of type table/object")
                 return
             end
 
@@ -106,7 +112,6 @@ do
         ---Publish the Group to RTB
         ---@param groupName string
         SpearheadEvents.PublishRTB = function(groupName)
-            SpearheadLogger:debug("Publishing RTB event for group " .. groupName)
             if groupName ~= nil then
                 if OnGroupRTBListeners[groupName] then
                     for _, callable in pairs(OnGroupRTBListeners[groupName]) do
@@ -114,7 +119,7 @@ do
                             callable:OnGroupRTB(groupName)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -128,7 +133,7 @@ do
         ---@param handlingObject table object with OnGroupRTBInTen(self, groupName)
         SpearheadEvents.addOnGroupRTBInTenListener = function(groupName, handlingObject)
             if type(handlingObject) ~= "table" then
-                SpearheadLogger:warn("Event handler not of type table/object")
+                warn("Event handler not of type table/object")
                 return
             end
 
@@ -142,7 +147,6 @@ do
         ---Publish the Group is RTB
         ---@param groupName string
         SpearheadEvents.PublishRTBInTen = function(groupName)
-            SpearheadLogger:debug("Publishing RTB in TEN event for group " .. groupName)
             if groupName ~= nil then
                 if OnGroupRTBInTenListeners[groupName] then
                     for _, callable in pairs(OnGroupRTBInTenListeners[groupName]) do
@@ -150,7 +154,7 @@ do
                             callable:OnGroupRTBInTen(groupName)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -165,7 +169,7 @@ do
         ---@param groupName string the groupname to expect
         SpearheadEvents.addOnGroupOnStationListener = function(groupName, handlingObject)
             if type(handlingObject) ~= "table" then
-                SpearheadLogger:warn("Event handler not of type table/object")
+                warn("Event handler not of type table/object")
                 return
             end
 
@@ -179,7 +183,6 @@ do
         ---Publish the Group to RTB
         ---@param groupName string
         SpearheadEvents.PublishOnStation = function(groupName)
-            SpearheadLogger:debug("Publishing onStation event for group " .. groupName)
             if groupName ~= nil then
                 if OnGroupOnStationListeners[groupName] then
                     for _, callable in pairs(OnGroupOnStationListeners[groupName]) do
@@ -187,7 +190,7 @@ do
                             callable:OnGroupOnStation(groupName)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -202,7 +205,7 @@ do
             ---@param listener table object with OnStatusRequestReceived(self, groupId)
             SpearheadEvents.AddOnStatusRequestReceivedListener = function(listener)
                 if type(listener) ~= "table" then
-                    SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+                    warn("Unit lost Event listener not of type table/object")
                     return
                 end
 
@@ -231,10 +234,10 @@ do
     do -- PLAYER ENTER UNIT
         local playerEnterUnitListeners = {}
         ---comment
-        ---@param listener table object with OnPlayerEnterUnit(self, unit)
+        ---@param listener table object with OnPlayerEntersUnit(self, unit)
         SpearheadEvents.AddOnPlayerEnterUnitListener = function(listener)
             if type(listener) ~= "table" then
-                SpearheadLogger:warn("Unit lost Event listener not of type table/object")
+                warn("Unit lost Event listener not of type table/object")
                 return
             end
 
@@ -246,10 +249,10 @@ do
                 if playerEnterUnitListeners then
                     for _, callable in pairs(playerEnterUnitListeners) do
                         local succ, err = pcall(function()
-                            callable:OnPlayerEnterUnit(unit)
+                            callable:OnPlayerEntersUnit(unit)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                           error(err)
                         end
                     end
                 end
@@ -270,7 +273,7 @@ do
                             callable:OnUnitLanded(unit, airbase)
                         end)
                         if err then
-                            SpearheadLogger:error(err)
+                            error(err)
                         end
                     end
                 end
@@ -289,16 +292,51 @@ do
                     end)
 
                     if err then
-                        SpearheadLogger:error(err)
+                        error(err)
                     end
                 end
             end
         end
 
-        if event.id == world.event.S_EVENT_PLAYER_ENTER_UNIT then
-            env.info("blaat player entering unit")
-            local groupId = event.initiator:getGroup():getID()
-            SpearheadEvents.AddCommandsToGroup(groupId)
+        local AI_GROUPS = {}
+
+        local function CheckAndTriggerSpawnAsync(unit, time)
+            local function isPlayer(unit)
+                if unit == nil then return false, "unit is nil" end
+                if unit:isExist() ~= true then return false, "unit does not exist" end
+                local group = unit:getGroup()
+                if group ~= nil then
+                    if Spearhead.DcsUtil.IsGroupStatic(group:getName()) == true then
+                        return false
+                    end
+
+                    if AI_GROUPS[group:getName()] == true then
+                        return false
+                    end
+
+                    local players = Spearhead.DcsUtil.getAllPlayerUnits()
+                    local unitName = unit:getName()
+                    for i, unit in pairs(players) do
+                        if unit:getName() == unitName then
+                            return true
+                        end
+                    end
+                    AI_GROUPS[group:getName()] = true
+                end
+                return false, "unit is nil or does not exist"
+            end
+
+            if isPlayer(unit) == true then
+                local groupId = unit:getGroup():getID()
+                SpearheadEvents.AddCommandsToGroup(groupId)
+                SpearheadEvents.TriggerPlayerEntersUnit(unit)
+            end
+
+            return nil
+        end
+
+        if event.id == world.event.S_EVENT_BIRTH then
+            timer.scheduleFunction(CheckAndTriggerSpawnAsync, event.initiator, timer.getTime() + 3)
         end
     end
 

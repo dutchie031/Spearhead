@@ -358,6 +358,7 @@ do -- DB
                                 functionString = functionString .. "{0,1,0,1}, {0,1,0,1}, 1)"
 
                                 env.info(functionString)
+---@diagnostic disable-next-line: deprecated
                                 local f, err = loadstring(functionString)
                                 if f then
                                     f()
