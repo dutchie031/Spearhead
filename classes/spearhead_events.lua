@@ -234,7 +234,7 @@ do
     do -- PLAYER ENTER UNIT
         local playerEnterUnitListeners = {}
         ---comment
-        ---@param listener table object with OnPlayerEnterUnit(self, unit)
+        ---@param listener table object with OnPlayerEntersUnit(self, unit)
         SpearheadEvents.AddOnPlayerEnterUnitListener = function(listener)
             if type(listener) ~= "table" then
                 warn("Unit lost Event listener not of type table/object")
@@ -249,7 +249,7 @@ do
                 if playerEnterUnitListeners then
                     for _, callable in pairs(playerEnterUnitListeners) do
                         local succ, err = pcall(function()
-                            callable:OnPlayerEnterUnit(unit)
+                            callable:OnPlayerEntersUnit(unit)
                         end)
                         if err then
                            error(err)
@@ -298,10 +298,45 @@ do
             end
         end
 
-        if event.id == world.event.S_EVENT_PLAYER_ENTER_UNIT then
-            env.info("blaat player entering unit")
-            local groupId = event.initiator:getGroup():getID()
-            SpearheadEvents.AddCommandsToGroup(groupId)
+        local AI_GROUPS = {}
+
+        local function CheckAndTriggerSpawnAsync(unit, time)
+            local function isPlayer(unit)
+                if unit == nil then return false, "unit is nil" end
+                if unit:isExist() ~= true then return false, "unit does not exist" end
+                local group = unit:getGroup()
+                if group ~= nil then
+                    if Spearhead.DcsUtil.IsGroupStatic(group:getName()) == true then
+                        return false
+                    end
+
+                    if AI_GROUPS[group:getName()] == true then
+                        return false
+                    end
+
+                    local players = Spearhead.DcsUtil.getAllPlayerUnits()
+                    local unitName = unit:getName()
+                    for i, unit in pairs(players) do
+                        if unit:getName() == unitName then
+                            return true
+                        end
+                    end
+                    AI_GROUPS[group:getName()] = true
+                end
+                return false, "unit is nil or does not exist"
+            end
+
+            if isPlayer(unit) == true then
+                local groupId = unit:getGroup():getID()
+                SpearheadEvents.AddCommandsToGroup(groupId)
+                SpearheadEvents.TriggerPlayerEntersUnit(unit)
+            end
+
+            return nil
+        end
+
+        if event.id == world.event.S_EVENT_BIRTH then
+            timer.scheduleFunction(CheckAndTriggerSpawnAsync, event.initiator, timer.getTime() + 3)
         end
     end
 

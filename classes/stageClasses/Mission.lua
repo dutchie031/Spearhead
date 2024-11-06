@@ -183,16 +183,34 @@ do -- INIT Mission Class
             timer.scheduleFunction(CheckAndUpdate, self, timer.getTime() + 300)
         end
 
-        local CleanupDelayedAsync = function (self, time)
-            self:Cleanup()
-            return nil
-        end
-
         ---comment
         ---@param self table
         ---@param checkUnitHealth boolean?
         o.CheckAndUpdateSelf = function(self, checkUnitHealth)
             if not checkUnitHealth then checkUnitHealth = false end
+
+            if checkUnitHealth == true then
+                local function unitAliveState(unitName)
+                    local unit = Unit.getByName(unitName)
+                    return unit ~= nil and unit:isExist() == true and unit:getLife() > 0.1
+                end
+
+                for groupName, unitNameDict in pairs(self.groupUnitAliveDict) do
+                    for unitName, isAlive in pairs(unitNameDict) do
+                        if isAlive == true then
+                            self.groupUnitAliveDict[groupName][unitName] = unitAliveState(unitName)
+                        end
+                    end
+                end
+
+                for groupName, unitNameDict in pairs(self.targetAliveStates) do
+                    for unitName, isAlive in pairs(unitNameDict) do
+                        if isAlive == true then
+                            self.targetAliveStates[groupName][unitName] = unitAliveState(unitName)
+                        end
+                    end
+                end
+            end
 
             if self.missionState == Mission.MissionState.COMPLETED then
                 return

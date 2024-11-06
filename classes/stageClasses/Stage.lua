@@ -473,6 +473,7 @@ do --init STAGE DIRECTOR
             mission:AddMissionCompleteListener(o)
         end
 
+        Spearhead.Events.AddOnPlayerEnterUnitListener(o)
         Spearhead.Events.AddOnStatusRequestReceivedListener(o)
         Spearhead.Events.AddStageNumberChangedListener(o)
         return o
