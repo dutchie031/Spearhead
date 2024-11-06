@@ -445,7 +445,11 @@ do     -- INIT DCS_UTIL
     ---checks if the groupname is a static group
     ---@param groupName any
     function DCS_UTIL.IsGroupStatic(groupName)
-        return DCS_UTIL.__miz_groups[groupName].category == 5;
+        if DCS_UTIL.__miz_groups[groupName] then
+            return DCS_UTIL.__miz_groups[groupName].category == 5;
+        end
+
+        return Group.getByName(groupName) == nil
     end
 
     ---comment
