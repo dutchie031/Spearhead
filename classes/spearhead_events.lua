@@ -300,26 +300,27 @@ do
 
         local AI_GROUPS = {}
 
-        if event.id == world.event.S_EVENT_BIRTH then
-
+        local function CheckAndTriggerSpawnAsync(unit, time)
             local function isPlayer(unit)
-                if Spearhead.DcsUtil.IsGroupStatic(unit:getName()) == true then
-                    return false
-                end
 
-                if AI_GROUPS[unit:getGroup():getName()] == true then
-                    return false
-                end
-
-                local players = Spearhead.DcsUtil.getAllPlayerUnits()
-                local unitName = unit:getName()
-                for i, unit in (players) do
-                    if unit:getName() == unitName then
-                        return true
+                if unit and unit:isExist() then
+                    if Spearhead.DcsUtil.IsGroupStatic(unit:getName()) == true then
+                        return false
                     end
-                end
 
-                AI_GROUPS[unit:getGroup():getName()] = true
+                    if AI_GROUPS[unit:getGroup():getName()] == true then
+                        return false
+                    end
+
+                    local players = Spearhead.DcsUtil.getAllPlayerUnits()
+                    local unitName = unit:getName()
+                    for i, unit in (players) do
+                        if unit:getName() == unitName then
+                            return true
+                        end
+                    end
+                    AI_GROUPS[unit:getGroup():getName()] = true
+                end
                 return false
             end
 
@@ -328,6 +329,12 @@ do
                 SpearheadEvents.AddCommandsToGroup(groupId)
                 SpearheadEvents.TriggerPlayerEntersUnit(event.initiator)
             end
+
+            return nil
+        end
+
+        if event.id == world.event.S_EVENT_BIRTH then
+            timer.scheduleFunction(CheckAndTriggerSpawnAsync, event.initiator, timer.getTime() + 3)
         end
     end
 
