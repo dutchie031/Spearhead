@@ -449,7 +449,7 @@ do     -- INIT DCS_UTIL
             return DCS_UTIL.__miz_groups[groupName].category == 5;
         end
 
-        return Group.getByName(groupName) == nil
+        return StaticObject.getByName(groupName) ~= nil
     end
 
     ---comment
@@ -743,7 +743,7 @@ do     -- INIT DCS_UTIL
     ---@return table units
     function DCS_UTIL.getAllPlayerUnits()
         local units = {}
-        for key, value in pairs({ 1, 2, 3 }) do
+        for key, value in pairs({ 0, 1, 2 }) do
             local players = coalition.getPlayers(value)
             for key, unit in pairs(players) do
                 units[#units + 1] = unit
@@ -791,7 +791,7 @@ do     -- INIT DCS_UTIL
     function DCS_UTIL.getAllPlayerGroups()
         local groupNames = {}
         local result = {}
-        for key, value in pairs({ 1, 2, 3 }) do
+        for key, value in pairs({ 0, 1, 2 }) do
             local players = coalition.getPlayers(value)
             for key, unit in pairs(players) do
                 local group = unit:getGroup()
