@@ -298,7 +298,5 @@ function AttackGroup:new(groupName, redAirbase, logger, database, casConfig)
     return o
 end
 
-
-
 if not Spearhead.internal then Spearhead.internal = {} end
 Spearhead.internal.AttackGroup = AttackGroup

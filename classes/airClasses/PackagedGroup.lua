@@ -56,7 +56,14 @@ function PackagedGroup:newAttackPackage(AttackGroup, EscortGroup, attackZoneName
 
     o.marshalPoint = Spearhead.Util.getClosestPointOnCircle(o.base:getPoint(), marshalPointOffset, attackZone)
     o.initialAttackPoint = Spearhead.Util.getClosestPointOnCircle(attackZone, intitialPointDistance, o.base:getPoint())
-    o.escortOrbitPoint = Spearhead.Util.getClosestPointOnCircle(attackZone, intitialPointDistance + 9260, o.base:getPoint())
+
+    if o.attackType == Spearhead.internal.Air.AttackGroupType.SEAD then
+        o.escortOrbitPoint = Spearhead.Util.getClosestPointOnCircle(attackZone, intitialPointDistance + 27780, o.base:getPoint())
+    else
+        o.escortOrbitPoint = Spearhead.Util.getClosestPointOnCircle(attackZone, intitialPointDistance + 9260, o.base:getPoint())
+    end
+    
+    
 
     o.SendOut = function(self)
         self.isActive = true

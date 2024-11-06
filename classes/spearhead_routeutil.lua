@@ -391,9 +391,12 @@ do --setup route util
                                     x = attackPosition.x,
                                     y = attackPosition.z,
                                     zoneRadius = attackZoneRadius,
-                                    value = "Air Defence;",
+                                    value = "SAM SR;MR SAM;LR SAM;EWR;",
                                     targetTypes = {
-                                        [1] = "Air Defence",
+                                        [1] = "SAM SR",
+                                        [2] = "MR SAM",
+                                        [3] = "LR SAM",
+                                        [4] = "EWR"
                                     },
                                     noTargetTypes = {
                                     },
