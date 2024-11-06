@@ -743,8 +743,8 @@ do     -- INIT DCS_UTIL
     ---@return table units
     function DCS_UTIL.getAllPlayerUnits()
         local units = {}
-        for key, value in pairs({ 0, 1, 2 }) do
-            local players = coalition.getPlayers(value)
+        for i = 0,2 do
+            local players = coalition.getPlayers(i)
             for key, unit in pairs(players) do
                 units[#units + 1] = unit
             end
@@ -782,29 +782,6 @@ do     -- INIT DCS_UTIL
         local result = DCS_UTIL.__airportsStartingCoalition[baseId]
         if result == nil then
             result = DCS_UTIL.__warehouseStartingCoalition[baseId]
-        end
-        return result
-    end
-
-    ---Gets all groups that have players
-    ---@return table groups
-    function DCS_UTIL.getAllPlayerGroups()
-        local groupNames = {}
-        local result = {}
-        for key, value in pairs({ 0, 1, 2 }) do
-            local players = coalition.getPlayers(value)
-            for key, unit in pairs(players) do
-                local group = unit:getGroup()
-                if group ~= nil then
-                    local name = group:getName()
-                    if name ~= nil then
-                        if groupNames[name] ~= nil then
-                            groupNames[name] = 1
-                            table.insert(result, group)
-                        end
-                    end
-                end
-            end
         end
         return result
     end
