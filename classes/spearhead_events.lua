@@ -316,7 +316,7 @@ do
 
                     local players = Spearhead.DcsUtil.getAllPlayerUnits()
                     local unitName = unit:getName()
-                    for i, unit in (players) do
+                    for i, unit in pairs(players) do
                         if unit:getName() == unitName then
                             return true
                         end
