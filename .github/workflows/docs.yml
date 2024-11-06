@@ -66,6 +66,9 @@ jobs:
   - run: python3 ./spearhead/SpearheadCompile.py "./spearhead" "./$repo/Spearhead/spearhead.lua"
     if: github.ref == 'refs/heads/master'
 
+  - run: mkdir -p ./$repo/Spearhead/beta
+    if: github.ref == 'refs/heads/develop'
+
   - run: python3 ./spearhead/SpearheadCompile.py "./spearhead" "./$repo/Spearhead/beta/spearhead.lua"
     if: github.ref == 'refs/heads/develop'
 
