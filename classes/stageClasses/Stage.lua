@@ -38,6 +38,7 @@ do --init STAGE DIRECTOR
         o.db.sams = {}
         o.db.redAirbasegroups = {}
         o.db.blueAirbasegroups = {}
+        o.db.blueSamGroups = {}
         o.db.airbaseIds = {}
         o.db.farps = {}
         o.activeStage = -99
@@ -102,6 +103,13 @@ do --init STAGE DIRECTOR
                         table.insert(o.db.blueAirbasegroups, groupName)
                         Spearhead.DcsUtil.DestroyGroup(groupName)
                     end
+                end
+            end
+
+            for _, samZoneName in pairs(database:getBlueSamsInStage(o.zoneName)) do
+                for _, samGroup in pairs(database:getBlueSamGroupsInZone(samZoneName)) do
+                    table.insert(o.db.blueSamGroups, samGroup)
+                    Spearhead.DcsUtil.DestroyGroup(samGroup)
                 end
             end
 
@@ -301,6 +309,10 @@ do --init STAGE DIRECTOR
                 self:MarkStage(true)
             end)
 
+            for _, blueSamGroupName in pairs(self.db.blueSamGroups) do
+                Spearhead.DcsUtil.SpawnGroupTemplate(blueSamGroupName)
+            end
+
             for key, airbaseId in pairs(self.db.airbaseIds) do
                 local airbase = Spearhead.DcsUtil.getAirbaseById(airbaseId)
 
@@ -316,6 +328,7 @@ do --init STAGE DIRECTOR
                     end
                 end
             end
+            return nil
         end
 
         ---Sets airfields to blue and spawns friendly farps

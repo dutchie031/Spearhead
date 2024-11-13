@@ -77,6 +77,30 @@ Overwrite the values in your own script (before spearhead runs) or <a download="
   ##!config!##
 ```
 
+## All Trigger zone name options: 
+
+<details> 
+  <summary>MISSIONSTAGE_</summary>
+  A mission stage that encapsulates multiple missions, airbases and other objects.
+</details> 
+
+<details> 
+  <summary>MISSION_</summary>
+</details> 
+
+<details> 
+  <summary>BLUESAM_</summary>
+</details> 
+
+<details> 
+  <summary>CAPROUTE_</summary>
+</details> 
+
+<details> 
+  <summary>CAPZONE_</summary>
+</details> 
+
+
 ## Stage
 
 A stage is a logical part of a mission. It's isn't anything special per se, but everything revolves around stages in Spearhead. <br/>
