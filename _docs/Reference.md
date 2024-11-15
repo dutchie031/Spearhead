@@ -132,8 +132,7 @@ The delay between checks is quite big, but it also is checked on unit deaths and
 
 ## Blue SAMs 
 
-Blue SAMs 
-
+Blue SAMs are trigger zones that are treated as friendly SAM sites. <br/> They will activate at the same time.
 
 
 ### Placement
