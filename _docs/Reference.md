@@ -64,6 +64,48 @@ The initial version with basic functionality
 - [ ] Persistance
 
 
+## Quick Ref: 
+
+<details> 
+<summary>MISSIONSTAGE</summary>
+
+Convention: `MISSIONSTAGE_<OrderNumber>_<FreeForm>`<br/>
+Details: [Stage](#stage) <br/>
+A mission stage that encapsulates multiple missions, airbases and other objects. <br/>
+MissionStages are in the end what contain the logic of order of objectives.
+
+</details> 
+
+<details> 
+<summary>MISSION</summary>
+
+Convention: `MISSION_<MissionType>_<MissionName>` <br/>
+Details: [Mission](#mission) <br/>
+A mission is an objective inside of a stage. <br/>
+Check the mission details to know all exact mission types. <br/>
+Examples are BAI, STRIKE, DEAD 
+
+</details> 
+
+<details> 
+<summary>BLUESAM</summary>
+
+Convention: `BLUESAM_<freeform>`
+Details: [Blue SAMs](#blue-sams)
+
+Blue SAMs are air defenses (doesn't have to be per se) which will be activated once a stage turns "Blue". <br/>
+
+This way you can easily setup nice SAMs in specific locations in a stage.
+</details> 
+
+<details> 
+<summary>CAPROUTE</summary>
+
+The route CAP units should fly. <br/>
+Be aware that AI does it's own thing sometimes and it's highly recommended checking the actual route in a dry run.
+
+</details> 
+
 ## Configuration
 
 Spearhead will always try to be as configurable as possible. <br/>
@@ -77,41 +119,21 @@ Overwrite the values in your own script (before spearhead runs) or <a download="
   ##!config!##
 ```
 
-## All Trigger zone name options: 
-
-<details> 
-  <summary>MISSIONSTAGE_</summary>
-  A mission stage that encapsulates multiple missions, airbases and other objects.
-</details> 
-
-<details> 
-  <summary>MISSION_</summary>
-</details> 
-
-<details> 
-  <summary>BLUESAM_</summary>
-</details> 
-
-<details> 
-  <summary>CAPROUTE_</summary>
-</details> 
-
-<details> 
-  <summary>CAPZONE_</summary>
-</details> 
-
-
 ## Stage
 
 A stage is a logical part of a mission. It's isn't anything special per se, but everything revolves around stages in Spearhead. <br/>
 Everything is tied to at a stage. <br/>
 
 
-
 ## Mission
 
 A mission is a completable objective with a state and a continuous check to see if itself is completed. <br/>
 The delay between checks is quite big, but it also is checked on unit deaths and other events.
+
+## Blue SAMs 
+
+Blue SAMs 
+
 
 
 ### Placement
