@@ -320,7 +320,7 @@ do -- DB
                                     functionString = functionString .. " { x=" .. vecpoint.x .. ", y=0,z=" .. vecpoint.z ..
                                     "},"
                                 end
-                                functionString = functionString .. "{0,1,0,1}, {0,1,0,1}, 1)"
+                                functionString = functionString .. "{0,1,0,1}, {0,0,0,1}, 1)"
 
                                 env.info(functionString)
 ---@diagnostic disable-next-line: deprecated
@@ -332,7 +332,7 @@ do -- DB
                                 end
                             else
                                 trigger.action.circleToAll(-1, baseId, { x = point.x, y = 0, z = point.z }, 2048,
-                                    { 1, 0, 0, 1 }, { 1, 0, 0, 0 }, 1, true)
+                                    { 1, 0, 0, 1 }, { 0, 0, 0, 0 }, 1, true)
                             end
                         end
 
