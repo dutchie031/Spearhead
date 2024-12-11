@@ -50,7 +50,10 @@ SpearheadConfig = {
         autoStages = true, --default true
 
         --Maximum missions per stage (includes all types of missions)
-        maxMissionStage = 10
+        maxMissionStage = 10,
+
+        --Stage starting number
+        startingStage = 1
     }
 }
 
