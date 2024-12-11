@@ -303,6 +303,8 @@ do
         local function CheckAndTriggerSpawnAsync(unit, time)
             local function isPlayer(unit)
                 if unit == nil then return false, "unit is nil" end
+                if unit.getGroup == nil then return false, 'no get group function in unit object, most likely static' end
+
                 if unit:isExist() ~= true then return false, "unit does not exist" end
                 local group = unit:getGroup()
                 if group ~= nil then
