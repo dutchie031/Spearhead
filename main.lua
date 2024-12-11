@@ -26,7 +26,9 @@ local SetStageDelayed = function(number, time)
     return nil
 end
 
-timer.scheduleFunction(SetStageDelayed, 2, timer.getTime() + 3)
+local startingStage = stageConfig:getStartingStage() or 1
+
+timer.scheduleFunction(SetStageDelayed, startingStage, timer.getTime() + 3)
 
 Spearhead.LoadingDone()
 --Check lines of code in directory per file: 
