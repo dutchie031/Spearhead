@@ -76,6 +76,8 @@ jobs:
   - name: ls
     run: ls
     working-directory: ./dutchie032.github.io
+  - name: commit
+    run: git pull
   - name: add
     run: git add --a
     working-directory: ./dutchie032.github.io
