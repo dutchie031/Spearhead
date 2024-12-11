@@ -34,6 +34,9 @@ jobs:
     run: git config --global user.name "automated action"
   - name: clone
     run: git clone --single-branch --branch $branch https://github.com/$username/$repo 
+  - name: commit
+    run: git pull --rebase
+    working-directory: ./dutchie032.github.io
   - name: ls
     run: ls
   - name: Replace strings in file
@@ -75,9 +78,6 @@ jobs:
   - run: cp -a ./spearhead/_docs/img/. ./$repo/Spearhead/img/
   - name: ls
     run: ls
-    working-directory: ./dutchie032.github.io
-  - name: commit
-    run: git pull --rebase
     working-directory: ./dutchie032.github.io
   - name: add
     run: git add --a
