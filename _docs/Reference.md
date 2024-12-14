@@ -19,51 +19,6 @@ If you however want to go right to the Get Started guide click here: [here](./Ge
 You can always come back later here. <br/>
 The Get Started guide will not show all details and reasoning. <br/>
 
-## Release Notes
-
-<details>
-<summary>01-10-2024 Initial Version </summary> 
-The initial version with basic functionality
-</details>
-
-## Feature / TODO list
-
-- [ ] CAP Manager
-    - [x] RTB flow. Flying out before primary flies back. 
-    - [ ] Out of Missile flow 
-- [ ] Stage
-    - [ ] Pre Activate
-      - [x] All SAM Sites
-      - [x] All Red airbase units
-      - [ ] OCA Missions
-    - [ ] Activate
-      - [ ] Activate all DEAD sites. (No surprise pop ups)
-      - [ ] Activate other random mission till 10 max
-    - [ ] Completion Logic
-      - [ ] ?? Custom Conditions ??
-      - [ ] ?? Airbases as final mission ??
-      - [ ] Required Mission types
-- [ ] Missions
-  - [x] BAI
-  - [x] DEAD
-  - [x] STRIKE
-  - [ ] INTERCEPT
-  - [ ] LOGISTIC
-  - [ ] EXTRACTION | MEDEVAC
-  - [ ] More?
-
-- [ ] Warehouses
-  - [ ] Logistics [OPTIONAL]
-  - [ ] 
-
-- [ ] Team creation
-- [ ] Airbases
-- [ ] Farps 
-- [ ] Carrier/Fleet routes
-    - [ ] Fleet tracks
-- [ ] Persistance
-
-
 ## Configuration
 
 Spearhead will always try to be as configurable as possible. <br/>
@@ -76,6 +31,12 @@ Overwrite the values in your own script (before spearhead runs) or <a download="
 ```lua
   ##!config!##
 ```
+
+## The Spearhead API
+
+You can not only use Spearhead, but you can also interact with it via your own scripts.  
+
+See all the reference, explanation here: [SpearheadAPI](./SpearheadApi.html)
 
 ## All Trigger zone name options: 
 
@@ -105,8 +66,6 @@ Overwrite the values in your own script (before spearhead runs) or <a download="
 
 A stage is a logical part of a mission. It's isn't anything special per se, but everything revolves around stages in Spearhead. <br/>
 Everything is tied to at a stage. <br/>
-
-
 
 ## Mission
 

@@ -30,6 +30,7 @@ do --init STAGE DIRECTOR
 
         o.stageNumber = orderNumber
         o.isActive = false
+        o.isComplete = false
         o.database = database
         o.logger = logger
         o.db = {}
@@ -163,6 +164,7 @@ do --init STAGE DIRECTOR
             end
 
             if self:IsComplete() == true then
+                self.isComplete = true
                 triggerStageCompleteListeners(self)
                 return nil
             end

@@ -36,6 +36,7 @@ do
 
         ---@param newStageNumber number
         SpearheadEvents.PublishStageNumberChanged = function(newStageNumber)
+            
             for _, callable in pairs(OnStageNumberChangedListeners) do
                 local succ, err = pcall(function()
                     callable:OnStageNumberChanged(newStageNumber)
@@ -51,6 +52,8 @@ do
                     error(err)
                 end
             end
+
+            Spearhead.StageNumber = newStageNumber
         end
     end
 
