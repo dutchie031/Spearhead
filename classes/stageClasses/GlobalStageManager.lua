@@ -43,5 +43,23 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
     return o
 end
 
+---comment
+---@param stageNumber number
+---@return boolean | nil
+GlobalStageManager.isStageComplete = function (stageNumber)
+
+    local stageIndex = tostring(stageNumber)
+
+    if StagesByIndex[stageIndex] == nil then return nil end
+    
+    for _, stage in ipairs(StagesByIndex[stageIndex]) do
+        if stage.isComplete == false then
+            return false
+        end
+    end
+
+    return true
+end
+
 if not Spearhead.internal then Spearhead.internal = {} end
 Spearhead.internal.GlobalStageManager = GlobalStageManager
