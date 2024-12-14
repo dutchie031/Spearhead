@@ -1,12 +1,13 @@
 
 # Spearhead.API
 
+> **_NOTE:_** The Spearhead.API space is only release in the Beta branch at the moment.
+
 the `Spearhead.API` space is specifically created to make sure mission makers can interact with the framework. 
 
 Simply alter logic, get the current state in Spearhead, and give the whole ME more control. 
 
 eg. Late activate the entire framework by calling `Spearhead.API.Stages.changeStage(1)` later or on demand and setting the starting config stage to -1 in the Spearhead configuration file
-
 
 ## Stages
 

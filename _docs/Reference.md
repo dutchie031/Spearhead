@@ -34,6 +34,8 @@ Overwrite the values in your own script (before spearhead runs) or <a download="
 
 ## The Spearhead API
 
+> **_NOTE:_** The Spearhead.API space is only release in the Beta branch at the moment.
+
 You can not only use Spearhead, but you can also interact with it via your own scripts.  
 
 See all the reference, explanation here: [SpearheadAPI](./SpearheadApi.html)
