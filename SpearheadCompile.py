@@ -28,8 +28,8 @@ def compile(root, target):
     with open(mainFileName, 'r') as mainFile: 
         compiled += "do --Main"
         string = mainFile.read()
-        compiled += "end --Main"
         compiled += string
+        compiled += "end --Main"
 
     apiFileName = os.path.join(root, "api" , "SpearheadApi.lua")
     with open(apiFile, 'r') as apiFile: 
