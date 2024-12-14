@@ -32,7 +32,7 @@ def compile(root, target):
         compiled += "end --Main"
 
     apiFileName = os.path.join(root, "api" , "SpearheadApi.lua")
-    with open(apiFile, 'r') as apiFile: 
+    with open(apiFileName, 'r') as apiFile: 
         string = apiFile.read()
         compiled += "do --Spearhead API"
         compiled += string
