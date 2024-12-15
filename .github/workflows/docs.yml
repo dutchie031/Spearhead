@@ -64,8 +64,8 @@ jobs:
 
       files = [ "Reference.md", "GetStarted.md", "SpearheadApi.md" ]
       for file in files:
-          replace("./spearhead/_docs/{file}", "##!lastupdatetime!##", lastUpdateTime)
-          with open("./spearhead/_docs/{file}", "a") as f:
+          replace(f"./spearhead/_docs/{file}", "##!lastupdatetime!##", lastUpdateTime)
+          with open(f"./spearhead/_docs/{file}", "a") as f:
               f.write(menu)
               
 
