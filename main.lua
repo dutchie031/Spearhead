@@ -1,6 +1,7 @@
 
 --Single player purpose
 
+
 local debug = false
 local id = net.get_my_player_id()
 if id == 0 then
