@@ -53,13 +53,22 @@ jobs:
           with open(fileName, "w") as f:
               f.write(newText)
 
-      with open("./spearhead/config.lua", "r") as luaFile: 
+      with open("./spearhead/config.lua", "r") as luaFile:
           luaConfig = luaFile.read()
           replace("./spearhead/_docs/Reference.md", "##!config!##", luaConfig)
-      
+
       lastUpdateTime = datetime.datetime.now().isoformat()
-      replace("./spearhead/_docs/Reference.md", "##!lastupdatetime!##", lastUpdateTime)
-      replace("./spearhead/_docs/GetStarted.md", "##!lastupdatetime!##", lastUpdateTime)
+      menu = ""
+      with open("./spearhead/_docs/menu.html", "r") as menuFile:
+          menu = menuFile.read()
+
+      files = [ "Reference.md", "GetStarted.md", "SpearheadApi.md" ]
+      for file in files:
+          replace("./spearhead/_docs/{file}", "##!lastupdatetime!##", lastUpdateTime)
+          with open("./spearhead/_docs/{file}", "a") as f:
+              f.write(menu)
+              
+
     shell: python
 
   - name: mkdir
