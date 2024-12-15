@@ -366,7 +366,6 @@ do -- INIT Mission Class
 
                         Spearhead.Events.addOnUnitLostEventListener(unitName, self)
                         
-
                         if isGroupTarget == true or Spearhead.Util.startswith(unitName, "TGT_") == true then
                             self.targetAliveStates[group_name][unitName] = true
                             self.hasSpecificTargets = true

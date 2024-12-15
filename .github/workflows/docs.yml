@@ -56,7 +56,7 @@ jobs:
       with open("./spearhead/config.lua", "r") as luaFile: 
           luaConfig = luaFile.read()
           replace("./spearhead/_docs/Reference.md", "##!config!##", luaConfig)
-
+      
       lastUpdateTime = datetime.datetime.now().isoformat()
       replace("./spearhead/_docs/Reference.md", "##!lastupdatetime!##", lastUpdateTime)
       replace("./spearhead/_docs/GetStarted.md", "##!lastupdatetime!##", lastUpdateTime)
