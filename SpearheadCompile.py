@@ -26,17 +26,16 @@ def compile(root, target):
     
     mainFileName = os.path.join(root, "main.lua")
     with open(mainFileName, 'r') as mainFile: 
-        compiled += "do --Main"
+        compiled += "do --Main\n"
         string = mainFile.read()
         compiled += string
-        compiled += "end --Main"
+        compiled += "end --Main\n"
 
     apiFileName = os.path.join(root, "api" , "SpearheadApi.lua")
     with open(apiFileName, 'r') as apiFile: 
-        string = apiFile.read()
-        part = "do --Spearhead API"
-        part += string
-        part += "end --Spearhead API"
+        part = "do --Spearhead API\n"
+        part += apiFile.read()
+        part += "end --Spearhead API\n"
         compiled += part
 
     with open(target, "w") as targetFile:
