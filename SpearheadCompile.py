@@ -34,9 +34,10 @@ def compile(root, target):
     apiFileName = os.path.join(root, "api" , "SpearheadApi.lua")
     with open(apiFileName, 'r') as apiFile: 
         string = apiFile.read()
-        compiled += "do --Spearhead API"
-        compiled += string
-        compiled += "end --Spearhead API"
+        part = "do --Spearhead API"
+        part += string
+        part += "end --Spearhead API"
+        compiled += part
 
     with open(target, "w") as targetFile:
         targetFile.write(compiled)
