@@ -17,7 +17,6 @@ local stageConfig = Spearhead.internal.configuration.StageConfig:new();
 
 standardLogger:info("Using StageConfig: ".. stageConfig:toString())
 
-
 Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
 Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
