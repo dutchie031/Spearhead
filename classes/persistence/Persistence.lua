@@ -104,10 +104,19 @@ do
 
     end
 
+    local writeToFile = function()
+
+        local f = io.open()
+
+    end
+
     local UpdateContinuous = function(null, time)
 
-        if updateRequired then
-            
+        if updateRequired then 
+            local status, result = pcall(writeToFile)
+            if status == false then
+                env.error("[Spearhead][Persistence] Could not write state to file: " .. result)
+            end
         end
 
         return time + 120
@@ -117,7 +126,6 @@ do
         timer.scheduleFunction(UpdateContinuous, nil, timer.getTime() + 120)
     end
 end
-
 
 if Spearhead == nil then Spearhead = {} end
 if Spearhead.internal == nil then Spearhead.internal = {} end
