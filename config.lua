@@ -40,7 +40,7 @@ SpearheadConfig = {
         enabled = true, -- default true
 
         --Will draw the active and the next stage 
-        drawStages = false, -- default true
+        drawStages = true, -- default true
 
         --AutoStages will continue to the next stage automatically on completion of the missions within the stage. 
         -- If you want to make it so the next stage triggers only when you want to disable it here and manually implement the actions needed.
@@ -48,6 +48,10 @@ SpearheadConfig = {
             TODO: Add manual stage transition documentation
         ]]
         autoStages = true, --default true
+
+        --Cleans up airbases and units on airbases after the stage continues
+        --Otherwise it will keep the destroyed units and use the persistant state
+        autoCleanupAirbases = false,
 
         --Maximum missions per stage (includes all types of missions)
         maxMissionStage = 10,

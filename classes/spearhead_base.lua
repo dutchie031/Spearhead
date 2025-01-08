@@ -115,6 +115,14 @@ do -- INIT UTIL
     end
 
     ---comment
+    ---@param a table DCS Point vector {x, z , y} 
+    ---@param b table DCS Point vector {x, z , y} 
+    ---@return number
+    function UTIL.VectorDistance(a, b)
+        return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
+    end
+
+    ---comment
     ---@param polygon table of pairs { x, z }
     ---@param x number X location
     ---@param z number Y location
@@ -452,8 +460,8 @@ do     -- INIT DCS_UTIL
         return StaticObject.getByName(groupName) ~= nil
     end
 
-    ---comment
-    ---@param groupName string destroy the given group
+    ---destroy the given group
+    ---@param groupName string 
     function DCS_UTIL.DestroyGroup(groupName)
         if DCS_UTIL.IsGroupStatic(groupName) then
             local object = StaticObject.getByName(groupName)
@@ -467,6 +475,23 @@ do     -- INIT DCS_UTIL
             end
         end
     end
+
+    ---destroy the given unit
+    ---@param groupName string 
+    function DCS_UTIL.DestroyUnit(groupName, unitName)
+        if DCS_UTIL.IsGroupStatic(groupName) == true then
+            local object = StaticObject.getByName(unitName)
+            if object ~= nil then
+                object:destroy()
+            end
+        else
+            local unit = Unit.getByName(unitName)
+            if unit and unit:isExist() then
+                unit:destroy()
+            end
+        end
+    end
+
 
     --- takes a list of units and returns all the units that are in any of the zones
     ---@param unit_names table unit names
@@ -784,6 +809,35 @@ do     -- INIT DCS_UTIL
             result = DCS_UTIL.__warehouseStartingCoalition[baseId]
         end
         return result
+    end
+
+    ---Spawn an corpse
+    ---@param countryId number countryId
+    ---@param unitType string
+    ---@param location table { z, y, z}
+    ---@param heading number
+    function DCS_UTIL.SpawnCorpse(countryId, unitName, unitType, location, heading)
+        local name = "dead_" .. unitName
+
+        local staticObj = {
+            ["heading"] = heading,
+            --["shape_name"] = "stolovaya",
+            ["type"] = unitType,
+            ["name"] = name,
+            ["y"] = location.z,
+            ["x"] = location.x,
+            ["dead"] = true,
+        }
+
+        coalition.addStaticObject(countryId, staticObj)
+    end
+
+    function DCS_UTIL.CleanCorpse(unitName)
+        local object = StaticObject.getByName(unitName)
+
+        if object then
+            object:destroy()
+        end
     end
 
     --- spawns the units as specified in the mission file itself

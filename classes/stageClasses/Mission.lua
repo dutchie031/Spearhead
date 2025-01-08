@@ -123,6 +123,16 @@ do -- INIT Mission Class
             ]]--
             self.logger:debug("Getting on unit lost event")
 
+            pcall(function ()
+                local name = object:getName()
+                local pos = object:getPoint()
+                local type = object:getDesc().typeName
+                local position = object:getPosition()
+                local heading = math.atan2(position.x.z, position.x.x)
+                local country_id = object:getCountry()
+                Spearhead.internal.Persistence.UnitKilled(name, pos, heading, type, country_id)
+            end)
+
             local category = Object.getCategory(object)
             if category == Object.Category.UNIT then
                 local unitName = object:getName()
@@ -176,23 +186,51 @@ do -- INIT Mission Class
                 if self.missionState == Mission.MissionState.COMPLETED or self.missionState == Mission.MissionState.NEW then
                     return nil
                 else
-                    return time + 60
-                end
+                    return time + 5                end
             end
 
-            timer.scheduleFunction(CheckAndUpdate, self, timer.getTime() + 300)
+            timer.scheduleFunction(CheckAndUpdate, self, timer.getTime() + 5)
         end
 
         ---comment
         ---@param self table
         ---@param checkUnitHealth boolean?
-        o.CheckAndUpdateSelf = function(self, checkUnitHealth)
+        o.CheckAndUpdateSelf = function(self, checkUnitHealth, displayMessageIfDone)
             if not checkUnitHealth then checkUnitHealth = false end
+            if displayMessageIfDone == nil then displayMessageIfDone = true end
 
             if checkUnitHealth == true then
                 local function unitAliveState(unitName)
-                    local unit = Unit.getByName(unitName)
-                    return unit ~= nil and unit:isExist() == true and unit:getLife() > 0.1
+
+
+                    local staticObject = StaticObject.getByName(unitName)
+                    if staticObject then
+                        if staticObject:isExist() == true then
+                            local life0 = staticObject:getDesc().life
+                            if staticObject:getLife() / life0 < 0.3 then
+                                self.logger:info("exploding unit")
+                                trigger.action.explosion(staticObject:getPoint(), 100)
+                                return false
+                            end
+                            return true
+                        else
+                            return false
+                        end
+                    else
+                        local unit = Unit.getByName(unitName)
+
+                        local alive = unit ~= nil and unit:isExist() == true
+                        if alive == true then
+                            if unit:getLife() / unit:getLife0() < 0.2 then
+                                self.logger:info("exploding unit")
+                                trigger.action.explosion(unit:getPoint(), 100)
+                                return false
+                            end
+                            return true
+                        else
+                            return false
+                        end
+                    end
                 end
 
                 for groupName, unitNameDict in pairs(self.groupUnitAliveDict) do
@@ -230,9 +268,6 @@ do -- INIT Mission Class
                 end
             else
                 local function CountAliveGroups()
-
-                    self.logger:debug(self.groupUnitAliveDict)
-
                     local aliveGroups = 0
 
                     for _, group in pairs(self.groupUnitAliveDict) do
@@ -270,12 +305,49 @@ do -- INIT Mission Class
 
             if self.missionState == Mission.MissionState.COMPLETED then
                 self.logger:debug("Mission complete " .. self.name)
-                trigger.action.outText("Mission " .. self.name .. " (" .. self.code .. ") was completed succesfully!", 20)
+
+                if displayMessageIfDone == true then
+                    trigger.action.outText("Mission " .. self.name .. " (" .. self.code .. ") was completed succesfully!", 20)
+                end
 
                 TriggerMissionComplete(self)
                 --Schedule cleanup after 5 minutes of mission complete
                 --timer.scheduleFunction(CleanupDelayedAsync, self, timer.getTime() + 300)
             end
+        end
+
+        o.spawnedPersisted = false
+        ---Spawns all corpses and alive units as in the persistance state
+        ---@param self table
+        o.SpawnsPersistedState = function(self)
+            if self.spawnedPersisted == true then
+                return 
+            end
+            
+            do --spawn groups
+                for key, groupname in pairs(self.groupNames) do
+                    Spearhead.DcsUtil.SpawnGroupTemplate(groupname)
+                end
+            end 
+
+            for groupName, unitNames in pairs(self.groupUnitAliveDict) do
+                for unitName, isAlive in pairs(unitNames) do
+                    local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                    if deathState and deathState.isDead == true then
+                        Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
+                        if deathState.isCleaned == false then
+                            Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
+                        end
+                        
+                        self.groupUnitAliveDict[groupName][unitName] = false
+                        if self.targetAliveStates[groupName][unitName] == true then
+                            self.targetAliveStates[groupName][unitName] = false
+                        end
+                    end
+                end
+            end
+
+            self.spawnedPersisted = true
         end
 
         ---Activates groups for this mission
@@ -286,9 +358,38 @@ do -- INIT Mission Class
             end
 
             self.missionState = Mission.MissionState.ACTIVE
-            do --spawn groups
-                for key, groupname in pairs(self.groupNames) do
-                    Spearhead.DcsUtil.SpawnGroupTemplate(groupname)
+
+            if self.spawnedPersisted == false then
+                do --spawn groups
+                    for key, groupname in pairs(self.groupNames) do
+                        Spearhead.DcsUtil.SpawnGroupTemplate(groupname)
+                    end
+                end
+                
+    
+                do --Check Persistence
+                    local needsChecking = false
+                    for groupName, unitNames in pairs(self.groupUnitAliveDict) do
+                        for unitName, isAlive in pairs(unitNames) do
+                            local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                            if deathState and deathState.isDead == true then
+                                Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
+                                if deathState.isCleaned == false then
+                                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
+                                end
+                                
+                                self.groupUnitAliveDict[groupName][unitName] = false
+                                needsChecking = true
+                                if self.targetAliveStates[groupName][unitName] == true then
+                                    self.targetAliveStates[groupName][unitName] = false
+                                end
+                            end
+                        end
+                    end
+    
+                    if needsChecking == true then
+                        self:CheckAndUpdateSelf(false, false)
+                    end
                 end
             end
 
@@ -340,6 +441,7 @@ do -- INIT Mission Class
             end
         end
 
+        
         local Init = function(self)
             for key, group_name in pairs(self.groupNames) do
 
@@ -349,6 +451,8 @@ do -- INIT Mission Class
 
                 if Spearhead.DcsUtil.IsGroupStatic(group_name) then
                     Spearhead.Events.addOnUnitLostEventListener(group_name, self)
+
+                    self.groupUnitAliveDict[group_name][group_name] = true
 
                     if Spearhead.Util.startswith(group_name, "TGT_") == true then
                         self.targetAliveStates[group_name][group_name] = true
@@ -360,7 +464,9 @@ do -- INIT Mission Class
 
                     self.startingUnits = self.startingUnits + group:getInitialSize()
                     for _, unit in pairs(group:getUnits()) do
+                        
                         local unitName = unit:getName()
+                        self.groupUnitAliveDict[group_name][unitName] = true
 
                         self.groupNamesPerUnit[unitName] = group_name
 
