@@ -11,17 +11,34 @@ do
     ]]--
 
     local missions = {}
+    local rescueUnits = {}
 
-    function SearchAndRescueManager:createAndStart(logger)
+    function SearchAndRescueManager:createAndStart(database, logger)
 
         local o = {}
         setmetatable(o, { __index = self })
 
-        o.OnPlayerEntersUnit = function(self, unit)
+        o.logger = logger
+        o.database = database
 
+        o.OnPlayerEntersUnit = function(self, unit)
+            local desc = unit:getDesc()
+            if desc.attributes["Transport Helicopter"] == true or (desc.attributes["Transports" and "Helicopters"]) then
+                rescueUnits[unit:getName()] = unit
+            end
         end
 
-        o.OnUnitEjected = function(self, unit, target)
+        o.OnEjectedUnitLanded = function(self, unit)
+            local pos = unit:getPoint()
+            local missionId = self.database:GetNewMissionCode()
+            local mission = Spearhead.classes.stageClasses.SearchAndRescueMission:new(self, self.logger, missionId, pos)
+
+            missions[tostring(missionId)] = mission
+        end
+
+        Spearhead.Events.AddEjectedUnitLandedListener(o)
+
+        local updateMissionMenu = function()
 
         end
 

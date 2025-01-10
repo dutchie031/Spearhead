@@ -8,13 +8,20 @@ local SearchAndRescueMission = {}
 do
     local allMissions = {}
 
-    function SearchAndRescueMission:new(target)
+    function SearchAndRescueMission:new(sarManager, logger, missionCode, position)
         
+        local o = {}
+        setmetatable(o, { __index = self })
+
+        local spawnUnit = function(pos)
+
+        end
+        
+        
+
+
+        return o
     end
-
-
-    
-
 end
 
 if Spearhead == nil then Spearhead = {} end

@@ -264,18 +264,29 @@ do
         end
     end
 
+    local ejectedUnitLandedListeners = {}
     do -- Ejection events
     
-        local unitEjectListeners = {}
-        SpearheadEvents.AddOnUnitEjectedListener = function(listener)
+        -- local unitEjectListeners = {}
+        -- SpearheadEvents.AddOnUnitEjectedListener = function(listener)
+        --     if type(listener) ~= "table" then
+        --         warn("Unit lost Event listener not of type table/object")
+        --         return
+        --     end
+
+        --     table.insert(unitEjectListeners, listener)
+        -- end
+
+        --- Add listener for the unit landing after ejection
+        --- @param listener table with function OnEjectedUnitLanded(self, landedPilotObject)
+        SpearheadEvents.AddEjectedUnitLandedListeer = function(listener)
             if type(listener) ~= "table" then
                 warn("Unit lost Event listener not of type table/object")
                 return
             end
 
-            table.insert(unitEjectListeners, listener)
+            table.insert(ejectedUnitLandedListeners, listener)
         end
-
     end
 
     local e = {}
@@ -316,8 +327,17 @@ do
             end
         end
 
-        if event.id == world.event.S_EVENT_EJECTION then
-            
+        if event.id == world.event.S_EVENT_LANDING_AFTER_EJECTION then
+            local object = event.initiator
+            for _, callable in pairs(ejectedUnitLandedListeners) do
+                local succ, err = pcall(function()
+                    callable:OnEjectedUnitLanded(object)
+                end)
+
+                if err then
+                    logError(err)
+                end
+            end
         end
 
         if event.id == world.event.S_EVENT_MISSION_END then
