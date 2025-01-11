@@ -11,6 +11,7 @@ end
 local startTime = timer.getTime() * 1000
 
 local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
+local sarLogger = Spearhead.LoggerTemplate:new("sar", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
 local standardLogger = Spearhead.LoggerTemplate:new("", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
 local databaseManager = Spearhead.DB:new(dbLogger, debug)
 
@@ -37,6 +38,7 @@ end
 Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
 Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
+Spearhead.classes.stageClasses.SearchAndRescueManager:createAndStart(databaseManager, sarLogger)
 
 local SetStageDelayed = function(number, time)
     Spearhead.Events.PublishStageNumberChanged(number)

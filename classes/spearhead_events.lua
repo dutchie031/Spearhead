@@ -279,7 +279,7 @@ do
 
         --- Add listener for the unit landing after ejection
         --- @param listener table with function OnEjectedUnitLanded(self, landedPilotObject)
-        SpearheadEvents.AddEjectedUnitLandedListeer = function(listener)
+        SpearheadEvents.AddEjectedUnitLandedListener = function(listener)
             if type(listener) ~= "table" then
                 warn("Unit lost Event listener not of type table/object")
                 return

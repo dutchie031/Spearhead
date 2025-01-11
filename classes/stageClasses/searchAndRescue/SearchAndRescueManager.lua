@@ -29,9 +29,13 @@ do
         end
 
         o.OnEjectedUnitLanded = function(self, unit)
+
+            self.logger:info(Spearhead.Util.toString(unit:getDesc()))
             local pos = unit:getPoint()
             local missionId = self.database:GetNewMissionCode()
-            local mission = Spearhead.classes.stageClasses.SearchAndRescueMission:new(self, self.logger, missionId, pos)
+            local type = Spearhead.classes.stageClasses.SearchAndRescueMission.SARType.PILOT
+            unit:destroy()
+            local mission = Spearhead.classes.stageClasses.SearchAndRescueMission:new(self, self.logger, missionId, pos, unit:getCountry(), type)
 
             missions[tostring(missionId)] = mission
         end

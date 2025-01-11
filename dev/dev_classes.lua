@@ -19,6 +19,11 @@ assert(loadfile(classPath .. "stageClasses\\Mission.lua"))()
 assert(loadfile(classPath .. "stageClasses\\Stage.lua"))()
 assert(loadfile(classPath .. "stageClasses\\StageBase.lua"))()
 
+assert(loadfile(classPath .. "stageClasses\\searchAndRescue\\SearchAndRescueManager.lua"))()
+assert(loadfile(classPath .. "stageClasses\\searchAndRescue\\SearchAndRescueMission.lua"))()
+
+assert(loadfile(classPath .. "stageClasses\\StageBase.lua"))()
+
 assert(loadfile(classPath .. "capClasses\\CapGroup.lua"))()
 assert(loadfile(classPath .. "capClasses\\GlobalCapManager.lua"))()
 assert(loadfile(classPath .. "capClasses\\CapAirbase.lua"))()
