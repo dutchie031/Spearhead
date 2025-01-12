@@ -92,7 +92,7 @@ do
                 if group then
                     for _, unit in pairs(group:getUnits()) do
                         local unitName = unit:getName()
-                        local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
                         if deathState and deathState.isDead == true then
                             Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
                         else
@@ -114,7 +114,7 @@ do
                             staticObject:destroy()
                         else
                             local unitName = staticObject:getName()
-                            local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
     
                             if deathState and deathState.isDead == true then
                                 Spearhead.DcsUtil.DestroyUnit(unitName, unitName)
@@ -136,7 +136,7 @@ do
                             if self.cleanup_units[unitName] == true then
                                 Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
                             else
-                                local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                                local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
                                 if deathState and deathState.isDead == true then
                                     Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
         
@@ -161,7 +161,7 @@ do
 
                     local staticObject = StaticObject.getByName(groupName)
                     local unitName = staticObject:getName()
-                    local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                    local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
 
                     if deathState and deathState.isDead == true then
                         Spearhead.DcsUtil.DestroyUnit(unitName, unitName)
@@ -177,7 +177,7 @@ do
                     if group then
                         for _, unit in pairs(group:getUnits()) do
                             local unitName = unit:getName()
-                            local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
                             if deathState and deathState.isDead == true then
                                 Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
 
@@ -208,7 +208,7 @@ do
             local position = object:getPosition()
             local heading = math.atan2(position.x.z, position.x.x)
             local country_id = object:getCountry()
-            Spearhead.internal.Persistence.UnitKilled(unitName, pos, heading, type, country_id)
+            Spearhead.classes.persistence.Persistence.UnitKilled(unitName, pos, heading, type, country_id)
         end
 
         o.ActivateBlueStage = function(self)

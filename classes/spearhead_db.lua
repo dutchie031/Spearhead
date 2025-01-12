@@ -273,7 +273,7 @@ do -- DB
 
             o.tables.samUnitsPerSamZone = {}
             local loadBlueSamUnits = function()
-                local all_groups = getAvailableGroups()
+                local all_groups = Spearhead.DcsUtil.getAllGroupNames()
                 for _, blueSamZone in pairs(o.tables.blue_sams) do
                     o.tables.samUnitsPerSamZone[blueSamZone] = {}
                     local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)

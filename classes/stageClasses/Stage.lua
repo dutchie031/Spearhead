@@ -37,7 +37,7 @@ do --init STAGE DIRECTOR
         o.db.missionsByCode = {}
         o.db.missions = {}
         o.db.sams = {}
-        o.db.blueSamGroups = {}
+        o.db.blueSams = {}
         o.db.airbases = {}
         o.activeStage = -99
         o.preActivated = false
@@ -97,10 +97,8 @@ do --init STAGE DIRECTOR
             end
 
             for _, samZoneName in pairs(database:getBlueSamsInStage(o.zoneName)) do
-                for _, samGroup in pairs(database:getBlueSamGroupsInZone(samZoneName)) do
-                    table.insert(o.db.blueSamGroups, samGroup)
-                    Spearhead.DcsUtil.DestroyGroup(samGroup)
-                end
+                local blueSam = Spearhead.classes.stageClasses.BlueSam:new(database, logger, samZoneName)
+                table.insert(o.db.blueSams, blueSam)
             end
 
             local miscGroups = database:getMiscGroupsAtStage(o.zoneName)
@@ -223,7 +221,7 @@ do --init STAGE DIRECTOR
                 local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
                 if group then
                     for _, unit in pairs(group:getUnits()) do
-                        local deathState = Spearhead.internal.Persistence.UnitDeadState(unit:getName())
+                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
 
                         if deathState and deathState.isDead == true then
                             Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
@@ -311,8 +309,8 @@ do --init STAGE DIRECTOR
                 self:MarkStage(true)
             end)
 
-            for _, blueSamGroupName in pairs(self.db.blueSamGroups) do
-                Spearhead.DcsUtil.SpawnGroupTemplate(blueSamGroupName)
+            for _, blueSam in pairs(self.db.blueSams) do
+                blueSam:Activate()
             end
 
             for _, airbase in pairs(self.db.airbases) do
@@ -340,7 +338,7 @@ do --init STAGE DIRECTOR
                 local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
                 if group then
                     for _, unit in pairs(group:getUnits()) do
-                        local deathState = Spearhead.internal.Persistence.UnitDeadState(unit:getName())
+                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
 
                         if deathState and deathState.isDead == true then
                             Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
@@ -447,7 +445,7 @@ do --init STAGE DIRECTOR
             local position = object:getPosition()
             local heading = math.atan2(position.x.z, position.x.x)
             local country_id = object:getCountry()
-            Spearhead.internal.Persistence.UnitKilled(unitName, pos, heading, type, country_id)
+            Spearhead.classes.persistence.Persistence.UnitKilled(unitName, pos, heading, type, country_id)
         end
 
         o.RemoveAllMissionCommands = function (self)

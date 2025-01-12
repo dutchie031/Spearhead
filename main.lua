@@ -23,9 +23,9 @@ local startingStage = stageConfig:getStartingStage() or 1
 if SpearheadConfig and SpearheadConfig.Persistence and SpearheadConfig.Persistence.enabled == true then
     standardLogger:info("Persistence enabled")
     local persistenceLogger = Spearhead.LoggerTemplate:new("Persistence", Spearhead.LoggerTemplate.LogLevelOptions.DEBUG)
-    Spearhead.internal.Persistence.Init(persistenceLogger)
+    Spearhead.classes.persistence.Persistence.Init(persistenceLogger)
 
-    local persistanceStage = Spearhead.internal.Persistence.GetActiveStage()
+    local persistanceStage = Spearhead.classes.persistence.Persistence.GetActiveStage()
     if persistanceStage then
         standardLogger:info("Persistance activated and using persistant active stage: " .. persistanceStage)
         startingStage = persistanceStage

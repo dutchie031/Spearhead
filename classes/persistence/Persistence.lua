@@ -210,5 +210,6 @@ do
 end
 
 if Spearhead == nil then Spearhead = {} end
-if Spearhead.internal == nil then Spearhead.internal = {} end
-Spearhead.internal.Persistence = Persistence
+if Spearhead.classes == nil then Spearhead.classes = {} end
+if Spearhead.classes.persistence == nil then Spearhead.classes.persistence = {} end
+Spearhead.classes.persistence.Persistence = Persistence

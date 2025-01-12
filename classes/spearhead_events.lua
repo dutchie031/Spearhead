@@ -35,7 +35,7 @@ do
         ---@param newStageNumber number
         SpearheadEvents.PublishStageNumberChanged = function(newStageNumber)
             pcall(function ()
-                Spearhead.internal.Persistence.SetActiveStage(newStageNumber)
+                Spearhead.classes.persistence.Persistence.SetActiveStage(newStageNumber)
             end)
 
             for _, callable in pairs(OnStageNumberChangedListeners) do
@@ -321,7 +321,7 @@ do
         end
 
         if event.id == world.event.S_EVENT_MISSION_END then
-            Spearhead.internal.Persistence.UpdateNow()
+            Spearhead.classes.persistence.Persistence.UpdateNow()
         end
 
         local AI_GROUPS = {}

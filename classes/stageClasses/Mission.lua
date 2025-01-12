@@ -130,7 +130,7 @@ do -- INIT Mission Class
                 local position = object:getPosition()
                 local heading = math.atan2(position.x.z, position.x.x)
                 local country_id = object:getCountry()
-                Spearhead.internal.Persistence.UnitKilled(name, pos, heading, type, country_id)
+                Spearhead.classes.persistence.Persistence.UnitKilled(name, pos, heading, type, country_id)
             end)
 
             local category = Object.getCategory(object)
@@ -332,7 +332,7 @@ do -- INIT Mission Class
 
             for groupName, unitNames in pairs(self.groupUnitAliveDict) do
                 for unitName, isAlive in pairs(unitNames) do
-                    local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                    local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
                     if deathState and deathState.isDead == true then
                         Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
                         if deathState.isCleaned == false then
@@ -371,7 +371,7 @@ do -- INIT Mission Class
                     local needsChecking = false
                     for groupName, unitNames in pairs(self.groupUnitAliveDict) do
                         for unitName, isAlive in pairs(unitNames) do
-                            local deathState = Spearhead.internal.Persistence.UnitDeadState(unitName)
+                            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
                             if deathState and deathState.isDead == true then
                                 Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
                                 if deathState.isCleaned == false then
