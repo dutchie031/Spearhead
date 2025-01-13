@@ -48,10 +48,6 @@ SpearheadConfig = {
         ]]
         autoStages = true, --default true
 
-        --Cleans up airbases and units on airbases after the stage continues
-        --Otherwise it will keep the destroyed units and use the persistant state
-        autoCleanupAirbases = false,
-
         --Maximum missions per stage (includes all types of missions)
         maxMissionStage = 10,
 
