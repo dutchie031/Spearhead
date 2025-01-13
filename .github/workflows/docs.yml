@@ -62,7 +62,7 @@ jobs:
       with open("./spearhead/_docs/menu.html", "r") as menuFile:
           menu = menuFile.read()
 
-      files = [ "Reference.md", "GetStarted.md", "SpearheadApi.md" ]
+      files = [ "Reference.md", "GetStarted.md", "SpearheadApi.md", "Persistence.md" ]
       for file in files:
           replace(f"./spearhead/_docs/{file}", "##!lastupdatetime!##", lastUpdateTime)
           with open(f"./spearhead/_docs/{file}", "a") as f:
