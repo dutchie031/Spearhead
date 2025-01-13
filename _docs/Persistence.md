@@ -1,5 +1,7 @@
 # Spearhead Persistence
 
+> **_NOTE:_** Persistence is only released in the Beta branch at the moment.
+
 Spearhead comes with a custom Persistence option. <br/>
 It will even save burned out vehicles to give players a consistent battlefield even after the restart. <br/>
 

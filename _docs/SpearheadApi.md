@@ -19,19 +19,19 @@ eg. Late activate the entire framework by calling `Spearhead.API.Stages.changeSt
 ---@param stageNumber number the stage number you want changed
 ---@return boolean success indicator of success
 ---@return string message error message
-Spearhead.API.Stages.changeStage = function(stageNumber) 
+Spearhead.API.Stages.changeStage = function(stageNumber) end
 
 ---Returns the current stange number
 ---Returns nil when the stagenumber was not set before ever, which means Spearhead was not started.
 ---@return number | nil
-Spearhead.API.Stages.getCurrentStage = function()
+Spearhead.API.Stages.getCurrentStage = function() end
 
 
 ---returns whether a stage (by index) is complete. 
 ---@param stageNumber number
 ---@return boolean | nil
 ---@return string 
-Spearhead.API.Stages.isStageComplete = function(stageNumber)
+Spearhead.API.Stages.isStageComplete = function(stageNumber) end
 
 ```
 
