@@ -32,7 +32,6 @@ SpearheadConfig = {
         -- unit: seconds
         deathDelay = 1800, -- default 1800
     },
-
     StageConfig = {
         
         -- management of stages and its missions. 
