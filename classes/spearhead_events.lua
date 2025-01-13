@@ -1,19 +1,17 @@
 
 local SpearheadEvents = {}
 do
+    local warn = function(text)
+        env.warn("[Spearhead][Events] " .. (text or "nil"))
+    end
+
+    local logError = function(text)
+        env.error("[Spearhead][Events] " .. (text or "nil"))
+    end
+
     do -- STAGE NUMBER CHANGED
         local OnStageNumberChangedListeners = {}
         local OnStageNumberChangedHandlers = {}
-
-
-        local warn = function(text)
-            env.warn("[Spearhead][Events] " .. (text or "nil"))
-        end
-    
-        local error = function(text)
-            env.error("[Spearhead][Events] " .. (text or "nil"))
-        end
-
         ---Add a stage zone number changed listener
         ---@param listener table object with function OnStageNumberChanged(self, number)
         SpearheadEvents.AddStageNumberChangedListener = function(listener)
@@ -36,19 +34,23 @@ do
 
         ---@param newStageNumber number
         SpearheadEvents.PublishStageNumberChanged = function(newStageNumber)
+            pcall(function ()
+                Spearhead.classes.persistence.Persistence.SetActiveStage(newStageNumber)
+            end)
+
             for _, callable in pairs(OnStageNumberChangedListeners) do
                 local succ, err = pcall(function()
                     callable:OnStageNumberChanged(newStageNumber)
                 end)
                 if err then
-                    error(err)
+                    logError(err)
                 end
             end
 
             for _, callable in pairs(OnStageNumberChangedHandlers) do
                 local succ, err = pcall(callable, newStageNumber)
                 if err then
-                    error(err)
+                    logError(err)
                 end
             end
 
@@ -121,7 +123,7 @@ do
                             callable:OnGroupRTB(groupName)
                         end)
                         if err then
-                            error(err)
+                            logError(err)
                         end
                     end
                 end
@@ -156,7 +158,7 @@ do
                             callable:OnGroupRTBInTen(groupName)
                         end)
                         if err then
-                            error(err)
+                            logError(err)
                         end
                     end
                 end
@@ -192,7 +194,7 @@ do
                             callable:OnGroupOnStation(groupName)
                         end)
                         if err then
-                            error(err)
+                            logError(err)
                         end
                     end
                 end
@@ -254,12 +256,26 @@ do
                             callable:OnPlayerEntersUnit(unit)
                         end)
                         if err then
-                           error(err)
+                            logError(err)
                         end
                     end
                 end
             end
         end
+    end
+
+    do -- Ejection events
+    
+        local unitEjectListeners = {}
+        SpearheadEvents.AddOnUnitEjectedListener = function(listener)
+            if type(listener) ~= "table" then
+                warn("Unit lost Event listener not of type table/object")
+                return
+            end
+
+            table.insert(unitEjectListeners, listener)
+        end
+
     end
 
     local e = {}
@@ -275,7 +291,7 @@ do
                             callable:OnUnitLanded(unit, airbase)
                         end)
                         if err then
-                            error(err)
+                            logError(err)
                         end
                     end
                 end
@@ -294,10 +310,18 @@ do
                     end)
 
                     if err then
-                        error(err)
+                        logError(err)
                     end
                 end
             end
+        end
+
+        if event.id == world.event.S_EVENT_EJECTION then
+            
+        end
+
+        if event.id == world.event.S_EVENT_MISSION_END then
+            Spearhead.classes.persistence.Persistence.UpdateNow()
         end
 
         local AI_GROUPS = {}

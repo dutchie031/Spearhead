@@ -171,12 +171,6 @@ do -- DB
                             isAirbaseInZone[baseIdString] = true
 
                             if airbase:getDesc().category == 0 then
-                                --Airbase
-                                if Spearhead.DcsUtil.getStartingCoalition(baseId) == 2 then
-                                    airbase:setCoalition(1)
-                                    airbase:autoCapture(false)
-                                end
-
                                 if o.tables.airbasesPerStage[zoneName] == nil then
                                     o.tables.airbasesPerStage[zoneName] = {}
                                 end
@@ -195,8 +189,6 @@ do -- DB
                                             o.tables.farpIdsInFarpZones[farpZoneName] = {}
                                         end
 
-                                        airbase:setCoalition(1)
-                                        airbase:autoCapture(false)
                                         table.insert(o.tables.farpIdsInFarpZones[farpZoneName], baseIdString)
                                     end
                                     i = i + 1
@@ -281,7 +273,7 @@ do -- DB
 
             o.tables.samUnitsPerSamZone = {}
             local loadBlueSamUnits = function()
-                local all_groups = getAvailableGroups()
+                local all_groups = Spearhead.DcsUtil.getAllGroupNames()
                 for _, blueSamZone in pairs(o.tables.blue_sams) do
                     o.tables.samUnitsPerSamZone[blueSamZone] = {}
                     local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
@@ -435,19 +427,6 @@ do -- DB
             loadFarpGroups()
             loadAirbaseGroups()
             loadMiscGroupsInStages()
-
-            -- local cleanup = function () --CLean up all groups that are now managed inside zones by spearhead
-
-            --     local count = 0
-            --     for name, taken in pairs(is_group_taken) do
-            --         if taken == true then
-            --             Spearhead.DcsUtil.DestroyGroup(name)
-            --             count = count + 1
-            --         end
-            --     end
-            --     Logger:info("Destroyed " .. count .. " units that are now managed in zones by Spearhead")
-            -- end
-            -- cleanup()
 
             --- key: zoneName value: { current, routes = [ { point1, point2 } ] }
             o.tables.capRoutesPerStageNumber = {}
@@ -617,6 +596,14 @@ do -- DB
 
         o.getFarpZonesInStage = function(self, stageName)
             return self.tables.farpZonesPerStage[stageName]
+        end
+
+        o.getFarpPadsInFarpZone = function(self, farpZoneName)
+            return self.tables.farpIdsInFarpZones[farpZoneName]
+        end
+
+        o.getGroupsInFarpZone = function(self, farpZoneName)
+            return self.tables.groupsInFarpZone[farpZoneName]
         end
 
         ---@param self table

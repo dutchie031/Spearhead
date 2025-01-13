@@ -32,6 +32,7 @@ SpearheadConfig = {
         -- unit: seconds
         deathDelay = 1800, -- default 1800
     },
+
     StageConfig = {
         
         -- management of stages and its missions. 
@@ -58,15 +59,14 @@ SpearheadConfig = {
         --- io and lfs cannot be sanitized in the MissionScripting.lua
         
         --- enables or disables the persistence logic in spearhead
-        enabled = false,
+        enabled = true,
 
         --- sets the directory where the persistence file is stored
-        --- if nil then lfs.writedir() will be used. 
-        --- which will 
+        --- if nil then lfs.writedir()/Data will be used. Which will be the saved games directory/Data
         directory = nil ,
 
         --- the filename of the persistence file. Should end with .json for convention, but any text extension should do.
-        fileName = "Spearhead_Persistence.json"
+        fileName = "Spearhead_Persistence_Test.json"
 
     }
 }

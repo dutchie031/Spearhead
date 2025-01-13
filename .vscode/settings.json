@@ -12,6 +12,7 @@
         "coalition",
         "timer",
         "AI",
-        "net"
+        "net",
+        "lfs"
     ]
 }

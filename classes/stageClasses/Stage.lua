@@ -37,15 +37,13 @@ do --init STAGE DIRECTOR
         o.db.missionsByCode = {}
         o.db.missions = {}
         o.db.sams = {}
-        o.db.redAirbasegroups = {}
-        o.db.blueAirbasegroups = {}
-        o.db.blueSamGroups = {}
-        o.db.airbaseIds = {}
-        o.db.farps = {}
+        o.db.blueSams = {}
+        o.db.airbases = {}
         o.activeStage = -99
         o.preActivated = false
         o.stageConfig = stageConfig or {}
         o.stageDrawingId = stageDrawingId + 1
+    
 
         stageDrawingId = stageDrawingId + 1
 
@@ -92,35 +90,21 @@ do --init STAGE DIRECTOR
 
             local airbaseIds = database:getAirbaseIdsInStage(o.zoneName)
             if airbaseIds ~= nil and type(airbaseIds) == "table" then
-                o.db.airbaseIds = airbaseIds
                 for _, airbaseId in pairs(airbaseIds) do
-                    
-                    for _, groupName in pairs(database:getRedGroupsAtAirbase(airbaseId)) do 
-                        table.insert(o.db.redAirbasegroups, groupName)
-                        Spearhead.DcsUtil.DestroyGroup(groupName)
-                    end
-
-                    for _, groupName in pairs(database:getBlueGroupsAtAirbase(airbaseId)) do 
-                        table.insert(o.db.blueAirbasegroups, groupName)
-                        Spearhead.DcsUtil.DestroyGroup(groupName)
-                    end
+                    local airbase = Spearhead.internal.StageBase:New(database, logger, airbaseId)
+                    table.insert(o.db.airbases, airbase)
                 end
             end
 
             for _, samZoneName in pairs(database:getBlueSamsInStage(o.zoneName)) do
-                for _, samGroup in pairs(database:getBlueSamGroupsInZone(samZoneName)) do
-                    table.insert(o.db.blueSamGroups, samGroup)
-                    Spearhead.DcsUtil.DestroyGroup(samGroup)
-                end
+                local blueSam = Spearhead.classes.stageClasses.BlueSam:new(database, logger, samZoneName)
+                table.insert(o.db.blueSams, blueSam)
             end
 
             local miscGroups = database:getMiscGroupsAtStage(o.zoneName)
             for _, groupName in pairs(miscGroups) do
                 Spearhead.DcsUtil.DestroyGroup(groupName)
             end
-
-            local farps = database:getFarpZonesInStage(o.zoneName)
-            if farps ~= nil and type(farps) == "table" then o.db.farps = farps end
         end
 
         o.StageCompleteListeners = {}
@@ -183,8 +167,8 @@ do --init STAGE DIRECTOR
                 end
                 self.logger:debug("Pre-activating stage with airbase groups amount: " .. Spearhead.Util.tableLength(self.db.redAirbasegroups))
 
-                for _ , groupName in pairs(self.db.redAirbasegroups) do
-                    Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                for _, airbase in pairs(self.db.airbases) do
+                    airbase:ActivateRedStage()
                 end
             end
 
@@ -234,7 +218,21 @@ do --init STAGE DIRECTOR
             local miscGroups = self.database:getMiscGroupsAtStage(self.zoneName)
             self.logger:debug("Activating Misc groups for zone: " .. Spearhead.Util.tableLength(miscGroups))
             for _, groupName in pairs(miscGroups) do
-                Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                if group then
+                    for _, unit in pairs(group:getUnits()) do
+                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
+
+                        if deathState and deathState.isDead == true then
+                            Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
+                            if deathState.isCleaned == false then
+                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
+                            end
+                        else
+                            Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
+                        end
+                    end
+                end
             end
 
             for _, mission in pairs(self.db.missions) do
@@ -311,42 +309,47 @@ do --init STAGE DIRECTOR
                 self:MarkStage(true)
             end)
 
-            for _, blueSamGroupName in pairs(self.db.blueSamGroups) do
-                Spearhead.DcsUtil.SpawnGroupTemplate(blueSamGroupName)
+            for _, blueSam in pairs(self.db.blueSams) do
+                blueSam:Activate()
             end
 
-            for key, airbaseId in pairs(self.db.airbaseIds) do
-                local airbase = Spearhead.DcsUtil.getAirbaseById(airbaseId)
-
-                if airbase then
-                    local startingCoalition = Spearhead.DcsUtil.getStartingCoalition(airbaseId)
-                    if startingCoalition == coalition.side.BLUE then
-                        airbase:setCoalition(2)
-                        for _, blueGroupName in pairs(self.db.blueAirbasegroups) do
-                            Spearhead.DcsUtil.SpawnGroupTemplate(blueGroupName)
-                        end
-                    else
-                        airbase:setCoalition(0)
-                    end
-                end
+            for _, airbase in pairs(self.db.airbases) do
+                airbase:ActivateBlueStage()
             end
+
             return nil
         end
 
+        o.persistedStateSpawned = false
         ---Sets airfields to blue and spawns friendly farps
         o.ActivateBlueStage = function(self)
             logger:debug("Setting stage '" .. Spearhead.Util.toString(self.zoneName) .. "' to blue")
             
-            for _, groupName in pairs(self.db.redAirbasegroups) do
-                Spearhead.DcsUtil.DestroyGroup(groupName)
-            end
-
             for _, mission in pairs(self.db.missions) do
-                mission:Cleanup()
+                mission:SpawnsPersistedState()
             end
 
             for _, mission in pairs(self.db.sams) do
-                mission:Cleanup()
+                mission:SpawnsPersistedState()
+            end
+
+            local miscGroups = self.database:getMiscGroupsAtStage(self.zoneName)
+            for _, groupName in pairs(miscGroups) do
+                local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                if group then
+                    for _, unit in pairs(group:getUnits()) do
+                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
+
+                        if deathState and deathState.isDead == true then
+                            Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
+                            if deathState.isCleaned == false then
+                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
+                            end
+                        else
+                            Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
+                        end
+                    end
+                end
             end
 
             timer.scheduleFunction(ActivateBlueAsync, self, timer.getTime() + 3)
@@ -433,6 +436,16 @@ do --init STAGE DIRECTOR
                     missionCommands.removeItemForGroup(groupId, { "Missions", folderName })
                 end
             end
+        end
+
+        o.OnUnitLost = function(self, object)
+            local unitName = object:getName()
+            local pos = object:getPoint()
+            local type = object:getDesc().typeName
+            local position = object:getPosition()
+            local heading = math.atan2(position.x.z, position.x.x)
+            local country_id = object:getCountry()
+            Spearhead.classes.persistence.Persistence.UnitKilled(unitName, pos, heading, type, country_id)
         end
 
         o.RemoveAllMissionCommands = function (self)

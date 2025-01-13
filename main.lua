@@ -8,6 +8,8 @@ if id == 0 then
     debug = true
 end
 
+local startTime = timer.getTime() * 1000
+
 local dbLogger = Spearhead.LoggerTemplate:new("database", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
 local standardLogger = Spearhead.LoggerTemplate:new("", Spearhead.LoggerTemplate.LogLevelOptions.INFO)
 local databaseManager = Spearhead.DB:new(dbLogger, debug)
@@ -17,6 +19,20 @@ local stageConfig = Spearhead.internal.configuration.StageConfig:new();
 
 standardLogger:info("Using StageConfig: ".. stageConfig:toString())
 
+local startingStage = stageConfig:getStartingStage() or 1
+if SpearheadConfig and SpearheadConfig.Persistence and SpearheadConfig.Persistence.enabled == true then
+    standardLogger:info("Persistence enabled")
+    local persistenceLogger = Spearhead.LoggerTemplate:new("Persistence", Spearhead.LoggerTemplate.LogLevelOptions.DEBUG)
+    Spearhead.classes.persistence.Persistence.Init(persistenceLogger)
+
+    local persistanceStage = Spearhead.classes.persistence.Persistence.GetActiveStage()
+    if persistanceStage then
+        standardLogger:info("Persistance activated and using persistant active stage: " .. persistanceStage)
+        startingStage = persistanceStage
+    end
+else
+    standardLogger:info("Persistence disabled")
+end
 
 Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
 Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
@@ -27,11 +43,14 @@ local SetStageDelayed = function(number, time)
     return nil
 end
 
-local startingStage = stageConfig:getStartingStage() or 1
-
 timer.scheduleFunction(SetStageDelayed, startingStage, timer.getTime() + 3)
 
+env.info(startTime .. "ms / " .. timer.getTime() * 1000 .. "ms")
+local duration = (timer.getTime() * 1000) - startTime
+standardLogger:info("Spearhead Initialisation duration: " .. tostring(duration) .. "ms")
+
 Spearhead.LoadingDone()
+
 --Check lines of code in directory per file: 
 -- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }; && GCI . -Include *.lua* -Recurse | foreach{(GC $_).Count} | measure-object -sum |  % Sum  
 -- find . -name '*.lua' | xargs wc -l
@@ -54,4 +73,3 @@ Spearhead.LoadingDone()
 --     trigger.action.lineToAll(-1 , 56+i , { x= a.x, y = 0, z = a.z } ,  { x = b.x, y = 0, z = b.z } , color , 1, true)
 
 -- end
-
