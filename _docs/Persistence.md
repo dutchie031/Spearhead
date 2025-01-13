@@ -12,6 +12,14 @@ Underneath you'll see all special zones listed.
 
 To see the full config check: [Reference](./Reference.html#Configuration)
 
+## Feedback
+
+Since this feature is still very much in development, please let any issues know as soon as possible and as consice as possible so a fix can be made quickly. 
+
+Currently implemented is local file storage. <br/>
+If enough interest is expressed cloud based persistence would be possible. <br/>
+
+
 ```lua
 ... Rest of config
    Persistence = {
@@ -32,9 +40,7 @@ To see the full config check: [Reference](./Reference.html#Configuration)
 
 ```
 
-## Feedback
 
-Since this feature is still very much in development, please let any issues know as soon as possible and as consice as possible so a fix can be made quickly. 
 
 ## Basic behavior
 
