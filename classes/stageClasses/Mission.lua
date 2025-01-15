@@ -11,54 +11,60 @@ do -- INIT Mission Class
     Defaults.ShowMissionSubs = { Defaults.MainMenu }
 
     local PlayersInMission = {}
-    local MissionType = {
-        UNKNOWN = 0,
-        STRIKE = 1,
-        BAI = 2,
-        DEAD = 3,
-        SAM = 4,
-    }
 
+    local MissionTypeParser = {}
     do --INIT MISSION TYPE FUNCTIONS
         ---Parse string to mission type
         ---@param input string
-        MissionType.Parse = function(input)
+        ---@return missionType missionType
+        MissionTypeParser.Parse = function(input)
             if input == nil then
                 return Mission.MissionType.UNKNOWN
             end
 
             input = string.lower(input)
-            if input == "dead" then return MissionType.DEAD end
-            if input == "strike" then return MissionType.STRIKE end
-            if input == "bai" then return MissionType.BAI end
-            if input == "sam" then return MissionType.SAM end
-            return Mission.MissionType.UNKNOWN
+            if input == "dead" then return "DEAD" end
+            if input == "strike" then return "STRIKE" end
+            if input == "bai" then return "BAI" end
+            if input == "sam" then return "SAM" end
+            return "nil"
         end
 
         ---comment
-        ---@param input number missionType
+        ---@param input missionType missionType
         ---@return string text
-        MissionType.toString = function(input)
-            if input == MissionType.DEAD then return "DEAD" end
-            if input == MissionType.STRIKE then return "STRIKE" end
-            if input == MissionType.BAI then return "BAI" end
-            if input == MissionType.SAM then return "SAM" end
+        MissionTypeParser.toString = function(input)
+            if input == "DEAD" then return "DEAD" end
+            if input == "STRIKE" then return "STRIKE" end
+            if input == "BAI" then return "BAI" end
+            if input == "SAM" then return "SAM" end
             return "?"
         end
     end
-    Mission.MissionType = MissionType
+    Mission.MissionTypeParser = MissionTypeParser
 
-    Mission.MissionState = {
-        NEW = 0,
-        ACTIVE = 1,
-        COMPLETED = 2,
-    }
+    --- @class MissionCompleteListener 
+    --- @field OnMissionComplete fun(self: any, mission:Mission)
+
+    --- @class Mission missionClass
+    --- @field missionZoneName string
+    --- @field name string
+    --- @field missionType missionType  
+    --- @field missionState missionState
+    --- @field code string
+    --- @field priority missionPriority
+    --- @field GetState fun(self:Mission):missionState
+    --- @field AddMissionCompleteListener fun(self:Mission, listener:MissionCompleteListener) Object that implements "OnMissionComplete(self, mission)"
+    --- @field SpawnsPersistedState fun(self:Mission) Activate groups (if not spawned before) and spawn corpses where needed.
+    --- @field Activate fun(self:Mission) Activate groups for this mission
+    --- @field ShowBriefing fun(self:Mission, groupId:integer)
 
     ---comment
     ---@param missionZoneName string missionZoneName
+    ---@param priority missionPriority missionPriority
     ---@param database table db dependency injection
-    ---@return table?
-    function Mission:new(missionZoneName, database, logger)
+    ---@return Mission? o
+    function Mission:new(missionZoneName, priority, database, logger)
         local o = {}
         setmetatable(o, { __index = self })
 
@@ -73,7 +79,7 @@ do -- INIT Mission Class
                 return nil
             end
             local type = split_name[2]
-            local parsedType = Mission.MissionType.Parse(type)
+            local parsedType = Mission.MissionTypeParser.Parse(type)
     
             if parsedType == nil then
                 Spearhead.AddMissionEditorWarning("Mission with zonename '" .. input .. "' has an unsupported type '" .. (type or "nil" ))
@@ -89,24 +95,30 @@ do -- INIT Mission Class
         local parsed = ParseGroupName(missionZoneName)
         if parsed == nil then return nil end
 
+
+        --public fields
         o.missionZoneName = missionZoneName
-        o.database = database
-        o.groupNames = database:getGroupsForMissionZone(missionZoneName)
         o.name = parsed.missionName
         o.missionType = parsed.type
-        o.missionTypeDisplayName = Mission.MissionType.toString(o.missionType)
-        o.startingGroups = Spearhead.Util.tableLength(o.groupNames)
-        o.missionState = Mission.MissionState.NEW
-        o.missionbriefing = database:GetDescriptionForMission(missionZoneName)
-        o.startingUnits = 0
-        o.logger = logger
+        ---@type missionState
+        o.missionState = "NEW"
+        o.priority = priority
         o.code = database:GetNewMissionCode()
 
+        --private fields
+        o._database = database
+        o.groupNames = database:getGroupsForMissionZone(missionZoneName)
+        o.startingGroups = Spearhead.Util.tableLength(o.groupNames)
+        o.startingUnits = 0
+        o.logger = logger
+        o.missionbriefing = database:GetDescriptionForMission(missionZoneName)
         o.groupNamesPerUnit = {}
 
         o.groupUnitAliveDict = {}
         o.targetAliveStates = {}
         o.hasSpecificTargets = false
+
+        o.spawnedGroups = {}
 
         local CheckStateAsync = function (self, time)
             self:CheckAndUpdateSelf()
@@ -324,24 +336,22 @@ do -- INIT Mission Class
                 return 
             end
             
-            do --spawn groups
-                for key, groupname in pairs(self.groupNames) do
-                    Spearhead.DcsUtil.SpawnGroupTemplate(groupname)
-                end
-            end 
-
             for groupName, unitNames in pairs(self.groupUnitAliveDict) do
-                for unitName, isAlive in pairs(unitNames) do
-                    local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
-                    if deathState and deathState.isDead == true then
-                        Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
-                        if deathState.isCleaned == false then
-                            Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                        end
-                        
-                        self.groupUnitAliveDict[groupName][unitName] = false
-                        if self.targetAliveStates[groupName][unitName] == true then
-                            self.targetAliveStates[groupName][unitName] = false
+                if self.spawnedGroups[groupName] ~= true then
+                    Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                    self.spawnedGroups[groupName] = true
+                    for unitName, isAlive in pairs(unitNames) do
+                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
+                        if deathState and deathState.isDead == true then
+                            Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
+                            if deathState.isCleaned == false then
+                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
+                            end
+                            
+                            self.groupUnitAliveDict[groupName][unitName] = false
+                            if self.targetAliveStates[groupName][unitName] == true then
+                                self.targetAliveStates[groupName][unitName] = false
+                            end
                         end
                     end
                 end
@@ -360,28 +370,26 @@ do -- INIT Mission Class
             self.missionState = Mission.MissionState.ACTIVE
 
             if self.spawnedPersisted == false then
-                do --spawn groups
-                    for key, groupname in pairs(self.groupNames) do
-                        Spearhead.DcsUtil.SpawnGroupTemplate(groupname)
-                    end
-                end
                 
-    
                 do --Check Persistence
                     local needsChecking = false
                     for groupName, unitNames in pairs(self.groupUnitAliveDict) do
-                        for unitName, isAlive in pairs(unitNames) do
-                            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
-                            if deathState and deathState.isDead == true then
-                                Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
-                                if deathState.isCleaned == false then
-                                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                                end
-                                
-                                self.groupUnitAliveDict[groupName][unitName] = false
-                                needsChecking = true
-                                if self.targetAliveStates[groupName][unitName] == true then
-                                    self.targetAliveStates[groupName][unitName] = false
+                        if self.spawnedGroups[groupName] ~= true then
+                            Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                            self.spawnedGroups[groupName] = true
+                            for unitName, isAlive in pairs(unitNames) do
+                                local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
+                                if deathState and deathState.isDead == true then
+                                    Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
+                                    if deathState.isCleaned == false then
+                                        Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
+                                    end
+                                    
+                                    self.groupUnitAliveDict[groupName][unitName] = false
+                                    needsChecking = true
+                                    if self.targetAliveStates[groupName][unitName] == true then
+                                        self.targetAliveStates[groupName][unitName] = false
+                                    end
                                 end
                             end
                         end

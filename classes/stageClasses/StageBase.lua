@@ -4,6 +4,15 @@
 local StageBase = {}
 
 do
+    ---@class StageBase 
+    ---@field ActivateRedStage fun(self:StageBase) Activate the red state
+    ---@field ActivateBlueStage fun(self:StageBase) Activate the blue stage after capture
+
+    ---comment
+    ---@param databaseManager table
+    ---@param logger table
+    ---@param airbaseId integer
+    ---@return StageBase
     function StageBase:New(databaseManager, logger, airbaseId)
 
         local o = {}

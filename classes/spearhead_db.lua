@@ -550,15 +550,6 @@ do -- DB
         end
         ---comment
         ---@param self table
-        ---@param number number
-        ---@return string zoneName
-        o.getStageZonesByStageNumber = function(self, number)
-            local numberString = tostring(number)
-            return self.tables.stage_zonesByNumer[numberString]
-        end
-
-        ---comment
-        ---@param self table
         ---@return table result a  list of stage zone names
         o.getStagezoneNames = function(self)
             return self.tables.stage_zones
@@ -641,6 +632,9 @@ do -- DB
             return self.tables.miscGroupsInStages[stageName] or {}
         end
 
+        ---comment
+        ---@param self table
+        ---@return integer|nil
         o.GetNewMissionCode = function(self)
             local code = nil
             local tries = 0

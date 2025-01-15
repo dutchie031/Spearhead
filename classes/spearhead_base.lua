@@ -847,19 +847,20 @@ do     -- INIT DCS_UTIL
     ---@param route table? route of the group. If nil wil be the default route.
     ---@param uncontrolled boolean? Sets the group to be uncontrolled on spawn
     ---@return table? new_group the Group class that was spawned
+    ---@return boolean? isStatic whether the group is a static or not
     function DCS_UTIL.SpawnGroupTemplate(groupName, location, route, uncontrolled)
         if groupName == nil then
-            return
+            return nil, nil
         end
 
         local template = DCS_UTIL.GetMizGroupOrDefault(groupName, nil)
         if template == nil then
-            return nil
+            return nil, nil
         end
         if template.category == DCS_UTIL.GroupCategory.STATIC then
             --TODO: Implement location and route stuff
             local spawn_template = template.group_template
-            coalition.addStaticObject(template.country_id, spawn_template)
+            return coalition.addStaticObject(template.country_id, spawn_template), true
         else
             local spawn_template = template.group_template
             if location ~= nil then
@@ -887,7 +888,7 @@ do     -- INIT DCS_UTIL
                 spawn_template.uncontrolled = uncontrolled
             end
             local new_group = coalition.addGroup(template.country_id, template.category, spawn_template)
-            return new_group
+            return new_group, false
         end
     end
 
@@ -1010,8 +1011,6 @@ Spearhead.MissionEditingWarnings = {}
 function Spearhead.AddMissionEditorWarning(warningMessage)
     table.insert(Spearhead.MissionEditingWarnings, warningMessage or "skip")
 end
-
-missionCommands.addSubMenu("Missions")
 
 local loadDone = false
 Spearhead.LoadingDone = function()

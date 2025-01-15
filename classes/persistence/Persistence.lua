@@ -172,11 +172,20 @@ do
         return false
     end
 
-    ---Check if the unit was dead during the last save. Nil if alive
+    ---Check if the unit was dead during the last save. Nil if persitance not enabled
     ---@param unitName string name
-    ---@return table|nil { isDead, pos = {x,y,z}, heading, type, country_id }
+    ---@return table|nil { isDead, pos = {x,y,z}, heading, type, country_id } 
     Persistence.UnitDeadState = function(unitName)
-        return tables.dead_units[unitName]
+        if Persistence.isEnabled() == false then
+            return nil
+        end
+
+        local entry =  tables.dead_units[unitName]
+        if entry then
+            return entry
+        else
+            return { isDead = false }
+        end
     end
 
     ---Pass the unit to be saved as "dead"

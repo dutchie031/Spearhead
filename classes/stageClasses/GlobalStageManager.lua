@@ -2,6 +2,7 @@
 
 local StagesByName = {}
 local StagesByIndex = {}
+local SideStageByIndex = {}
 
 
 GlobalStageManager = {}
@@ -27,16 +28,49 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
 
     for _, stageName in pairs(database:getStagezoneNames()) do
 
-        local stagelogger = Spearhead.LoggerTemplate:new(stageName, stageConfig.logLevel)
-        local stage = Spearhead.internal.Stage:new(stageName, database, stagelogger, stageConfig)
+        local split = Spearhead.Util.split_string(stageName, "_")
+        if Spearhead.Util.tableLength(split) < 2 then
+            Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a order number or valid format")
+            return nil
+        end
 
-        if stage then
-            stage:AddStageCompleteListener(o);
-            StagesByName[stageName]  = stage
-            local indexString = tostring(stage.stageNumber)
-            if StagesByIndex[indexString] == nil then StagesByIndex[indexString] = {} end
-            table.insert(StagesByIndex[indexString], stage)
-            logger:info("Initiated " .. Spearhead.Util.tableLength(StagesByName) .. " airbases for cap")
+        local orderNumberString = string.lower(split[2])
+        local orderNumber = nil 
+        local isSideStage = false
+        if Spearhead.Util.startswith(orderNumberString, "x") == true then
+            isSideStage = true
+
+            local orderNumberString = string.gsub(orderNumberString, "x", "")
+            orderNumber = tonumber(orderNumberString)
+        else
+            orderNumber = tonumber(split[2])
+        end
+
+        if orderNumber == nil then
+            Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a valid order number : " .. split[2])
+        end
+
+        local stagelogger = Spearhead.LoggerTemplate:new(stageName, stageConfig.logLevel)
+        if orderNumber then
+            if isSideStage == true then
+                local stage = Spearhead.classes.stageClasses.ExtraStage:new(database, stagelogger, stageConfig, stageName, orderNumber)
+                if stage then
+                    StagesByName[stageName]  = stage
+                    local indexString = tostring(orderNumber)
+                    if SideStageByIndex[indexString] == nil then SideStageByIndex[indexString] = {} end
+                    table.insert(SideStageByIndex[indexString], stage)
+                end
+            else 
+                local stage = Spearhead.internal.Stage:new(stageName, orderNumber, database, stagelogger, stageConfig)
+                if stage then
+                    stage:AddStageCompleteListener(o);
+                    StagesByName[stageName]  = stage
+                    local indexString = tostring(orderNumber)
+                    if StagesByIndex[indexString] == nil then StagesByIndex[indexString] = {} end
+                    table.insert(StagesByIndex[indexString], stage)
+                    logger:info("Initiated " .. Spearhead.Util.tableLength(StagesByName))
+                end
+            end 
         end
     end
 

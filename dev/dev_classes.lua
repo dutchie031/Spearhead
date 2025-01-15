@@ -1,5 +1,8 @@
 
 
+
+--assert(loadfile("C:\\Repos\\DCS\\Spearhead\\dev\\dev_classes.lua"))()
+
 local basePath = "C:\\Repos\\DCS\\Spearhead\\"
 local classPath = basePath .. "classes\\"
 
@@ -17,7 +20,9 @@ assert(loadfile(classPath .. "configuration\\StageConfig.lua"))()
 assert(loadfile(classPath .. "stageClasses\\GlobalStageManager.lua"))()
 assert(loadfile(classPath .. "stageClasses\\Mission.lua"))()
 assert(loadfile(classPath .. "stageClasses\\Stage.lua"))()
+assert(loadfile(classPath .. "stageClasses\\ExtraStage.lua"))()
 assert(loadfile(classPath .. "stageClasses\\StageBase.lua"))()
+assert(loadfile(classPath .. "stageClasses\\BlueSam.lua"))()
 
 assert(loadfile(classPath .. "capClasses\\CapGroup.lua"))()
 assert(loadfile(classPath .. "capClasses\\GlobalCapManager.lua"))()

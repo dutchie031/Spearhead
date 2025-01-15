@@ -7,43 +7,43 @@ do --init STAGE DIRECTOR
 
     ---comment
     ---@param stagezone_name string
+    ---@param stageNumber number
     ---@param database table
     ---@param logger table
     ---@return table?
-    function Stage:new(stagezone_name, database, logger, stageConfig)
+    function Stage:new(stagezone_name, stageNumber, database, logger, stageConfig)
         local o = {}
         setmetatable(o, { __index = self })
 
         o.zoneName = stagezone_name
 
-        local split = Spearhead.Util.split_string(stagezone_name, "_")
-        if Spearhead.Util.tableLength(split) < 2 then
-            Spearhead.AddMissionEditorWarning("Stage zone with name " .. stagezone_name .. " does not have a order number or valid format")
-            return nil
-        end
-
-        local orderNumber = tonumber(split[2])
-        if orderNumber == nil then
-            Spearhead.AddMissionEditorWarning("Stage zone with name " .. stagezone_name .. " does not have a valid order number : " .. split[2])
-            return nil
-        end
-
-        o.stageNumber = orderNumber
+        o.stageNumber = stageNumber
         o.isActive = false
         o.isComplete = false
         o.database = database
         o.logger = logger
         o.db = {}
+
+        --- @type table<integer, Mission>
         o.db.missionsByCode = {}
+
+        --- @type Array<Mission>
         o.db.missions = {}
+        
+        --- @type Array<Mission>
         o.db.sams = {}
+
+        --- @type Array<Mission>
         o.db.blueSams = {}
+
+        --- @type Array<StageBase>
         o.db.airbases = {}
         o.activeStage = -99
         o.preActivated = false
         o.stageConfig = stageConfig or {}
         o.stageDrawingId = stageDrawingId + 1
     
+        o.spawnedGroups = {}
 
         stageDrawingId = stageDrawingId + 1
 
@@ -52,10 +52,10 @@ do --init STAGE DIRECTOR
 
             local missionZones = database:getMissionsForStage(stagezone_name)
             for _, missionZone in pairs(missionZones) do
-                local mission = Spearhead.internal.Mission:new(missionZone, database, logger)
+                local mission = Spearhead.internal.Mission:new(missionZone, "primary", database, logger)
                 if mission then
                     o.db.missionsByCode[mission.code] = mission
-                    if mission.missionType == Spearhead.internal.Mission.MissionType.SAM then
+                    if mission.missionType == "SAM" then
                         table.insert(o.db.sams, mission)
                     else
                         table.insert(o.db.missions, mission)
@@ -67,7 +67,7 @@ do --init STAGE DIRECTOR
 
             local randomMissionByName = {}
             for _, missionZoneName in pairs(randomMissionNames) do
-                local mission = Spearhead.internal.Mission:new(missionZoneName, database, logger)
+                local mission = Spearhead.internal.Mission:new(missionZoneName, "primary", database, logger)
                 if mission then
                     if randomMissionByName[mission.name] == nil then
                         randomMissionByName[mission.name] = {}
@@ -80,7 +80,7 @@ do --init STAGE DIRECTOR
                 local mission = Spearhead.Util.randomFromList(missions)
                 if mission then
                     o.db.missionsByCode[mission.code] = mission
-                    if mission.missionType == Spearhead.internal.Mission.MissionType.SAM then
+                    if mission.missionType == "SAM" then
                         table.insert(o.db.sams, mission)
                     else
                         table.insert(o.db.missions, mission)
@@ -218,18 +218,21 @@ do --init STAGE DIRECTOR
             local miscGroups = self.database:getMiscGroupsAtStage(self.zoneName)
             self.logger:debug("Activating Misc groups for zone: " .. Spearhead.Util.tableLength(miscGroups))
             for _, groupName in pairs(miscGroups) do
-                local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
-                if group then
-                    for _, unit in pairs(group:getUnits()) do
-                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
+                if self.spawnedGroups[groupName] ~= true then
+                    local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                    self.spawnedGroups[groupName] = true
+                    if group then
+                        for _, unit in pairs(group:getUnits()) do
+                            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
 
-                        if deathState and deathState.isDead == true then
-                            Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
-                            if deathState.isCleaned == false then
-                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
+                            if deathState and deathState.isDead == true then
+                                Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
+                                if deathState.isCleaned == false then
+                                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
+                                end
+                            else
+                                Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
                             end
-                        else
-                            Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
                         end
                     end
                 end
@@ -335,18 +338,23 @@ do --init STAGE DIRECTOR
 
             local miscGroups = self.database:getMiscGroupsAtStage(self.zoneName)
             for _, groupName in pairs(miscGroups) do
-                local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
-                if group then
-                    for _, unit in pairs(group:getUnits()) do
-                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
+                if self.spawnedGroups[groupName] ~= true then
+                    local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                    self.spawnedGroups[groupName] = true
+                    if group then
+                        for _, unit in pairs(group:getUnits()) do
+                            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
 
-                        if deathState and deathState.isDead == true then
-                            Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
-                            if deathState.isCleaned == false then
-                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
+                            if deathState and deathState.isDead == true then
+                                Spearhead.DcsUtil.DestroyUnit(groupName, unit:getName())
+                                if deathState.isCleaned == false then
+                                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
+                                end
+                            else
+                                if unit and unit:isExist() then
+                                    Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
+                                end
                             end
-                        else
-                            Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
                         end
                     end
                 end
@@ -372,7 +380,7 @@ do --init STAGE DIRECTOR
                 if mission.missionState == Spearhead.internal.Mission.MissionState.ACTIVE then
 
                     text = text .. "\n [" .. mission.code .. "] " .. mission.name .. 
-                    " ("  ..  mission.missionTypeDisplayName .. ") \n"
+                    " ("  ..  mission.name .. ") \n"
                 end
                
                 if mission.missionState == Spearhead.internal.Mission.MissionState.COMPLETED then
@@ -411,19 +419,6 @@ do --init STAGE DIRECTOR
             end
         end
 
-        --- input = { self, groupId, missionCode }
-        local ShowBriefingClicked = function (input)
-            
-            local self = input.self
-            local groupId = input.groupId
-            local missionCode = input.missionCode
-
-            local mission  = self.db.missionsByCode[missionCode]
-            if mission then
-                mission:ShowBriefing(groupId)
-            end
-        end
-        
         o.RemoveMissionCommands = function (self, mission)
 
             self.logger:debug("Removing commands for: " .. mission.name)
@@ -433,7 +428,7 @@ do --init STAGE DIRECTOR
                 local players = coalition.getPlayers(i)
                 for _, playerUnit in pairs(players) do
                     local groupId = playerUnit:getGroup():getID()
-                    missionCommands.removeItemForGroup(groupId, { "Missions", folderName })
+                    missionCommands.removeItemForGroup(groupId, { "Primary Missions", folderName })
                 end
             end
         end
@@ -452,12 +447,6 @@ do --init STAGE DIRECTOR
             for _, mission in pairs(self.db.missionsByCode) do
                 self:RemoveMissionCommands(mission)
             end
-        end
-
-        o.AddCommandsForMissionToGroup = function (self, groupId, mission)
-            local folderName = mission.name .. "(" .. mission.missionTypeDisplayName .. ")"
-            missionCommands.addSubMenuForGroup(groupId, folderName, { "Missions"} )
-            missionCommands.addCommandForGroup(groupId, "Show Briefing", { "Missions", folderName }, ShowBriefingClicked, { self = self, groupId = groupId, missionCode = mission.code })
         end
 
         o.AddCommmandsForMissionToAllPlayers = function(self, mission)
@@ -487,6 +476,9 @@ do --init STAGE DIRECTOR
             self:RemoveMissionCommands(mission)
         end
         
+        ---comment
+        ---@param self table
+        ---@param mission Mission
         o.OnMissionComplete = function(self, mission)
             timer.scheduleFunction(removeMissionCommandsDelayed, { self = self, mission = mission}, timer.getTime() + 20)
 
