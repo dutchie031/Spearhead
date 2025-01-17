@@ -6,16 +6,16 @@ local ExtraStage = {}
 do
     local stageDrawingId = 400
 
-    function ExtraStage:new(database, logger, stageConfig, stageZoneName, stageIndex)
+    function ExtraStage:new(database, logger, stageConfig, stageZoneName, stageIndex, stageDisplayName)
 
         local o = {}
         setmetatable(o, {__index = self} )
-
 
         o.database = database
         o.logger = logger
         o.zoneName = stageZoneName
         o.stageNumber = tonumber(stageIndex)
+        o.stageDisplayName = stageDisplayName
         o.stageConfig = stageConfig
 
         o.isActivated = false

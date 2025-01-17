@@ -3,18 +3,28 @@
 local BlueSam = {}
 
 do
+
+    ---@class BlueSam
+    ---@field Activate fun(self: BlueSam)
+    ---@field _database Database
+    ---@field _logger Logger
+    ---@field _zoneName string
+    ---@field _redGroups Array<string>
+    ---@field _blueGroups Array<string>
+    ---@field _cleanupUnits table<string, boolean>
+
     function BlueSam:new(database, logger, zoneName)
 
         local o = {}
         setmetatable(o, { __index = self})
 
-        o.database = database
-        o.logger = logger
-        o.zoneName = zoneName
+        o._database = database
+        o._logger = logger
+        o._zoneName = zoneName
 
-        o.redGroups = {}
-        o.blueGroups = {}
-        o.cleanupUnits = {}
+        o._redGroups = {}
+        o._blueGroups = {}
+        o._cleanupUnits = {}
 
         do
             local groups = database:getBlueSamGroupsInZone(zoneName)
@@ -27,20 +37,20 @@ do
                         local staticObject = StaticObject.getByName(groupName)
 
                         if staticObject:getCoalition() == 1 then
-                            table.insert(o.redGroups, groupName)
+                            table.insert(o._redGroups, groupName)
                             redUnitsPos[staticObject:getName()] = staticObject:getPoint()
                         end
 
                         if staticObject:getCoalition() == 2 then
-                            table.insert(o.blueGroups, groupName)
+                            table.insert(o._blueGroups, groupName)
                             blueUnitsPos[staticObject:getName()] = staticObject:getPoint()
                         end
                     else
                         local group = Group.getByName(groupName)
                         if group:getCoalition() == 1 then
-                            table.insert(o.redGroups, groupName)
+                            table.insert(o._redGroups, groupName)
                         elseif group:getCoalition() == 2 then
-                            table.insert(o.blueGroups, groupName)
+                            table.insert(o._blueGroups, groupName)
                         end
 
                         for _, unit in pairs(group:getUnits()) do
@@ -64,15 +74,17 @@ do
                         local distance = Spearhead.Util.VectorDistance(blueUnitPos, redUnitPos)
                         env.info("distance: " .. tostring(distance))
                         if distance <= cleanup_distance then
-                            o.cleanup_units[redUnitName] = true
+                            o._cleanup_units[redUnitName] = true
                         end
                     end
                 end
             end
         end
 
+        ---comment
+        ---@param self BlueSam
         o.Activate = function(self)
-            for unitName, needsCleanup in pairs(self.cleanupUnits) do
+            for unitName, needsCleanup in pairs(self._cleanupUnits) do
                 if needsCleanup == true then
                     Spearhead.DcsUtil.DestroyUnit(unitName)
                 else
@@ -83,7 +95,7 @@ do
                 end
             end
 
-            for _, blueGroup in pairs(self.blueGroups) do
+            for _, blueGroup in pairs(self._blueGroups) do
                 if Spearhead.DcsUtil.IsGroupStatic(blueGroup) then
                     Spearhead.DcsUtil.SpawnGroupTemplate(blueGroup)
                     local staticObject = StaticObject.getByName(blueGroup)

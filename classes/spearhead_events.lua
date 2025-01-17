@@ -202,39 +202,6 @@ do
         end
     end
 
-    do     --COMMANDS
-        do -- status updates
-            local onStatusRequestReceivedListeners = {}
-            ---comment
-            ---@param listener table object with OnStatusRequestReceived(self, groupId)
-            SpearheadEvents.AddOnStatusRequestReceivedListener = function(listener)
-                if type(listener) ~= "table" then
-                    warn("Unit lost Event listener not of type table/object")
-                    return
-                end
-
-                table.insert(onStatusRequestReceivedListeners, listener)
-            end
-
-            local triggerStatusRequestReceived = function(groupId)
-                for _, callable in pairs(onStatusRequestReceivedListeners) do
-                    local succ, err = pcall(function()
-                        callable:OnStatusRequestReceived(groupId)
-                    end)
-                end
-            end
-
-            SpearheadEvents.AddCommandsToGroup = function(groupId)
-                local base = "MISSIONS"
-                if groupId then
-                    missionCommands.addCommandForGroup(groupId, "Stage Status", nil, triggerStatusRequestReceived,
-                        groupId)
-                end
-            end
-
-        end
-    end
-
     do -- PLAYER ENTER UNIT
         local playerEnterUnitListeners = {}
         ---comment

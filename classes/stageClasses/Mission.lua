@@ -5,13 +5,6 @@ do -- INIT Mission Class
 
     local MINIMAL_UNITS_ALIVE_RATIO = 0.20
 
-    local Defaults = {}
-    Defaults.MainMenu = "Missions"
-    Defaults.SelectMenuSubMenus = { Defaults.MainMenu, "Select Mission" }
-    Defaults.ShowMissionSubs = { Defaults.MainMenu }
-
-    local PlayersInMission = {}
-
     local MissionTypeParser = {}
     do --INIT MISSION TYPE FUNCTIONS
         ---Parse string to mission type
@@ -58,11 +51,24 @@ do -- INIT Mission Class
     --- @field SpawnsPersistedState fun(self:Mission) Activate groups (if not spawned before) and spawn corpses where needed.
     --- @field Activate fun(self:Mission) Activate groups for this mission
     --- @field ShowBriefing fun(self:Mission, groupId:integer)
+    --- @field CheckAndUpdateSelf fun(self:Mission, checkUnitHealth: boolean?, displayMessageIfDone:boolean?)
+    --- @field _logger Logger
+    --- @field _groupNames Array<string>
+    --- @field _missionBriefing string
+    --- @field _groupNamesPerUnit table<string,string>
+    --- @field _groupUnitAliveDict table<string, table<string,boolean>>
+    --- @field _targetAliveStates table<string, table<string,boolean>>
+    --- @field _hasSpecificTargets boolean
+    --- @field _spawnedGroups table<string, boolean>
+    --- @field _missionCompleteListeners Array<MissionCompleteListener>
+
+    --- @class MissionCompleteListener
+    --- @field OnMissionComplete fun(self:MissionCompleteListener, mission:Mission)
 
     ---comment
     ---@param missionZoneName string missionZoneName
     ---@param priority missionPriority missionPriority
-    ---@param database table db dependency injection
+    ---@param database Database db dependency injection
     ---@return Mission? o
     function Mission:new(missionZoneName, priority, database, logger)
         local o = {}
@@ -107,33 +113,41 @@ do -- INIT Mission Class
 
         --private fields
         o._database = database
-        o.groupNames = database:getGroupsForMissionZone(missionZoneName)
-        o.startingGroups = Spearhead.Util.tableLength(o.groupNames)
-        o.startingUnits = 0
-        o.logger = logger
-        o.missionbriefing = database:GetDescriptionForMission(missionZoneName)
-        o.groupNamesPerUnit = {}
+        o._logger = logger
+        o._groupNames = database:getGroupsForMissionZone(missionZoneName)
+        o._missionBriefing = database:GetDescriptionForMission(missionZoneName)
+        o._groupNamesPerUnit = {}
 
-        o.groupUnitAliveDict = {}
-        o.targetAliveStates = {}
-        o.hasSpecificTargets = false
+        o._groupUnitAliveDict = {}
+        o._targetAliveStates = {}
+        o._hasSpecificTargets = false
 
-        o.spawnedGroups = {}
+        o._spawnedGroups = {}
 
+        ---comment
+        ---@param self Mission
+        ---@param time any
+        ---@return nil
         local CheckStateAsync = function (self, time)
             self:CheckAndUpdateSelf()
             return nil
         end
 
+        ---comment
+        ---@param self Mission
+        ---@return missionState
         o.GetState = function(self)
             return self.missionState
         end
 
+        ---comment
+        ---@param self Mission
+        ---@param object table
         o.OnUnitLost = function(self, object)
             --[[
                 OnUnit lost event
             ]]--
-            self.logger:debug("Getting on unit lost event")
+            self._logger:debug("Getting on unit lost event")
 
             pcall(function ()
                 local name = object:getName()
@@ -148,64 +162,73 @@ do -- INIT Mission Class
             local category = Object.getCategory(object)
             if category == Object.Category.UNIT then
                 local unitName = object:getName()
-                self.logger:debug("UnitName:" .. unitName)
-                local groupName = self.groupNamesPerUnit[unitName]
-                self.groupUnitAliveDict[groupName][unitName] = false
+                self._logger:debug("UnitName:" .. unitName)
+                local groupName = self._groupNamesPerUnit[unitName]
+                self._groupUnitAliveDict[groupName][unitName] = false
 
-                if self.targetAliveStates[groupName][unitName] then
-                    self.targetAliveStates[groupName][unitName] = false
+                if self._targetAliveStates[groupName][unitName] then
+                    self._targetAliveStates[groupName][unitName] = false
                 end
             elseif category == Object.Category.STATIC  then
                 local name = object:getName()
-                self.groupUnitAliveDict[name][name] = false
+                self._groupUnitAliveDict[name][name] = false
 
-                self.logger:debug("Name " .. name)
+                self._logger:debug("Name " .. name)
 
-                if self.targetAliveStates[name][name] then
-                    self.targetAliveStates[name][name] = false
+                if self._targetAliveStates[name][name] then
+                    self._targetAliveStates[name][name] = false
                 end
             end
             timer.scheduleFunction(CheckStateAsync, self, timer.getTime() + 1)
         end
 
-        o.MissionCompleteListeners = {}
+        o._missionCompleteListeners = {}
+
         ---comment
-        ---@param self table
-        ---@param listener table Object that implements "OnMissionComplete(self, mission)"
+        ---@param self Mission
+        ---@param listener MissionCompleteListener Object that implements "OnMissionComplete(self, mission)"
         o.AddMissionCompleteListener = function(self, listener)
             if type(listener) ~= "table" then
                 return
             end
             
-            table.insert(self.MissionCompleteListeners, listener)
+            table.insert(self._missionCompleteListeners, listener)
         end
 
+        ---comment
+        ---@param self Mission
         local TriggerMissionComplete = function(self)
-            for _, callable in pairs(self.MissionCompleteListeners) do
+            for _, callable in pairs(self._missionCompleteListeners) do
                 local succ, err = pcall( function() 
                     callable:OnMissionComplete(self)
                 end)
                 if err then
-                    self.logger:warn("Error in misstion complete listener:" .. err)
+                    self._logger:warn("Error in misstion complete listener:" .. err)
                 end
             end
         end
 
-
+        ---comment
+        ---@param self Mission
         local StartCheckingAndUpdateSelfContinuous = function (self)
+            ---comment
+            ---@param self Mission
+            ---@param time any
+            ---@return nil
             local CheckAndUpdate = function(self, time)
                 self:CheckAndUpdateSelf(true)
-                if self.missionState == Mission.MissionState.COMPLETED or self.missionState == Mission.MissionState.NEW then
+                if self.missionState == "COMPLETED" or self.missionState == "NEW" then
                     return nil
                 else
-                    return time + 5                end
+                    return time + 5
+                end
             end
 
             timer.scheduleFunction(CheckAndUpdate, self, timer.getTime() + 5)
         end
 
         ---comment
-        ---@param self table
+        ---@param self Mission
         ---@param checkUnitHealth boolean?
         o.CheckAndUpdateSelf = function(self, checkUnitHealth, displayMessageIfDone)
             if not checkUnitHealth then checkUnitHealth = false end
@@ -220,7 +243,7 @@ do -- INIT Mission Class
                         if staticObject:isExist() == true then
                             local life0 = staticObject:getDesc().life
                             if staticObject:getLife() / life0 < 0.3 then
-                                self.logger:info("exploding unit")
+                                self._logger:debug("exploding unit")
                                 trigger.action.explosion(staticObject:getPoint(), 100)
                                 return false
                             end
@@ -234,7 +257,7 @@ do -- INIT Mission Class
                         local alive = unit ~= nil and unit:isExist() == true
                         if alive == true then
                             if unit:getLife() / unit:getLife0() < 0.2 then
-                                self.logger:info("exploding unit")
+                                self._logger:debug("exploding unit")
                                 trigger.action.explosion(unit:getPoint(), 100)
                                 return false
                             end
@@ -245,30 +268,30 @@ do -- INIT Mission Class
                     end
                 end
 
-                for groupName, unitNameDict in pairs(self.groupUnitAliveDict) do
+                for groupName, unitNameDict in pairs(self._groupUnitAliveDict) do
                     for unitName, isAlive in pairs(unitNameDict) do
                         if isAlive == true then
-                            self.groupUnitAliveDict[groupName][unitName] = unitAliveState(unitName)
+                            self._groupUnitAliveDict[groupName][unitName] = unitAliveState(unitName)
                         end
                     end
                 end
 
-                for groupName, unitNameDict in pairs(self.targetAliveStates) do
+                for groupName, unitNameDict in pairs(self._targetAliveStates) do
                     for unitName, isAlive in pairs(unitNameDict) do
                         if isAlive == true then
-                            self.targetAliveStates[groupName][unitName] = unitAliveState(unitName)
+                            self._targetAliveStates[groupName][unitName] = unitAliveState(unitName)
                         end
                     end
                 end
             end
 
-            if self.missionState == Mission.MissionState.COMPLETED then
+            if self.missionState == "COMPLETED" then
                 return
             end
 
-            if self.hasSpecificTargets == true then
+            if self._hasSpecificTargets == true then
                 local specificTargetsAlive = false
-                for groupName, unitNameDict in pairs(self.targetAliveStates) do
+                for groupName, unitNameDict in pairs(self._targetAliveStates) do
                     for unitName, isAlive in pairs(unitNameDict) do
                         if isAlive == true then
                             specificTargetsAlive = true
@@ -276,13 +299,13 @@ do -- INIT Mission Class
                     end
                 end
                 if specificTargetsAlive == false then
-                    self.missionState = Mission.MissionState.COMPLETED
+                    self.missionState = "COMPLETED"
                 end
             else
                 local function CountAliveGroups()
                     local aliveGroups = 0
 
-                    for _, group in pairs(self.groupUnitAliveDict) do
+                    for _, group in pairs(self._groupUnitAliveDict) do
                         local groupTotal = 0
                         local groupDeath = 0
                         for _, isAlive in pairs(group) do
@@ -301,13 +324,13 @@ do -- INIT Mission Class
                     return aliveGroups
                 end
                 
-                if self.missionType == Mission.MissionType.STRIKE then --strike targets should normally have TGT targets
+                if self.missionType == "STRIKE" then --strike targets should normally have TGT targets
                     if CountAliveGroups() == 0 then
-                        self.missionState = Mission.MissionState.COMPLETED
+                        self.missionState = "COMPLETED"
                     end
-                elseif self.missionType == Mission.MissionType.BAI then
+                elseif self.missionType == "BAI" then
                     if CountAliveGroups() == 0 then
-                        self.missionState = Mission.MissionState.COMPLETED
+                        self.missionState = "COMPLETED"
                     end
                 end
                 --[[
@@ -315,12 +338,14 @@ do -- INIT Mission Class
                 ]]
             end
 
-            if self.missionState == Mission.MissionState.COMPLETED then
-                self.logger:debug("Mission complete " .. self.name)
+            if self.missionState == "COMPLETED" then
+                self._logger:info("Mission complete " .. self.name)
 
                 if displayMessageIfDone == true then
-                    trigger.action.outText("Mission " .. self.name .. " (" .. self.code .. ") was completed succesfully!", 20)
+                    trigger.action.outText("Mission " .. self.name .. " (" .. self.code .. ") was completed successfully!", 20)
                 end
+
+                Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.RemoveMissionToCommands(self)
 
                 TriggerMissionComplete(self)
                 --Schedule cleanup after 5 minutes of mission complete
@@ -328,87 +353,77 @@ do -- INIT Mission Class
             end
         end
 
-        o.spawnedPersisted = false
         ---Spawns all corpses and alive units as in the persistance state
-        ---@param self table
+        ---@param self Mission
         o.SpawnsPersistedState = function(self)
-            if self.spawnedPersisted == true then
-                return 
-            end
-            
-            for groupName, unitNames in pairs(self.groupUnitAliveDict) do
-                if self.spawnedGroups[groupName] ~= true then
+            for groupName, unitNames in pairs(self._groupUnitAliveDict) do
+                if self._spawnedGroups[groupName] ~= true then
                     Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
-                    self.spawnedGroups[groupName] = true
+                    self._spawnedGroups[groupName] = true
                     for unitName, isAlive in pairs(unitNames) do
                         local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
                         if deathState and deathState.isDead == true then
                             Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
-                            if deathState.isCleaned == false then
-                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                            end
+                            Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
                             
-                            self.groupUnitAliveDict[groupName][unitName] = false
-                            if self.targetAliveStates[groupName][unitName] == true then
-                                self.targetAliveStates[groupName][unitName] = false
+                            self._groupUnitAliveDict[groupName][unitName] = false
+                            if self._targetAliveStates[groupName][unitName] == true then
+                                self._targetAliveStates[groupName][unitName] = false
                             end
                         end
                     end
                 end
             end
-
-            self.spawnedPersisted = true
         end
 
         ---Activates groups for this mission
-        ---@param self table
+        ---@param self Mission
         o.Activate = function(self)
-            if self.missionState == Mission.MissionState.ACTIVE then
+            if self.missionState == "ACTIVE" then
                 return
             end
 
-            self.missionState = Mission.MissionState.ACTIVE
+            self.missionState = "ACTIVE"
 
-            if self.spawnedPersisted == false then
-                
-                do --Check Persistence
-                    local needsChecking = false
-                    for groupName, unitNames in pairs(self.groupUnitAliveDict) do
-                        if self.spawnedGroups[groupName] ~= true then
-                            Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
-                            self.spawnedGroups[groupName] = true
-                            for unitName, isAlive in pairs(unitNames) do
-                                local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
-                                if deathState and deathState.isDead == true then
-                                    Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
-                                    if deathState.isCleaned == false then
-                                        Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                                    end
-                                    
-                                    self.groupUnitAliveDict[groupName][unitName] = false
-                                    needsChecking = true
-                                    if self.targetAliveStates[groupName][unitName] == true then
-                                        self.targetAliveStates[groupName][unitName] = false
-                                    end
+            Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.AddMissionToCommands(self)
+            do --Check Persistence
+                local needsChecking = false
+                for groupName, unitNames in pairs(self._groupUnitAliveDict) do
+                    if self._spawnedGroups[groupName] ~= true then
+                        Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
+                        self._spawnedGroups[groupName] = true
+                        for unitName, isAlive in pairs(unitNames) do
+                            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
+                            if deathState and deathState.isDead == true then
+                                Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
+                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
+                                
+                                self._groupUnitAliveDict[groupName][unitName] = false
+                                needsChecking = true
+                                if self._targetAliveStates[groupName][unitName] == true then
+                                    self._targetAliveStates[groupName][unitName] = false
                                 end
                             end
                         end
                     end
-    
-                    if needsChecking == true then
-                        self:CheckAndUpdateSelf(false, false)
-                    end
+                end
+
+                if needsChecking == true then
+                    self:CheckAndUpdateSelf(false, false)
                 end
             end
 
             StartCheckingAndUpdateSelfContinuous(self)
         end
 
+        ---comment
+        ---@param self Mission
+        ---@return string
         local ToStateString = function(self)
-            if self.hasSpecificTargets then
+            if self._hasSpecificTargets then
                 local dead = 0
                 local total = 0
-                for _, group in pairs(self.targetAliveStates) do
+                for _, group in pairs(self._targetAliveStates) do
                     for _, isAlive in pairs(group) do
                         total = total + 1
                         if isAlive == false then
@@ -421,7 +436,7 @@ do -- INIT Mission Class
             else
                 local dead = 0
                 local total = 0
-                for _, group in pairs(self.groupUnitAliveDict) do
+                for _, group in pairs(self._groupUnitAliveDict) do
                     for _, isAlive in pairs(group) do
                         total = total + 1
                         if isAlive == false then
@@ -435,69 +450,75 @@ do -- INIT Mission Class
             end
         end
 
+        ---comment
+        ---@param self Mission
+        ---@param groupId integer
         o.ShowBriefing = function(self, groupId)
             local stateString = ToStateString(self)
 
-            if self.missionbriefing == nil then self.missionbriefing = "No briefing available" end
-            local text = "Mission [" .. self.code .. "] ".. self.name .. "\n \n" .. self.missionbriefing .. " \n \n" .. stateString
+            if self._missionBriefing == nil then self._missionBriefing = "No briefing available" end
+            local text = "Mission [" .. self.code .. "] ".. self.name .. "\n \n" .. self._missionBriefing .. " \n \n" .. stateString
             trigger.action.outTextForGroup(groupId, text, 30);
         end
 
+        ---comment
+        ---@param self Mission
         o.Cleanup = function(self)
-            for key, groupName in pairs(self.groupNames) do
+            for key, groupName in pairs(self._groupNames) do
                 Spearhead.DcsUtil.DestroyGroup(groupName)
             end
         end
 
         
+        ---comment
+        ---@param self Mission
         local Init = function(self)
-            for key, group_name in pairs(self.groupNames) do
+            for key, group_name in pairs(self._groupNames) do
 
 
-                self.groupUnitAliveDict[group_name] = {}
-                self.targetAliveStates[group_name] = {}
+                self._groupUnitAliveDict[group_name] = {}
+                self._targetAliveStates[group_name] = {}
 
                 if Spearhead.DcsUtil.IsGroupStatic(group_name) then
                     Spearhead.Events.addOnUnitLostEventListener(group_name, self)
 
-                    self.groupUnitAliveDict[group_name][group_name] = true
+                    self._groupUnitAliveDict[group_name][group_name] = true
 
                     if Spearhead.Util.startswith(group_name, "TGT_") == true then
-                        self.targetAliveStates[group_name][group_name] = true
-                        self.hasSpecificTargets = true
+                        self._targetAliveStates[group_name][group_name] = true
+                        self._hasSpecificTargets = true
                     end
                 else
                     local group = Group.getByName(group_name)
                     local isGroupTarget = Spearhead.Util.startswith(group_name, "TGT_")
 
-                    self.startingUnits = self.startingUnits + group:getInitialSize()
                     for _, unit in pairs(group:getUnits()) do
                         
                         local unitName = unit:getName()
-                        self.groupUnitAliveDict[group_name][unitName] = true
+                        self._groupUnitAliveDict[group_name][unitName] = true
 
-                        self.groupNamesPerUnit[unitName] = group_name
+                        self._groupNamesPerUnit[unitName] = group_name
 
                         Spearhead.Events.addOnUnitLostEventListener(unitName, self)
                         
                         if isGroupTarget == true or Spearhead.Util.startswith(unitName, "TGT_") == true then
-                            self.targetAliveStates[group_name][unitName] = true
-                            self.hasSpecificTargets = true
+                            self._targetAliveStates[group_name][unitName] = true
+                            self._hasSpecificTargets = true
                         end
 
-                        if self.missionType == MissionType.BAI then
+                        if self.missionType == "BAI" then
                             if Spearhead.DcsUtil.IsGroupStatic(group_name) ~= true then
-                                self.groupUnitAliveDict[group_name][unitName] = true
+                                self._groupUnitAliveDict[group_name][unitName] = true
                             end
-                        elseif self.missionType == MissionType.DEAD or self.missionType == MissionType.SAM then
+                        elseif self.missionType == "DEAD" or self.missionType == "SAM" then
                             local desc = unit:getDesc()
                             local attributes = desc.attributes
                             if attributes["SAM"] == true or attributes["SAM TR"] or attributes["AAA"] then
-                                self.targetAliveStates[group_name][unitName] = true
-                                self.hasSpecificTargets = true
+                                self._targetAliveStates[group_name][unitName] = true
+                                self._hasSpecificTargets = true
                             end
                         else
-                            self.groupUnitAliveDict[group_name][unitName] = true
+                            self._groupUnitAliveDict[group_name][unitName] = true
                         end
                     end
                 end

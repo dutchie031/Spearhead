@@ -6,6 +6,11 @@ local SideStageByIndex = {}
 
 
 GlobalStageManager = {}
+
+---comment
+---@param database Database
+---@param stageConfig StageConfig
+---@return nil
 function GlobalStageManager:NewAndStart(database, stageConfig)
     local logger = Spearhead.LoggerTemplate:new("StageManager", stageConfig.logLevel)
     local o = {}
@@ -26,34 +31,45 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
 
     end
 
+    
     for _, stageName in pairs(database:getStagezoneNames()) do
+        local valid = true
 
         local split = Spearhead.Util.split_string(stageName, "_")
         if Spearhead.Util.tableLength(split) < 2 then
             Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a order number or valid format")
-            return nil
+            valid = false
         end
 
-        local orderNumberString = string.lower(split[2])
+        if Spearhead.Util.tableLength(split) < 3 then
+            Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a stage name")
+            valid = false
+        end
+
         local orderNumber = nil 
         local isSideStage = false
-        if Spearhead.Util.startswith(orderNumberString, "x") == true then
-            isSideStage = true
+        if valid == true then
+            local orderNumberString = string.lower(split[2])
+            if Spearhead.Util.startswith(orderNumberString, "x") == true then
+                isSideStage = true
 
-            local orderNumberString = string.gsub(orderNumberString, "x", "")
-            orderNumber = tonumber(orderNumberString)
-        else
-            orderNumber = tonumber(split[2])
+                local orderNumberString = string.gsub(orderNumberString, "x", "")
+                orderNumber = tonumber(orderNumberString)
+            else
+                orderNumber = tonumber(split[2])
+            end
+
+            if orderNumber == nil then
+                Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a valid order number : " .. split[2])
+                valid = false
+            end
         end
-
-        if orderNumber == nil then
-            Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a valid order number : " .. split[2])
-        end
-
+            
+        local stageDisplayName = split[3]
         local stagelogger = Spearhead.LoggerTemplate:new(stageName, stageConfig.logLevel)
-        if orderNumber then
+        if valid == true and orderNumber then
             if isSideStage == true then
-                local stage = Spearhead.classes.stageClasses.ExtraStage:new(database, stagelogger, stageConfig, stageName, orderNumber)
+                local stage = Spearhead.classes.stageClasses.ExtraStage:new(database, stagelogger, stageConfig, stageZoneName, orderNumber, stageDisplayName)
                 if stage then
                     StagesByName[stageName]  = stage
                     local indexString = tostring(orderNumber)
@@ -61,7 +77,7 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
                     table.insert(SideStageByIndex[indexString], stage)
                 end
             else 
-                local stage = Spearhead.internal.Stage:new(stageName, orderNumber, database, stagelogger, stageConfig)
+                local stage = Spearhead.internal.Stage:new(stageName, orderNumber, stageDisplayName, database, stagelogger, stageConfig)
                 if stage then
                     stage:AddStageCompleteListener(o);
                     StagesByName[stageName]  = stage

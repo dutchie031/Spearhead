@@ -7,6 +7,14 @@ do
     ---@class StageBase 
     ---@field ActivateRedStage fun(self:StageBase) Activate the red state
     ---@field ActivateBlueStage fun(self:StageBase) Activate the blue stage after capture
+    ---@field _database Database
+    ---@field _logger Logger
+    ---@field _red_groups Array<string>
+    ---@field _blue_groups Array<string>
+    ---@field _cleanup_units table<string, boolean>
+    ---@field _airbase table
+    ---@field _initialSide number?
+
 
     ---comment
     ---@param databaseManager table
@@ -18,15 +26,15 @@ do
         local o = {}
         setmetatable(o, { __index = self })
     
-        o.db = databaseManager
-        o.logger = logger
+        o._database = databaseManager
+        o._logger = logger
 
-        o.red_groups = {}
-        o.blue_groups = {}
-        o.cleanup_units = {}
+        o._red_groups = {}
+        o._blue_groups = {}
+        o._cleanup_units = {}
 
-        o.airbase = Spearhead.DcsUtil.getAirbaseById(airbaseId)
-        o.initialSide = Spearhead.DcsUtil.getStartingCoalition(airbaseId)
+        o._airbase = Spearhead.DcsUtil.getAirbaseById(airbaseId)
+        o._initialSide = Spearhead.DcsUtil.getStartingCoalition(airbaseId)
 
         do --init
             local redUnitsPos = {}
@@ -37,7 +45,7 @@ do
               if redGroups then
                 for _, groupName in pairs(redGroups) do
                     
-                    table.insert(o.red_groups, groupName)
+                    table.insert(o._red_groups, groupName)
 
                     if Spearhead.DcsUtil.IsGroupStatic(groupName) then
                         local staticObject = StaticObject.getByName(groupName)
@@ -58,7 +66,7 @@ do
               if blueGroups then
                 for _, groupName in pairs(blueGroups) do
                     
-                    table.insert(o.blue_groups, groupName)
+                    table.insert(o._blue_groups, groupName)
 
                     if Spearhead.DcsUtil.IsGroupStatic(groupName) then
                         local staticObject = StaticObject.getByName(groupName)
@@ -87,15 +95,17 @@ do
                         local distance = Spearhead.Util.VectorDistance(blueUnitPos, redUnitPos)
                         env.info("distance: " .. tostring(distance))
                         if distance <= cleanup_distance then
-                            o.cleanup_units[redUnitName] = true
+                            o._cleanup_units[redUnitName] = true
                         end
                     end
                 end
             end
         end
 
+        ---comment
+        ---@param self StageBase    
         local spawnRedUnits = function(self)
-            for _, groupName in pairs(self.red_groups) do
+            for _, groupName in pairs(self._red_groups) do
                 local group = Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
 
                 if group then
@@ -112,14 +122,16 @@ do
             end
         end
 
+        ---comment
+        ---@param self StageBase
         local cleanRedUnit = function(self)
-            for _, groupName in pairs(self.red_groups) do
+            for _, groupName in pairs(self._red_groups) do
                 if Spearhead.DcsUtil.IsGroupStatic(groupName) then
                     Spearhead.DcsUtil.SpawnGroupTemplate(groupName)
                     local staticObject = StaticObject.getByName(groupName)
 
                     if staticObject then
-                        if self.cleanup_units[groupName] then
+                        if self._cleanup_units[groupName] then
                             staticObject:destroy()
                         else
                             local unitName = staticObject:getName()
@@ -127,10 +139,7 @@ do
     
                             if deathState and deathState.isDead == true then
                                 Spearhead.DcsUtil.DestroyUnit(unitName, unitName)
-    
-                                if deathState.isCleaned == false then
-                                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                                end
+                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
                             else
                                 Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
                             end
@@ -142,16 +151,13 @@ do
                         for _, unit in pairs(group:getUnits()) do
                             local unitName = unit:getName()
 
-                            if self.cleanup_units[unitName] == true then
+                            if self._cleanup_units[unitName] == true then
                                 Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
                             else
                                 local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
                                 if deathState and deathState.isDead == true then
                                     Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
-        
-                                    if deathState.isCleaned == false then
-                                        Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                                    end
+                                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
                                 else
                                     Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
                                 end
@@ -174,10 +180,7 @@ do
 
                     if deathState and deathState.isDead == true then
                         Spearhead.DcsUtil.DestroyUnit(unitName, unitName)
-
-                        if deathState.isCleaned == false then
-                            Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                        end
+                        Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
                     else
                         Spearhead.Events.addOnUnitLostEventListener(unitName, self)
                     end
@@ -189,10 +192,7 @@ do
                             local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
                             if deathState and deathState.isDead == true then
                                 Spearhead.DcsUtil.DestroyUnit(groupName, unitName)
-
-                                if deathState.isCleaned == false then
-                                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                                end
+                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
                             else
                                 Spearhead.Events.addOnUnitLostEventListener(unitName, self)
                             end

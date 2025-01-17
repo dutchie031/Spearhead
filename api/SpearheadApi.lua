@@ -1,9 +1,11 @@
 
 
 
+
+
 local SpearheadAPI = {}
 do
-    
+
     SpearheadAPI.Stages = {}
 
     --- Changes the active stage of spearhead.

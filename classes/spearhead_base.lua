@@ -919,9 +919,21 @@ do
         ERROR = 3,
         NONE = 4
     }
+    
 
     local PreFix = "Spearhead"
 
+    --- @class Logger
+    --- @field debug fun(self:Logger, text:string)
+    --- @field info fun(self:Logger, text:string)
+    --- @field warn fun(self:Logger, text:string)
+    --- @field error fun(self:Logger, text:string)
+
+    ---comment
+    ---@param logger_name any
+    ---@param logLevel any
+    ---@param liveLoggingLevel any
+    ---@return Logger
     function LOGGER:new(logger_name, logLevel, liveLoggingLevel)
         local o = {}
         setmetatable(o, { __index = self })
