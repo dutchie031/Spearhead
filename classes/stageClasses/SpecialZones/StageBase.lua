@@ -235,8 +235,10 @@ do
 end
 
 if Spearhead == nil then Spearhead = {} end
-if Spearhead.internal == nil then Spearhead.internal = {} end
-Spearhead.internal.StageBase = StageBase
+if Spearhead.classes == nil then Spearhead.classes = {} end
+if Spearhead.classes.stageClasses == nil then Spearhead.classes.stageClasses = {} end
+if Spearhead.classes.stageClasses.SpecialZones == nil then Spearhead.classes.stageClasses.SpecialZones = {} end
+Spearhead.classes.stageClasses.SpecialZones.StageBase = StageBase
 
 
 

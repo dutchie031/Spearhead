@@ -912,13 +912,6 @@ Spearhead.DcsUtil = DCS_UTIL
 
 local LOGGER = {}
 do
-    LOGGER.LogLevelOptions = {
-        DEBUG = 0,
-        INFO = 1,
-        WARN = 2,
-        ERROR = 3,
-        NONE = 4
-    }
     
 
     local PreFix = "Spearhead"
@@ -931,15 +924,13 @@ do
 
     ---comment
     ---@param logger_name any
-    ---@param logLevel any
-    ---@param liveLoggingLevel any
+    ---@param logLevel LogLevel
     ---@return Logger
-    function LOGGER:new(logger_name, logLevel, liveLoggingLevel)
+    function LOGGER:new(logger_name, logLevel)
         local o = {}
         setmetatable(o, { __index = self })
         o.LoggerName = logger_name or "(loggername not set)"
-        o.LogLevel = logLevel or LOGGER.LogLevelOptions.INFO
-        o.LiveLoggingLevel = liveLoggingLevel or LOGGER.LogLevelOptions.NONE
+        o.LogLevel = logLevel or "INFO"
 
         ---comment
         ---@param self table self logger
@@ -950,12 +941,8 @@ do
             end
             message = UTIL.toString(message)
 
-            if self.LogLevel <= LOGGER.LogLevelOptions.INFO then
+            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" then
                 env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
-
-            if self.LiveLoggingLevel <= LOGGER.LogLevelOptions.INFO then
-                trigger.action.outText(message, 20)
             end
         end
 
@@ -967,12 +954,8 @@ do
             end
             message = UTIL.toString(message)
 
-            if self.LogLevel <= LOGGER.LogLevelOptions.WARN then
-                env.warning("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
-
-            if self.LiveLoggingLevel <= LOGGER.LogLevelOptions.WARN then
-                trigger.action.outText(message, 20)
+            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" or self.LogLevel == "WARN" then
+                env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
             end
         end
 
@@ -986,12 +969,8 @@ do
 
             message = UTIL.toString(message)
 
-            if self.LogLevel <= LOGGER.LogLevelOptions.ERROR then
-                env.error("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
-
-            if self.LiveLoggingLevel <= LOGGER.LogLevelOptions.ERROR then
-                trigger.action.outText(message, 20)
+            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" or self.LogLevel == "WARN" or self.logLevel == "ERROR" then
+                env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
             end
         end
 
@@ -1004,12 +983,8 @@ do
             end
 
             message = UTIL.toString(message)
-            if self.LogLevel <= LOGGER.LogLevelOptions.DEBUG then
+            if self.LogLevel == "DEBUG" then
                 env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "][DEBUG] " .. message)
-            end
-
-            if self.LiveLoggingLevel <= LOGGER.LogLevelOptions.DEBUG then
-                trigger.action.outText(message, 20)
             end
         end
 
@@ -1030,7 +1005,7 @@ Spearhead.LoadingDone = function()
         return
     end
 
-    local warningLogger = Spearhead.LoggerTemplate:new("MISSIONPARSER", Spearhead.LoggerTemplate.LogLevelOptions.INFO, 4)
+    local warningLogger = Spearhead.LoggerTemplate:new("MISSIONPARSER", "INFO")
     if Spearhead.Util.tableLength(Spearhead.MissionEditingWarnings) > 0 then
         for key, message in pairs(Spearhead.MissionEditingWarnings) do
             warningLogger:warn(message)

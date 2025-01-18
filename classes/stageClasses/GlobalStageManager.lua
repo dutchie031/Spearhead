@@ -1,8 +1,14 @@
 
 
 local StagesByName = {}
+
+---@type table<string, Array<Stage>>
 local StagesByIndex = {}
+
+---@type table<string, Array<Stage>>
 local SideStageByIndex = {}
+
+local currentStage = -99
 
 
 GlobalStageManager = {}
@@ -13,6 +19,7 @@ GlobalStageManager = {}
 ---@return nil
 function GlobalStageManager:NewAndStart(database, stageConfig)
     local logger = Spearhead.LoggerTemplate:new("StageManager", stageConfig.logLevel)
+    logger:info("Using Stage Log Level: " .. stageConfig.logLevel)
     local o = {}
     setmetatable(o, { __index = self })
 
@@ -28,10 +35,37 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
         if anyActive == false and stageConfig:isAutoStages() == true then
             Spearhead.Events.PublishStageNumberChanged(tonumber(stageNumber) + 1)
         end
-
     end
 
     
+
+    
+    ---@type OnStageChangedListener
+    local OnStageNumberChangedListener = {
+        OnStageNumberChanged = function (self, number)
+            currentStage = number
+        end
+    }
+
+    
+    ---@type StageCompleteListener
+    local OnStageCompleteListener = {
+        OnStageComplete = function(self, stage)
+            local anyIncomplete = false
+            for index, stage in pairs(StagesByIndex[tostring(currentStage)]) do
+                if stage:IsComplete() == false then
+                    anyIncomplete = true
+                end
+            end
+
+            if anyIncomplete == false and stageConfig.isAutoStages == true then
+                Spearhead.Events.PublishStageNumberChanged(currentStage + 1)
+            end
+        end
+    }
+
+
+
     for _, stageName in pairs(database:getStagezoneNames()) do
         local valid = true
 
@@ -68,24 +102,26 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
         local stageDisplayName = split[3]
         local stagelogger = Spearhead.LoggerTemplate:new(stageName, stageConfig.logLevel)
         if valid == true and orderNumber then
+
+            ---@type StageInitData
+            local initData = {
+                stageDisplayName = stageDisplayName,
+                stageNumber =  orderNumber,
+                stageZoneName = stageName,
+            }
+
             if isSideStage == true then
-                local stage = Spearhead.classes.stageClasses.ExtraStage:new(database, stagelogger, stageConfig, stageZoneName, orderNumber, stageDisplayName)
-                if stage then
-                    StagesByName[stageName]  = stage
-                    local indexString = tostring(orderNumber)
-                    if SideStageByIndex[indexString] == nil then SideStageByIndex[indexString] = {} end
-                    table.insert(SideStageByIndex[indexString], stage)
-                end
+                local stage = Spearhead.classes.stageClasses.Stages.ExtraStage.New(database, stageConfig, stagelogger, initData)
+                stage:AddStageCompleteListener(OnStageCompleteListener)
+
+                if SideStageByIndex[tostring(orderNumber)] == nil then SideStageByIndex[tostring(orderNumber)] = {} end
+                table.insert(SideStageByIndex[tostring(orderNumber)], stage) 
             else 
-                local stage = Spearhead.internal.Stage:new(stageName, orderNumber, stageDisplayName, database, stagelogger, stageConfig)
-                if stage then
-                    stage:AddStageCompleteListener(o);
-                    StagesByName[stageName]  = stage
-                    local indexString = tostring(orderNumber)
-                    if StagesByIndex[indexString] == nil then StagesByIndex[indexString] = {} end
-                    table.insert(StagesByIndex[indexString], stage)
-                    logger:info("Initiated " .. Spearhead.Util.tableLength(StagesByName))
-                end
+                local stage = Spearhead.classes.stageClasses.Stages.PrimaryStage.New(database, stageConfig, stagelogger, initData)
+                stage:AddStageCompleteListener(OnStageCompleteListener)
+                
+                if SideStageByIndex[tostring(orderNumber)] == nil then SideStageByIndex[tostring(orderNumber)] = {} end
+                table.insert(SideStageByIndex[tostring(orderNumber)], stage) 
             end 
         end
     end
@@ -103,7 +139,7 @@ GlobalStageManager.isStageComplete = function (stageNumber)
     if StagesByIndex[stageIndex] == nil then return nil end
     
     for _, stage in ipairs(StagesByIndex[stageIndex]) do
-        if stage.isComplete == false then
+        if stage:IsComplete() == false then
             return false
         end
     end

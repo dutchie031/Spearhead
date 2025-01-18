@@ -18,11 +18,19 @@ assert(loadfile(classPath .. "configuration\\CapConfig.lua"))()
 assert(loadfile(classPath .. "configuration\\StageConfig.lua"))()
 
 assert(loadfile(classPath .. "stageClasses\\GlobalStageManager.lua"))()
-assert(loadfile(classPath .. "stageClasses\\Mission.lua"))()
-assert(loadfile(classPath .. "stageClasses\\Stage.lua"))()
-assert(loadfile(classPath .. "stageClasses\\ExtraStage.lua"))()
-assert(loadfile(classPath .. "stageClasses\\StageBase.lua"))()
-assert(loadfile(classPath .. "stageClasses\\BlueSam.lua"))()
+assert(loadfile(classPath .. "stageClasses\\Missions\\Mission.lua"))()
+
+assert(loadfile(classPath .. "stageClasses\\Stages\\Stage.lua"))()
+assert(loadfile(classPath .. "stageClasses\\Stages\\PrimaryStage.lua"))()
+assert(loadfile(classPath .. "stageClasses\\Stages\\ExtraStage.lua"))()
+
+
+assert(loadfile(classPath .. "stageClasses\\Groups\\SpearheadGroup.lua"))()
+
+assert(loadfile(classPath .. "stageClasses\\helpers\\MissionCommandsHelper.lua"))()
+
+assert(loadfile(classPath .. "stageClasses\\SpecialZones\\StageBase.lua"))()
+assert(loadfile(classPath .. "stageClasses\\SpecialZones\\BlueSam.lua"))()
 
 assert(loadfile(classPath .. "capClasses\\CapGroup.lua"))()
 assert(loadfile(classPath .. "capClasses\\GlobalCapManager.lua"))()

@@ -48,7 +48,7 @@ function CapConfig:new()
     local deathDelay = tonumber(SpearheadConfig.CapConfig.deathDelay) or 1800
     ---@return number
     o.getDeathDelay = function(self) return deathDelay end
-    o.logLevel  = Spearhead.LoggerTemplate.LogLevelOptions.INFO
+    o.logLevel  = "INFO"
 
     return o;
 end

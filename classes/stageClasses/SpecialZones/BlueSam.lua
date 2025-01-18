@@ -127,7 +127,9 @@ do
         return o
     end
 end
+
 if Spearhead == nil then Spearhead = {} end
 if Spearhead.classes == nil then Spearhead.classes = {} end
 if Spearhead.classes.stageClasses == nil then Spearhead.classes.stageClasses = {} end
-Spearhead.classes.stageClasses.BlueSam = BlueSam
+if Spearhead.classes.stageClasses.SpecialZones == nil then Spearhead.classes.stageClasses.SpecialZones = {} end
+Spearhead.classes.stageClasses.Missions.SpecialZones = BlueSam
