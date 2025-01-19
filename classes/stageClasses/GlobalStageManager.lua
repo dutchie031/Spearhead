@@ -24,18 +24,16 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
     setmetatable(o, { __index = self })
 
     o.logger = logger
-
-
     if stageConfig.isAutoStages == false then
         logger:warn("Spearhead will not automatically progress stages due to the given settings. If you manually have implemented this, please ignore this message")
     end
-
     ---@type OnStageChangedListener
     local OnStageNumberChangedListener = {
         OnStageNumberChanged = function (self, number)
             currentStage = number
         end
     }
+
     Spearhead.Events.AddStageNumberChangedListener(OnStageNumberChangedListener)
 
     
@@ -61,8 +59,6 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
             end
         end
     }
-
-
 
     for _, stageName in pairs(database:getStagezoneNames()) do
         local valid = true
