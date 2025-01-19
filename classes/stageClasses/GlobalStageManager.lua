@@ -25,40 +25,38 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
 
     o.logger = logger
 
-    o.onStageCompleted = function(self, stage) 
-        local stageNumber = tostring(stage.stageNumber)
-        local anyActive = false
-        for _, stage in pairs(StagesByIndex[stageNumber] or {}) do
-            if stage.isActive then anyActive = true end
-        end
 
-        if anyActive == false and stageConfig:isAutoStages() == true then
-            Spearhead.Events.PublishStageNumberChanged(tonumber(stageNumber) + 1)
-        end
+    if stageConfig.isAutoStages == false then
+        logger:warn("Spearhead will not automatically progress stages due to the given settings. If you manually have implemented this, please ignore this message")
     end
 
-    
-
-    
     ---@type OnStageChangedListener
     local OnStageNumberChangedListener = {
         OnStageNumberChanged = function (self, number)
             currentStage = number
         end
     }
+    Spearhead.Events.AddStageNumberChangedListener(OnStageNumberChangedListener)
 
     
     ---@type StageCompleteListener
     local OnStageCompleteListener = {
         OnStageComplete = function(self, stage)
+            logger:debug("Receiving stage complete event from: " .. stage.zoneName)
+
             local anyIncomplete = false
+
+
+            logger:debug("Checking stages for index: " .. tostring(currentStage))
             for index, stage in pairs(StagesByIndex[tostring(currentStage)]) do
                 if stage:IsComplete() == false then
                     anyIncomplete = true
+                    logger:debug("Need to wait for Stage " .. stage.zoneName .. " to be completed")
                 end
             end
 
             if anyIncomplete == false and stageConfig.isAutoStages == true then
+                logger:debug("Setting next stage to: " .. tostring(currentStage + 1))
                 Spearhead.Events.PublishStageNumberChanged(currentStage + 1)
             end
         end

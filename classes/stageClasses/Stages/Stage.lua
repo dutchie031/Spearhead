@@ -201,11 +201,6 @@ end
 function Stage:CheckAndUpdateSelf()
     self._logger:debug("Checking on Stage: " .. self.zoneName)
 
-    if self:IsComplete() == true then
-        self:NotifyComplete()
-        return
-    end
-
     local activeCount = 0
     local dbTables = self:GetStageTables()
 
