@@ -24,21 +24,6 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
     setmetatable(o, { __index = self })
 
     o.logger = logger
-
-    o.onStageCompleted = function(self, stage) 
-        local stageNumber = tostring(stage.stageNumber)
-        local anyActive = false
-        for _, stage in pairs(StagesByIndex[stageNumber] or {}) do
-            if stage.isActive then anyActive = true end
-        end
-
-        if anyActive == false and stageConfig:isAutoStages() == true then
-            Spearhead.Events.PublishStageNumberChanged(tonumber(stageNumber) + 1)
-        end
-    end
-
-    
-
     
     ---@type OnStageChangedListener
     local OnStageNumberChangedListener = {
@@ -46,7 +31,6 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
             currentStage = number
         end
     }
-
     
     ---@type StageCompleteListener
     local OnStageCompleteListener = {
@@ -63,8 +47,6 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
             end
         end
     }
-
-
 
     for _, stageName in pairs(database:getStagezoneNames()) do
         local valid = true
