@@ -24,9 +24,10 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
     setmetatable(o, { __index = self })
 
     o.logger = logger
-    if stageConfig.isAutoStages == false then
+    if stageConfig.isAutoStages ~= true then
         logger:warn("Spearhead will not automatically progress stages due to the given settings. If you manually have implemented this, please ignore this message")
     end
+
     ---@type OnStageChangedListener
     local OnStageNumberChangedListener = {
         OnStageNumberChanged = function (self, number)
@@ -36,20 +37,19 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
 
     Spearhead.Events.AddStageNumberChangedListener(OnStageNumberChangedListener)
 
-    
     ---@type StageCompleteListener
     local OnStageCompleteListener = {
         OnStageComplete = function(self, stage)
             logger:debug("Receiving stage complete event from: " .. stage.zoneName)
 
             local anyIncomplete = false
-
-
             logger:debug("Checking stages for index: " .. tostring(currentStage))
             for index, stage in pairs(StagesByIndex[tostring(currentStage)]) do
                 if stage:IsComplete() == false then
                     anyIncomplete = true
                     logger:debug("Need to wait for Stage " .. stage.zoneName .. " to be completed")
+                else
+                    logger:debug("Stage verified to be completed:  " .. stage.zoneName)
                 end
             end
 
@@ -114,8 +114,8 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
                 local stage = Spearhead.classes.stageClasses.Stages.PrimaryStage.New(database, stageConfig, stagelogger, initData)
                 stage:AddStageCompleteListener(OnStageCompleteListener)
                 
-                if SideStageByIndex[tostring(orderNumber)] == nil then SideStageByIndex[tostring(orderNumber)] = {} end
-                table.insert(SideStageByIndex[tostring(orderNumber)], stage) 
+                if StagesByIndex[tostring(orderNumber)] == nil then StagesByIndex[tostring(orderNumber)] = {} end
+                table.insert(StagesByIndex[tostring(orderNumber)], stage) 
             end 
         end
     end

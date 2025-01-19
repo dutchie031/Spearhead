@@ -14,9 +14,10 @@ function PrimaryStage.New(database, stageConfig, logger, initData)
     local Stage = Spearhead.classes.stageClasses.Stages.__Stage
     setmetatable(PrimaryStage, Stage)
     PrimaryStage.__index = PrimaryStage
-    local o = Stage.New({}, database, stageConfig, logger, initData, "primary")
-    setmetatable(o, PrimaryStage)
-    return o
+    setmetatable(PrimaryStage, {__index = Stage}) 
+    
+    local o = Stage.New(database, stageConfig, logger, initData, "primary") --[[@as PrimaryStage]]
+    return o 
 end
 
 if not Spearhead.classes then Spearhead.classes = {} end

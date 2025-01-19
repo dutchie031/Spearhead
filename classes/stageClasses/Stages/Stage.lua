@@ -39,26 +39,25 @@
 --- @field protected _spawnedGroups Array<string>
 --- @field protected _stageCompleteListeners Array<StageCompleteListener>
 --- @field protected CheckContinuousAsync fun(self:Stage, time:number) : number?
---- @fiedl protected _stageCompleteListeners Array<StageCompleteListener>
+--- @field protected OnPostStageComplete fun(self:Stage)?
+--- @field protected OnPostBlueActivated fun(self:Stage)?
 local Stage = {}
 
 local stageDrawingId = 100
 
 ---comment
----@generic T: Stage
----@param o T
 ---@param database Database
 ---@param stageConfig StageConfig
 ---@param logger any
 ---@param initData StageInitData
 ---@param missionPriority MissionPriority
----@return T
-function Stage.New(o, database, stageConfig, logger, initData, missionPriority)
+---@return Stage
+function Stage.New(database, stageConfig, logger, initData, missionPriority)
 
     local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
 
     Stage.__index = Stage
-    o = o or {}
+    local o = {}
     local self = setmetatable(o, Stage)
 
     self.zoneName = initData.stageZoneName
@@ -67,6 +66,8 @@ function Stage.New(o, database, stageConfig, logger, initData, missionPriority)
     self.isComplete = false
     self.stageName = initData.stageDisplayName
     
+    self.OnPostStageComplete = nil
+    self.OnPostBlueActivated = nil
 
     self._database = database
     self._logger = logger
@@ -249,6 +250,9 @@ function Stage:NotifyComplete()
         end)
     end
 
+    if self.OnPostStageComplete then
+        timer.scheduleFunction(self.OnPostStageComplete, self, timer.getTime() + 3)
+    end
 end
 
 ---@param listener StageCompleteListener
@@ -283,14 +287,14 @@ function Stage:MarkStage(stageColor)
     elseif stageColor =="BLUE" then
         fillColor = {0, 0, 1, 0.1}
         line ={ 0, 0,1, 1 }
-    else
-        fillColor = {80/255, 80/255, 80/255, 0.3}
+    elseif stageColor == "GRAY" then
+        fillColor = {80/255, 80/255, 80/255, 0.15}
         line ={ 80/255, 80/255,80/255, 1 }
     end
 
     local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
     if zone and self._stageConfig.isDrawStagesEnabled == true then
-        self._logger:debug("drawing stage")
+        self._logger:debug("drawing stage: " .. self.zoneName)
         if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
             trigger.action.circleToAll(-1, self._stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, {0,0,0,0}, {0,0,0,0},4, true)
         else
@@ -368,6 +372,25 @@ Stage.OnMissionComplete = function(self, mission)
     self:CheckAndUpdateSelf()
 end
 
+
+---private use only
+function Stage:ActivateBlueGroups()
+
+    for _, blueSam in pairs(self._db.blueSams) do
+        blueSam:Activate()
+    end
+
+    for _, airbase in pairs(self._db.airbases) do
+        airbase:ActivateBlueStage()
+    end
+
+    if self.OnPostBlueActivated then
+        pcall(function()
+            self:OnPostBlueActivated()
+        end)
+    end
+end
+
 function Stage:ActivateBlueStage()
 
     self._logger:debug("Setting stage '" .. Spearhead.Util.toString(self.zoneName) .. "' to blue")
@@ -390,15 +413,7 @@ function Stage:ActivateBlueStage()
             self:MarkStage("BLUE")
         end)
 
-        local _db = self:GetStageTables()
-
-        for _, blueSam in pairs(_db.blueSams) do
-            blueSam:Activate()
-        end
-
-        for _, airbase in pairs(_db.airbases) do
-            airbase:ActivateBlueStage()
-        end
+        self:ActivateBlueGroups()
 
         return nil
     end

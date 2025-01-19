@@ -7,7 +7,7 @@ local ExtraStage = {}
 ---@param stageConfig StageConfig
 ---@param logger any
 ---@param initData StageInitData
----@return PrimaryStage
+---@return ExtraStage
 function ExtraStage.New(database, stageConfig, logger, initData)
 
     -- "Import"
@@ -15,17 +15,38 @@ function ExtraStage.New(database, stageConfig, logger, initData)
     setmetatable(ExtraStage, Stage)
 
     ExtraStage.__index = ExtraStage
-    local o = Stage.New({}, database, stageConfig, logger, initData, "secondary")
-    setmetatable(o, ExtraStage)
-    return o
+    local self = Stage.New(database, stageConfig, logger, initData, "secondary") --[[@as ExtraStage]]
+    setmetatable(self, ExtraStage)
+
+    self.OnPostBlueActivated = function (selfStage)
+        selfStage:MarkStage("GRAY")
+    end
+    
+    self.OnPostStageComplete = function (selfStage)
+        self:ActivateBlueStage()
+    end
+
+    return self
 end
 
-function ExtraStage:ActivateBlueStage()
-    Spearhead.classes.stageClasses.Stages.__Stage.ActivateBlueStage(self)
+---comment
+---@param self Stage
+---@param number integer
+function ExtraStage:OnStageNumberChanged(number)
 
-    pcall(function()
-        self:MarkStage("GRAY")
-    end)
+    self._activeStage = number
+    if Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
+        self:PreActivate()
+    end
+
+    if number == self.stageNumber then
+        self:ActivateStage()
+    end
+
+    if self.isComplete == true then
+        self:ActivateBlueStage()
+    end
+
 end
 
 
