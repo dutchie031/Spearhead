@@ -4,9 +4,32 @@ local SpearheadDB = {}
 do -- DB
     local singleton = nil
 
+    ---@class Database
+    ---@field private tables table tables
+    ---@field private Logger Logger 
+    ---@field GetNewMissionCode fun(self:Database): integer
+    ---@field GetDescriptionForMission fun(self:Database, MissionZoneName:string) : string|nil
+    ---@field getAirbaseIdsInStage fun(self:Database, stageZoneName:string) : Array<integer>
+    ---@field getBlueGroupsAtAirbase fun(self:Database, airbaseId:integer) : Array<string>
+    ---@field getRedGroupsAtAirbase fun(self:Database, airbaseId:integer) : Array<string>
+    ---@field getBlueSamGroupsInZone fun(self:Database, samZoneName:string) : Array<string>
+    ---@field getBlueSamsInStage fun(self:Database, stageZoneName:string) : Array<string>
+    ---@field getCapGroupsAtAirbase fun(self:Database, airbaseId0:integer) : Array<string>
+    ---@field getCapRouteInZone fun(self:Database, stageNumber:integer, baseId:integer) : Array<string>
+    ---@field getCarrierRouteZones fun(self:Database) : Array<string>
+    ---@field getFarpPadsInFarpZone fun(self:Database, farpZoneName:string) : Array<string>
+    ---@field getFarpZonesInStage fun(self:Database, stageZoneName:string) : Array<string>
+    ---@field getGroupsForMissionZone fun(self:Database, missionZoneName:string) : Array<string>
+    ---@field getGroupsInFarpZone fun(self:Database, farpZoneName:string) : Array<string>
+    ---@field getMiscGroupsAtStage fun(self:Database, stageZoneName:string) : Array<string>
+    ---@field getMissionBriefingForMissionZone fun(self:Database, missionZoneName:string): string
+    ---@field getMissionsForStage fun(self:Database, stageZoneName:string) : Array<string>
+    ---@field getRandomMissionsForStage fun(self:Database, stageZoneName:string) : Array<string>
+    ---@field getStagezoneNames fun(self:Database) : Array<string>
+
     ---comment
     ---@param Logger table
-    ---@return table
+    ---@return Database
     function SpearheadDB:new(Logger, debug)
         if not debug then debug = false end
         if singleton ~= nil then
@@ -14,9 +37,14 @@ do -- DB
             return singleton
         end
 
-        local o = {}
-        setmetatable(o, { __index = self })
-
+        local tables = {}
+        
+        local o = {
+            Logger = Logger,
+            tables = tables,
+        }
+        setmetatable(o, { __index = self, })
+        
         o.Logger = Logger
         o.tables = {}
         do --INIT ALL TABLES
@@ -488,11 +516,11 @@ do -- DB
             o.tables.missionCodes = {}
         end
 
-        o.GetDescriptionForMission = function(self, missionZoneName)
+        function o:GetDescriptionForMission(missionZoneName)
             return self.tables.descriptions[missionZoneName]
         end
 
-        o.getCapRouteInZone = function(self, stageNumber, baseId)
+        function o.getCapRouteInZone(stageNumber, baseId)
             local stageNumber = tostring(stageNumber) or "nothing"
             local routeData = self.tables.capRoutesPerStageNumber[stageNumber]
             if routeData then
@@ -550,15 +578,6 @@ do -- DB
         end
         ---comment
         ---@param self table
-        ---@param number number
-        ---@return string zoneName
-        o.getStageZonesByStageNumber = function(self, number)
-            local numberString = tostring(number)
-            return self.tables.stage_zonesByNumer[numberString]
-        end
-
-        ---comment
-        ---@param self table
         ---@return table result a  list of stage zone names
         o.getStagezoneNames = function(self)
             return self.tables.stage_zones
@@ -613,10 +632,9 @@ do -- DB
             return self.tables.capGroupsOnAirbase[airbaseId] or {}
         end
 
-        ---@param self table
         ---@param stageName string
         ---@return table
-        o.getBlueSamsInStage = function(self, stageName)
+        function o:getBlueSamsInStage(stageName)
             return self.tables.blueSamZonesPerStage[stageName] or {}
         end
 
@@ -641,6 +659,9 @@ do -- DB
             return self.tables.miscGroupsInStages[stageName] or {}
         end
 
+        ---comment
+        ---@param self table
+        ---@return integer|nil
         o.GetNewMissionCode = function(self)
             local code = nil
             local tries = 0

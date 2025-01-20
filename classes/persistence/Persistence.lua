@@ -1,36 +1,28 @@
 
 local Persistence = {}
 do
-    --[[
-        The Tables: 
+    ---@class PersistentData
+    ---@field dead_units table<string, DeathState>
+    ---@field activeStage integer|nil
 
-        tables {
-            number activeStage;
+    ---@class DeathState 
+    ---@field isDead boolean
+    ---@field pos Position
+    ---@field heading number
+    ---@field type string
+    ---@field country_id integer
 
-            Dict stages: [
-                "stageName": {
-                    Dict missions: [
-                        "missionName":{
-                            boolean isCompleted;
-                            Dict aliveUnits: [
-                                "unitName" : true | false
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-    ]]--
 
     local persistanceWriteIntervalSeconds = 15
     local enabled = false
 
-    local tables = {}
-    tables.activeStage = nil
-    tables.stages = {}
-    tables.dead_units = {}
+    ---@type PersistentData
+    local tables = {
+        dead_units = {},
+        activeStage = nil
+    }
 
-
+    
     local logger = {}
 
     if SpearheadConfig == nil then SpearheadConfig = {} end
@@ -80,8 +72,7 @@ do
                         pos = deadState.pos,
                         heading = deadState.heading,
                         type = deadState.type,
-                        country_id = deadState.country_id,
-                        isCleaned = deadState.isCleaned
+                        country_id = deadState.country_id
                     }
                 end
             end
@@ -127,10 +118,13 @@ do
         return enabled
     end
 
+
+    ---comment
+    ---@param persistenceLogger Logger
     Persistence.Init = function(persistenceLogger)
         logger = persistenceLogger
 
-        logger:info("Initiating Persistance Manager")
+        logger:info("Initiating Persistence Manager")
 
         if lfs == nil or io == nil then
             env.error("[Spearhead][Persistence] lfs and io seem to be sanitized. Persistence is skipped and disabled")
@@ -151,7 +145,7 @@ do
     end
 
     ---Get the active stage as in the persistance file
-    ---@return number|nil
+    ---@return integer|nil
     Persistence.GetActiveStage = function()
         if tables.activeStage then
             return tables.activeStage
@@ -159,29 +153,25 @@ do
         return nil
     end
 
-    ---Checks if the mission is complete
-    ---@param stageName any
-    ---@param missionZoneName any
-    ---@return boolean
-    Persistence.IsMissionComplete = function(stageName, missionZoneName)
-
-        if tables.stages[stageName] and tables.stages[stageName].missions and tables.stages[stageName].missions[missionZoneName] then
-            return tables.stages[stageName].missions[missionZoneName].isComplete == true
-        end
-        
-        return false
-    end
-
-    ---Check if the unit was dead during the last save. Nil if alive
+    ---Check if the unit was dead during the last save. Nil if persitance not enabled
     ---@param unitName string name
-    ---@return table|nil { isDead, pos = {x,y,z}, heading, type, country_id }
+    ---@return DeathState|nil { isDead, pos = {x,y,z}, heading, type, country_id } 
     Persistence.UnitDeadState = function(unitName)
-        return tables.dead_units[unitName]
+        if Persistence.isEnabled() == false then
+            return nil
+        end
+
+        local entry =  tables.dead_units[unitName]
+        if entry then
+            return entry
+        else
+            return { isDead = false }
+        end
     end
 
     ---Pass the unit to be saved as "dead"
     ---@param name string
-    ---@param position table { x, y ,z } 
+    ---@param position Position { x, y ,z } 
     ---@param heading number
     ---@param type string 
     ---@param country_id number
@@ -198,15 +188,6 @@ do
          }
         updateRequired = true
     end
-
-    Persistence.CorpseCleaned = function(unitName)
-        local data = tables.dead_units[unitName]
-        if data then
-            data.isCleaned = true
-        end
-        updateRequired = true
-    end
-
 end
 
 if Spearhead == nil then Spearhead = {} end

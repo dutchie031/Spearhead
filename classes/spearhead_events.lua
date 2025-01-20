@@ -9,16 +9,15 @@ do
         env.error("[Spearhead][Events] " .. (text or "nil"))
     end
 
+    ---@class OnStageChangedListener
+    ---@field OnStageNumberChanged fun(self:OnStageChangedListener, number:integer)
+
     do -- STAGE NUMBER CHANGED
         local OnStageNumberChangedListeners = {}
         local OnStageNumberChangedHandlers = {}
         ---Add a stage zone number changed listener
-        ---@param listener table object with function OnStageNumberChanged(self, number)
+        ---@param listener OnStageChangedListener object with function OnStageNumberChanged(self, number)
         SpearheadEvents.AddStageNumberChangedListener = function(listener)
-            if type(listener) ~= "table" then
-                warn("Event listener not of type table, did you mean to use handler?")
-                return
-            end
             table.insert(OnStageNumberChangedListeners, listener)
         end
 
@@ -76,11 +75,15 @@ do
         table.insert(onLandEventListeners[unitName], landListener)
     end
 
+    ---@class OnUnitLostListener
+    ---@field OnUnitLost fun(self:OnUnitLostListener, unit:table)
+
+    ---@type table<string,Array<OnUnitLostListener>>
     local OnUnitLostListeners = {}
     ---This listener gets fired for any event that can indicate a loss of a unit.
     ---Such as: Eject, Crash, Dead, Unit_Lost,
     ---@param unitName any
-    ---@param unitLostListener table Object with function: OnUnitLost(initiatorUnit)
+    ---@param unitLostListener OnUnitLostListener 
     SpearheadEvents.addOnUnitLostEventListener = function(unitName, unitLostListener)
         if type(unitLostListener) ~= "table" then
             warn("Unit lost Event listener not of type table/object")
@@ -199,39 +202,6 @@ do
                     end
                 end
             end
-        end
-    end
-
-    do     --COMMANDS
-        do -- status updates
-            local onStatusRequestReceivedListeners = {}
-            ---comment
-            ---@param listener table object with OnStatusRequestReceived(self, groupId)
-            SpearheadEvents.AddOnStatusRequestReceivedListener = function(listener)
-                if type(listener) ~= "table" then
-                    warn("Unit lost Event listener not of type table/object")
-                    return
-                end
-
-                table.insert(onStatusRequestReceivedListeners, listener)
-            end
-
-            local triggerStatusRequestReceived = function(groupId)
-                for _, callable in pairs(onStatusRequestReceivedListeners) do
-                    local succ, err = pcall(function()
-                        callable:OnStatusRequestReceived(groupId)
-                    end)
-                end
-            end
-
-            SpearheadEvents.AddCommandsToGroup = function(groupId)
-                local base = "MISSIONS"
-                if groupId then
-                    missionCommands.addCommandForGroup(groupId, "Stage Status", nil, triggerStatusRequestReceived,
-                        groupId)
-                end
-            end
-
         end
     end
 

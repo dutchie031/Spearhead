@@ -477,9 +477,8 @@ do     -- INIT DCS_UTIL
     end
 
     ---destroy the given unit
-    ---@param groupName string 
-    function DCS_UTIL.DestroyUnit(groupName, unitName)
-        if DCS_UTIL.IsGroupStatic(groupName) == true then
+    function DCS_UTIL.DestroyUnit(unitName)
+        if DCS_UTIL.IsGroupStatic(unitName) == true then
             local object = StaticObject.getByName(unitName)
             if object ~= nil then
                 object:destroy()
@@ -833,6 +832,8 @@ do     -- INIT DCS_UTIL
     end
 
     function DCS_UTIL.CleanCorpse(unitName)
+        local unitName = "dead_" .. unitName
+
         local object = StaticObject.getByName(unitName)
 
         if object then
@@ -847,19 +848,20 @@ do     -- INIT DCS_UTIL
     ---@param route table? route of the group. If nil wil be the default route.
     ---@param uncontrolled boolean? Sets the group to be uncontrolled on spawn
     ---@return table? new_group the Group class that was spawned
+    ---@return boolean? isStatic whether the group is a static or not
     function DCS_UTIL.SpawnGroupTemplate(groupName, location, route, uncontrolled)
         if groupName == nil then
-            return
+            return nil, nil
         end
 
         local template = DCS_UTIL.GetMizGroupOrDefault(groupName, nil)
         if template == nil then
-            return nil
+            return nil, nil
         end
         if template.category == DCS_UTIL.GroupCategory.STATIC then
             --TODO: Implement location and route stuff
             local spawn_template = template.group_template
-            coalition.addStaticObject(template.country_id, spawn_template)
+            return coalition.addStaticObject(template.country_id, spawn_template), true
         else
             local spawn_template = template.group_template
             if location ~= nil then
@@ -887,7 +889,7 @@ do     -- INIT DCS_UTIL
                 spawn_template.uncontrolled = uncontrolled
             end
             local new_group = coalition.addGroup(template.country_id, template.category, spawn_template)
-            return new_group
+            return new_group, false
         end
     end
 
@@ -911,22 +913,25 @@ Spearhead.DcsUtil = DCS_UTIL
 
 local LOGGER = {}
 do
-    LOGGER.LogLevelOptions = {
-        DEBUG = 0,
-        INFO = 1,
-        WARN = 2,
-        ERROR = 3,
-        NONE = 4
-    }
+    
 
     local PreFix = "Spearhead"
 
-    function LOGGER:new(logger_name, logLevel, liveLoggingLevel)
+    --- @class Logger
+    --- @field debug fun(self:Logger, text:string)
+    --- @field info fun(self:Logger, text:string)
+    --- @field warn fun(self:Logger, text:string)
+    --- @field error fun(self:Logger, text:string)
+
+    ---comment
+    ---@param logger_name any
+    ---@param logLevel LogLevel
+    ---@return Logger
+    function LOGGER:new(logger_name, logLevel)
         local o = {}
         setmetatable(o, { __index = self })
         o.LoggerName = logger_name or "(loggername not set)"
-        o.LogLevel = logLevel or LOGGER.LogLevelOptions.INFO
-        o.LiveLoggingLevel = liveLoggingLevel or LOGGER.LogLevelOptions.NONE
+        o.LogLevel = logLevel or "INFO"
 
         ---comment
         ---@param self table self logger
@@ -937,12 +942,8 @@ do
             end
             message = UTIL.toString(message)
 
-            if self.LogLevel <= LOGGER.LogLevelOptions.INFO then
+            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" then
                 env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
-
-            if self.LiveLoggingLevel <= LOGGER.LogLevelOptions.INFO then
-                trigger.action.outText(message, 20)
             end
         end
 
@@ -954,12 +955,8 @@ do
             end
             message = UTIL.toString(message)
 
-            if self.LogLevel <= LOGGER.LogLevelOptions.WARN then
-                env.warning("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
-
-            if self.LiveLoggingLevel <= LOGGER.LogLevelOptions.WARN then
-                trigger.action.outText(message, 20)
+            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" or self.LogLevel == "WARN" then
+                env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
             end
         end
 
@@ -973,12 +970,8 @@ do
 
             message = UTIL.toString(message)
 
-            if self.LogLevel <= LOGGER.LogLevelOptions.ERROR then
-                env.error("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
-
-            if self.LiveLoggingLevel <= LOGGER.LogLevelOptions.ERROR then
-                trigger.action.outText(message, 20)
+            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" or self.LogLevel == "WARN" or self.logLevel == "ERROR" then
+                env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
             end
         end
 
@@ -991,12 +984,8 @@ do
             end
 
             message = UTIL.toString(message)
-            if self.LogLevel <= LOGGER.LogLevelOptions.DEBUG then
+            if self.LogLevel == "DEBUG" then
                 env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "][DEBUG] " .. message)
-            end
-
-            if self.LiveLoggingLevel <= LOGGER.LogLevelOptions.DEBUG then
-                trigger.action.outText(message, 20)
             end
         end
 
@@ -1011,15 +1000,13 @@ function Spearhead.AddMissionEditorWarning(warningMessage)
     table.insert(Spearhead.MissionEditingWarnings, warningMessage or "skip")
 end
 
-missionCommands.addSubMenu("Missions")
-
 local loadDone = false
 Spearhead.LoadingDone = function()
     if loadDone == true then
         return
     end
 
-    local warningLogger = Spearhead.LoggerTemplate:new("MISSIONPARSER", Spearhead.LoggerTemplate.LogLevelOptions.INFO, 4)
+    local warningLogger = Spearhead.LoggerTemplate:new("MISSIONPARSER", "INFO")
     if Spearhead.Util.tableLength(Spearhead.MissionEditingWarnings) > 0 then
         for key, message in pairs(Spearhead.MissionEditingWarnings) do
             warningLogger:warn(message)
