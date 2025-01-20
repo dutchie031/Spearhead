@@ -48,12 +48,12 @@ See all the reference, explanation here: [SpearheadAPI](./SpearheadApi.html)
 </details> 
 
 <details> 
-  <summary>DELAYSTAGE_</summary>
+  <summary>WAITINGSTAGE_</summary>
   A stage that functions as a logic delay or timer. <br/>
   With this you can add a wait before or in between stages. 
 
-  Naming Convention: `DELAYSTAGE_<order>_<amount of seconds>`
-  Example: `DELAYSTAGE_2_180`
+  Naming Convention: `WAITINGSTAGE_<order>_<amount of seconds>`
+  Example: `WAITINGSTAGE_2_180`
 
   A waiting stage can be part of the same stage order as other stages. <br/>
   This will first activate the DELAYSTAGE and only when the DELAYSTAGE is completed will the other stages be activated. <br/>

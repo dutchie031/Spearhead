@@ -49,6 +49,8 @@ do
     end
 
     local loadTablesFromFile = function()
+        if not path then return end
+
         logger:info("Loading data from persistance file...")
         local f  = io.open(path, "r")
         if f == nil then
@@ -85,7 +87,7 @@ do
 
     local writeToFile = function()
         if not path then return end
-        
+
         local f = io.open(path, "w+")
         if f == nil then
             error("Could not open file for writing")
