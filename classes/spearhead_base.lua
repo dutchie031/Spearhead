@@ -477,9 +477,8 @@ do     -- INIT DCS_UTIL
     end
 
     ---destroy the given unit
-    ---@param groupName string 
-    function DCS_UTIL.DestroyUnit(groupName, unitName)
-        if DCS_UTIL.IsGroupStatic(groupName) == true then
+    function DCS_UTIL.DestroyUnit(unitName)
+        if DCS_UTIL.IsGroupStatic(unitName) == true then
             local object = StaticObject.getByName(unitName)
             if object ~= nil then
                 object:destroy()
@@ -833,6 +832,8 @@ do     -- INIT DCS_UTIL
     end
 
     function DCS_UTIL.CleanCorpse(unitName)
+        local unitName = "dead_" .. unitName
+
         local object = StaticObject.getByName(unitName)
 
         if object then

@@ -1,132 +1,88 @@
 
-
+---@class BlueSam
+---@field Activate fun(self: BlueSam)
+---@field private _database Database
+---@field private _logger Logger
+---@field private _zoneName string
+---@field private _blueGroups Array<SpearheadGroup>
+---@field private _cleanupUnits table<string, boolean>
 local BlueSam = {}
 
-do
+function BlueSam.New(database, logger, zoneName)
+    BlueSam.__index = BlueSam
+    local self = setmetatable({}, BlueSam)
 
-    ---@class BlueSam
-    ---@field Activate fun(self: BlueSam)
-    ---@field _database Database
-    ---@field _logger Logger
-    ---@field _zoneName string
-    ---@field _redGroups Array<string>
-    ---@field _blueGroups Array<string>
-    ---@field _cleanupUnits table<string, boolean>
+    self._database = database
+    self._logger = logger
+    self._zoneName = zoneName
 
-    function BlueSam:new(database, logger, zoneName)
+    self._blueGroups = {}
+    self._cleanupUnits = {}
 
-        local o = {}
-        setmetatable(o, { __index = self})
+    do
+        local groups = database:getBlueSamGroupsInZone(zoneName)
 
-        o._database = database
-        o._logger = logger
-        o._zoneName = zoneName
+        local blueUnitsPos = {}
+        local redUnitsPos = {}
 
-        o._redGroups = {}
-        o._blueGroups = {}
-        o._cleanupUnits = {}
+        for _, groupName in pairs(groups) do
+            local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
+            if SpearheadGroup then
+                
+                if SpearheadGroup:GetCoalition() == 2 then
+                    table.insert(self._blueGroups, SpearheadGroup)
+                end
 
-        do
-            local groups = database:getBlueSamGroupsInZone(zoneName)
 
-            local blueUnitsPos = {}
-            local redUnitsPos = {}
-
-            for _, groupName in pairs(groups) do
-                    if Spearhead.DcsUtil.IsGroupStatic(groupName) then
-                        local staticObject = StaticObject.getByName(groupName)
-
-                        if staticObject:getCoalition() == 1 then
-                            table.insert(o._redGroups, groupName)
-                            redUnitsPos[staticObject:getName()] = staticObject:getPoint()
-                        end
-
-                        if staticObject:getCoalition() == 2 then
-                            table.insert(o._blueGroups, groupName)
-                            blueUnitsPos[staticObject:getName()] = staticObject:getPoint()
-                        end
-                    else
-                        local group = Group.getByName(groupName)
-                        if group:getCoalition() == 1 then
-                            table.insert(o._redGroups, groupName)
-                        elseif group:getCoalition() == 2 then
-                            table.insert(o._blueGroups, groupName)
-                        end
-
-                        for _, unit in pairs(group:getUnits()) do
-                            if group:getCoalition() == 1 then
-                                table.insert(blueUnitsPos, unit:getPoint())
-                            elseif group:getCoalition() == 2 then
-                                table.insert(redUnitsPos, unit:getPoint())
-                            end
-                        end
+                for _, unit in pairs(SpearheadGroup:GetUnits()) do
+                    if SpearheadGroup:GetCoalition() == 1 then
+                        table.insert(blueUnitsPos, unit:getPoint())
+                    elseif SpearheadGroup:GetCoalition() == 2 then
+                        table.insert(redUnitsPos, unit:getPoint())
                     end
-                    Spearhead.DcsUtil.DestroyGroup(groupName)
-            end
+                end
 
-            do -- check cleanup requirements
-                -- Checks is any of the units are withing range (5m) of another unit. 
-                -- If so, make sure to add them to the cleanup list.
-            
-                local cleanup_distance = 5
-                for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
-                    for redUnitName, redUnitPos in pairs(redUnitsPos) do
-                        local distance = Spearhead.Util.VectorDistance(blueUnitPos, redUnitPos)
-                        env.info("distance: " .. tostring(distance))
-                        if distance <= cleanup_distance then
-                            o._cleanup_units[redUnitName] = true
-                        end
+            end
+            SpearheadGroup:Destroy()
+        end
+
+        do -- check cleanup requirements
+            -- Checks is any of the units are withing range (5m) of another unit. 
+            -- If so, make sure to add them to the cleanup list.
+        
+            local cleanup_distance = 5
+            for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
+                for redUnitName, redUnitPos in pairs(redUnitsPos) do
+                    local distance = Spearhead.Util.VectorDistance(blueUnitPos, redUnitPos)
+                    env.info("distance: " .. tostring(distance))
+                    if distance <= cleanup_distance then
+                        self._cleanupUnits[redUnitName] = true
                     end
                 end
             end
         end
+    end
 
-        ---comment
-        ---@param self BlueSam
-        o.Activate = function(self)
-            for unitName, needsCleanup in pairs(self._cleanupUnits) do
-                if needsCleanup == true then
-                    Spearhead.DcsUtil.DestroyUnit(unitName)
-                else
-                    local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
-                    if deathState and deathState.isDead == true then
-                        Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                    end
-                end
-            end
+    return self
+end
 
-            for _, blueGroup in pairs(self._blueGroups) do
-                if Spearhead.DcsUtil.IsGroupStatic(blueGroup) then
-                    Spearhead.DcsUtil.SpawnGroupTemplate(blueGroup)
-                    local staticObject = StaticObject.getByName(blueGroup)
-
-                    if staticObject then
-                        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(blueGroup)
-                        if deathState and deathState.isDead == true then
-                            Spearhead.DcsUtil.DestroyUnit(blueGroup)
-                            Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, blueGroup, deathState.type, deathState.pos, deathState.heading)
-                        end
-                    end
-                else
-                    local group = Spearhead.DcsUtil.SpawnGroupTemplate(blueGroup)
-                    if group then
-                        for _, unit in pairs(group:getUnits()) do
-                            local unitName = unit:getName()
-                            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
-
-                            if deathState and deathState.isDead == true then
-                                Spearhead.DcsUtil.DestroyUnit(unitName)
-                                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-                            end
-                        end
-                    end
-                end
+function BlueSam:Activate()
+    for unitName, needsCleanup in pairs(self._cleanupUnits) do
+        if needsCleanup == true then
+            Spearhead.DcsUtil.DestroyUnit(unitName)
+        else
+            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
+            if deathState and deathState.isDead == true then
+                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
             end
         end
+    end
 
-        return o
+    for _, group in pairs(self._blueGroups) do
+        group:Spawn()
     end
 end
+
 
 if Spearhead == nil then Spearhead = {} end
 if Spearhead.classes == nil then Spearhead.classes = {} end

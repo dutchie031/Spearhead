@@ -63,6 +63,23 @@ function SpearheadGroup:Spawn()
     self.isSpawned = true
 end
 
+function SpearheadGroup:Destroy()
+    self.isSpawned = false
+    Spearhead.DcsUtil.DestroyGroup(self.groupName)
+end
+
+---comment
+---@return integer
+function SpearheadGroup:GetCoalition()
+    if self.isStatic == true then
+        local object = StaticObject.getByName(self.groupName)
+        return object:getCoalition()
+    else
+        local group = Group.getByName(self.groupName)
+        return group:getCoalition()
+    end
+end
+
 function SpearheadGroup:OnUnitLost(object)
     local name = object:getName()
     local pos = object:getPoint()

@@ -152,7 +152,7 @@ function Stage.New(database, stageConfig, logger, initData, missionPriority)
         local airbaseIds = database:getAirbaseIdsInStage(self.zoneName)
         if airbaseIds ~= nil and type(airbaseIds) == "table" then
             for _, airbaseId in pairs(airbaseIds) do
-                local airbase = Spearhead.classes.stageClasses.SpecialZones.StageBase:New(database, logger, airbaseId)
+                local airbase = Spearhead.classes.stageClasses.SpecialZones.StageBase.New(database, logger, airbaseId)
                 table.insert(self._db.airbases, airbase)
             end
         end
