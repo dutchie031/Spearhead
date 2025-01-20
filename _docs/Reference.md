@@ -48,6 +48,21 @@ See all the reference, explanation here: [SpearheadAPI](./SpearheadApi.html)
 </details> 
 
 <details> 
+  <summary>WAITINGSTAGE_</summary>
+  A stage that functions as a logic delay or timer. <br/>
+  With this you can add a wait before or in between stages. 
+
+  Naming Convention: `WAITINGSTAGE_<order>_<amount of seconds>`
+  Example: `WAITINGSTAGE_2_180`
+
+  A waiting stage can be part of the same stage order as other stages. <br/>
+  This will first activate the DELAYSTAGE and only when the DELAYSTAGE is completed will the other stages be activated. <br/>
+  This is so you can easily add delays later in your mission development, without havint to rename all subsequent stages. 
+
+</details> 
+
+
+<details> 
   <summary>MISSION_</summary>
 </details> 
 

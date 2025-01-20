@@ -28,10 +28,12 @@ do
     if SpearheadConfig == nil then SpearheadConfig = {} end
     if SpearheadConfig.Persistence == nil then SpearheadConfig.Persistence = {} end
 
-    local path  = (SpearheadConfig.Persistence.directory or (lfs.writedir() .. "\\Data" )) .. "\\" .. (SpearheadConfig.Persistence.fileName or "Spearhead_Persistence.json")
+    local path  = nil
     local updateRequired = false
 
     local createFileIfNotExists = function()
+        if not path then return end
+
         local f = io.open(path, "r")
         if f == nil then
             f = io.open(path, "w+")
@@ -47,6 +49,8 @@ do
     end
 
     local loadTablesFromFile = function()
+        if not path then return end
+
         logger:info("Loading data from persistance file...")
         local f  = io.open(path, "r")
         if f == nil then
@@ -82,6 +86,8 @@ do
     end
 
     local writeToFile = function()
+        if not path then return end
+
         local f = io.open(path, "w+")
         if f == nil then
             error("Could not open file for writing")
@@ -130,6 +136,8 @@ do
             env.error("[Spearhead][Persistence] lfs and io seem to be sanitized. Persistence is skipped and disabled")
             return
         end
+
+        path = (SpearheadConfig.Persistence.directory or (lfs.writedir() .. "\\Data" )) .. "\\" .. (SpearheadConfig.Persistence.fileName or "Spearhead_Persistence.json")
 
         createFileIfNotExists()
         loadTablesFromFile()

@@ -10,6 +10,8 @@ end
 
 local startTime = timer.getTime() * 1000
 
+Spearhead.Events.Init("DEBUG")
+
 local dbLogger = Spearhead.LoggerTemplate:new("database", "INFO")
 local standardLogger = Spearhead.LoggerTemplate:new("", "INFO")
 local databaseManager = Spearhead.DB:new(dbLogger, debug)

@@ -1,12 +1,28 @@
 
 local SpearheadEvents = {}
 do
+
+    ---@type Logger
+    local logger = nil
+
+    ---@param logLevel LogLevel
+    SpearheadEvents.Init = function(logLevel)
+        logger = Spearhead.LoggerTemplate:new("Events", logLevel)
+    end
+
+
     local warn = function(text)
-        env.warn("[Spearhead][Events] " .. (text or "nil"))
+        if logger then
+            logger:warn(text)
+        end
     end
 
     local logError = function(text)
-        env.error("[Spearhead][Events] " .. (text or "nil"))
+        if logger then logger:error(text) end
+    end
+
+    local logDebug = function(text)
+        if logger then logger:debug(text) end
     end
 
     ---@class OnStageChangedListener
@@ -273,6 +289,11 @@ do
             event.id == world.event.S_EVENT_EJECTION or
             event.id == world.event.S_EVENT_UNIT_LOST then
             local object = event.initiator
+
+            if object and object.getName then
+                logDebug("Receiving death event from: " .. object:getName())
+            end
+            
             if object and object.getName and OnUnitLostListeners[object:getName()] then
                 for _, callable in pairs(OnUnitLostListeners[object:getName()]) do
                     local succ, err = pcall(function()

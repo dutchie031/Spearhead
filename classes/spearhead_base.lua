@@ -78,8 +78,14 @@ do -- INIT UTIL
     ---comment
     ---@param str string
     ---@param findable string
+    ---@param ignoreCase boolean?
     ---@return boolean
-    UTIL.startswith = function(str, findable)
+    UTIL.startswith = function(str, findable, ignoreCase)
+
+        if ignoreCase == true then
+            return string.lower(str):find('^' .. string.lower(findable)) ~= nil
+        end
+
         return str:find('^' .. findable) ~= nil
     end
 
