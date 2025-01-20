@@ -11,7 +11,7 @@ local ExtraStage = {}
 function ExtraStage.New(database, stageConfig, logger, initData)
 
     -- "Import"
-    local Stage = Spearhead.classes.stageClasses.Stages.__Stage
+    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
     setmetatable(ExtraStage, Stage)
 
     ExtraStage.__index = ExtraStage
@@ -43,7 +43,7 @@ function ExtraStage:OnStageNumberChanged(number)
         self:ActivateStage()
     end
 
-    if self.isComplete == true then
+    if self._isComplete == true then
         self:ActivateBlueStage()
     end
 

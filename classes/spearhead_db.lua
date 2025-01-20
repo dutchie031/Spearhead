@@ -80,6 +80,10 @@ do -- DB
                         end
                     end
 
+                    if string.lower(split_string[1]) == "waitingstage" then
+                        table.insert(o.tables.stage_zones, zone_name)
+                    end
+
                     if string.lower(split_string[1]) == "mission" then
                         table.insert(o.tables.mission_zones, zone_name)
                     end

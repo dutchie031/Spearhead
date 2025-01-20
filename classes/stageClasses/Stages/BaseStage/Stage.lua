@@ -26,8 +26,8 @@
 --- @field zoneName string
 --- @field stageName string
 --- @field stageNumber number
---- @field isActive boolean
---- @field protected isComplete boolean
+--- @field protected _isActive boolean
+--- @field protected _isComplete boolean
 --- @field protected _missionPriority MissionPriority
 --- @field protected _database Database
 --- @field protected _db StageData
@@ -62,8 +62,8 @@ function Stage.New(database, stageConfig, logger, initData, missionPriority)
 
     self.zoneName = initData.stageZoneName
     self.stageNumber = initData.stageNumber
-    self.isActive = false
-    self.isComplete = false
+    self._isActive = false
+    self._isComplete = false
     self.stageName = initData.stageDisplayName
     
     self.OnPostStageComplete = nil
@@ -178,7 +178,7 @@ end
 
 ---@return boolean
 function Stage:IsComplete()
-    if self.isComplete == true then return true end
+    if self._isComplete == true then return true end
 
     for i, mission in pairs(self._db.sams) do
         local state = mission:GetState()
@@ -194,8 +194,13 @@ function Stage:IsComplete()
         end
     end
 
-    self.isComplete = true
+    self._isComplete = true
     return true
+end
+
+---@return boolean
+function Stage:IsActive()
+    return self._isActive == true
 end
 
 ---comment
@@ -308,7 +313,7 @@ function Stage:MarkStage(stageColor)
 end
 
 function Stage:ActivateStage()
-    self.isActive = true;
+    self._isActive = true;
 
     pcall(function()
         self:MarkStage("RED")
@@ -424,7 +429,8 @@ end
 if not Spearhead.classes then Spearhead.classes = {} end
 if not Spearhead.classes.stageClasses then Spearhead.classes.stageClasses = {} end
 if not Spearhead.classes.stageClasses.Stages then Spearhead.classes.stageClasses.Stages = {} end
-Spearhead.classes.stageClasses.Stages.__Stage = Stage
+if not Spearhead.classes.stageClasses.Stages.BaseStage then Spearhead.classes.stageClasses.Stages.BaseStage = {} end
+Spearhead.classes.stageClasses.Stages.BaseStage.Stage = Stage
 
 
 

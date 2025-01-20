@@ -11,7 +11,7 @@ local PrimaryStage = {}
 function PrimaryStage.New(database, stageConfig, logger, initData)
 
     -- "Import"
-    local Stage = Spearhead.classes.stageClasses.Stages.__Stage
+    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
     setmetatable(PrimaryStage, Stage)
     PrimaryStage.__index = PrimaryStage
     setmetatable(PrimaryStage, {__index = Stage}) 
