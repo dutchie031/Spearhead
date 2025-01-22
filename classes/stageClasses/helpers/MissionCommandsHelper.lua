@@ -59,16 +59,16 @@ do
         local path = nil
 
         if mission.priority == "primary" then
-            path = { folderNames.primary }
+            path = { [1] = folderNames.primary }
         elseif mission.priority == "secondary" then
-            path = { folderNames.secondary }
+            path = { [1] = folderNames.secondary }
         end
 
         if path then
-            local missionFolderName = "[" .. mission.code .. "] " .. mission.name
+            local missionFolderName = "[" .. mission.code .. "]" .. mission.name
             missionCommands.addSubMenuForGroup(groupId, missionFolderName, path)
             table.insert(path, missionFolderName)
-            missionCommands.addCommandForGroup(groupId, "Briefing" , missionFolderName , missionBriefingRequested, { groupId = groupId, mission = mission })
+            missionCommands.addCommandForGroup(groupId, "Briefing" , path , missionBriefingRequested, { groupId = groupId, mission = mission })
         end
     end
 
@@ -96,7 +96,7 @@ do
             return time + 15
         end
 
-        for _, unit in Spearhead.DcsUtil.getAllPlayerUnits() do
+        for _, unit in pairs(Spearhead.DcsUtil.getAllPlayerUnits()) do
             if unit and unit:isExist() then
                 local group = unit:getGroup()
                 if group then

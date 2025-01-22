@@ -1,10 +1,21 @@
--- 3
 
-local SpearheadDB = {}
-do -- DB
-    local singleton = nil
+---@class DatabaseTables
+---@field AllZoneNames Array<string>
+---@field StageZones Array<string>
+---@field MissionZones Array<string>
+---@field RandomMissionZone Array<string>
+---@field FarpZones Array<string>
+---@field CapRoutes Array<string>
+---@field CarrierRouteZones Array<string>
+---@field BlueSams Array<string>
 
-    ---@class Database
+
+---@class Database
+---@field private _tables DatabaseTables
+---@field private _logger Logger 
+local Database = {}
+
+    ---@class Databaseb
     ---@field private tables table tables
     ---@field private Logger Logger 
     ---@field GetNewMissionCode fun(self:Database): integer
@@ -27,498 +38,500 @@ do -- DB
     ---@field getRandomMissionsForStage fun(self:Database, stageZoneName:string) : Array<string>
     ---@field getStagezoneNames fun(self:Database) : Array<string>
 
-    ---comment
-    ---@param Logger table
-    ---@return Database
-    function SpearheadDB:new(Logger, debug)
-        if not debug then debug = false end
-        if singleton ~= nil then
-            Logger:info("Returning an already initiated instance of SpearheadDB")
-            return singleton
+---comment
+---@param Logger table
+---@return Database
+function Database.New(Logger, debug)
+    
+    ---@type DatabaseTables
+    local tables = {
+
+    }
+
+    Database.__index = Database
+    local self = setmetatable({}, Database)
+
+    self._logger = Logger
+    self._tables = tables
+
+    Logger:debug("Initiating tables")
+
+    o.tables.all_zones = {}
+    o.tables.stage_zones = {}
+    o.tables.mission_zones = {}
+    o.tables.random_mission_zones = {}
+    o.tables.farp_zones = {}
+    o.tables.cap_route_zones = {}
+    o.tables.carrier_route_zones = {}
+    o.tables.blue_sams = {}
+
+    o.tables.stage_zonesByNumer = {}
+    o.tables.stage_numberPerzone = {}
+
+    do -- INIT ZONE TABLES
+        for zone_ind, zone_data in pairs(Spearhead.DcsUtil.__trigger_zones) do
+            local zone_name = zone_data.name
+            local split_string = Spearhead.Util.split_string(zone_name, "_")
+            table.insert(o.tables.all_zones, zone_name)
+
+            if string.lower(split_string[1]) == "missionstage" then
+                table.insert(o.tables.stage_zones, zone_name)
+                if split_string[2] then
+                    local stringified = tostring(split_string[2]) or "unknown"
+                    if o.tables.stage_zonesByNumer[stringified] == nil then
+                        o.tables.stage_zonesByNumer[stringified] = {}
+                    end
+                    table.insert(o.tables.stage_zonesByNumer[stringified], zone_name)
+                    o.tables.stage_numberPerzone[zone_name] = stringified
+                end
+            end
+
+            if string.lower(split_string[1]) == "waitingstage" then
+                table.insert(o.tables.stage_zones, zone_name)
+            end
+
+            if string.lower(split_string[1]) == "mission" then
+                table.insert(o.tables.mission_zones, zone_name)
+            end
+
+            if string.lower(split_string[1]) == "randommission" then
+                table.insert(o.tables.random_mission_zones, zone_name)
+            end
+
+            if string.lower(split_string[1]) == "farp" then
+                table.insert(o.tables.farp_zones, zone_name)
+            end
+
+            if string.lower(split_string[1]) == "caproute" then
+                table.insert(o.tables.cap_route_zones, zone_name)
+            end
+
+            if string.lower(split_string[1]) == "carrierroute" then
+                table.insert(o.tables.carrier_route_zones, zone_name)
+            end
+
+            if string.lower(split_string[1]) == "bluesam" then
+                table.insert(o.tables.blue_sams, zone_name)
+            end
         end
+    end
 
-        local tables = {}
-        
-        local o = {
-            Logger = Logger,
-            tables = tables,
-        }
-        setmetatable(o, { __index = self, })
-        
-        o.Logger = Logger
-        o.tables = {}
-        do --INIT ALL TABLES
-            Logger:debug("Initiating tables")
+    Logger:debug("initiated zone tables, continuing with descriptions")
+    o.tables.descriptions = {}
+    do --load markers
+        if env.mission.drawings and env.mission.drawings.layers then
+            for i, layer in pairs(env.mission.drawings.layers) do
+                if string.lower(layer.name) == "author" then
+                    for key, layer_object in pairs(layer.objects) do
 
-            o.tables.all_zones = {}
-            o.tables.stage_zones = {}
-            o.tables.mission_zones = {}
-            o.tables.random_mission_zones = {}
-            o.tables.farp_zones = {}
-            o.tables.cap_route_zones = {}
-            o.tables.carrier_route_zones = {}
-            o.tables.blue_sams = {}
-
-            o.tables.stage_zonesByNumer = {}
-            o.tables.stage_numberPerzone = {}
-
-            do -- INIT ZONE TABLES
-                for zone_ind, zone_data in pairs(Spearhead.DcsUtil.__trigger_zones) do
-                    local zone_name = zone_data.name
-                    local split_string = Spearhead.Util.split_string(zone_name, "_")
-                    table.insert(o.tables.all_zones, zone_name)
-
-                    if string.lower(split_string[1]) == "missionstage" then
-                        table.insert(o.tables.stage_zones, zone_name)
-                        if split_string[2] then
-                            local stringified = tostring(split_string[2]) or "unknown"
-                            if o.tables.stage_zonesByNumer[stringified] == nil then
-                                o.tables.stage_zonesByNumer[stringified] = {}
-                            end
-                            table.insert(o.tables.stage_zonesByNumer[stringified], zone_name)
-                            o.tables.stage_numberPerzone[zone_name] = stringified
-                        end
-                    end
-
-                    if string.lower(split_string[1]) == "waitingstage" then
-                        table.insert(o.tables.stage_zones, zone_name)
-                    end
-
-                    if string.lower(split_string[1]) == "mission" then
-                        table.insert(o.tables.mission_zones, zone_name)
-                    end
-
-                    if string.lower(split_string[1]) == "randommission" then
-                        table.insert(o.tables.random_mission_zones, zone_name)
-                    end
-
-                    if string.lower(split_string[1]) == "farp" then
-                        table.insert(o.tables.farp_zones, zone_name)
-                    end
-
-                    if string.lower(split_string[1]) == "caproute" then
-                        table.insert(o.tables.cap_route_zones, zone_name)
-                    end
-
-                    if string.lower(split_string[1]) == "carrierroute" then
-                        table.insert(o.tables.carrier_route_zones, zone_name)
-                    end
-
-                    if string.lower(split_string[1]) == "bluesam" then
-                        table.insert(o.tables.blue_sams, zone_name)
-                    end
-                end
-            end
-
-            Logger:debug("initiated zone tables, continuing with descriptions")
-            o.tables.descriptions = {}
-            do --load markers
-                if env.mission.drawings and env.mission.drawings.layers then
-                    for i, layer in pairs(env.mission.drawings.layers) do
-                        if string.lower(layer.name) == "author" then
-                            for key, layer_object in pairs(layer.objects) do
-                                local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
-                                    o.tables.mission_zones)
-                                if Spearhead.Util.tableLength(inZone) >= 1 then
-                                    local name = inZone[1]
-                                    if name ~= nil then
-                                        o.tables.descriptions[name] = layer_object.text
-                                    end
-                                end
-
-                                local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
-                                    o.tables.random_mission_zones)
-                                if Spearhead.Util.tableLength(inZone) >= 1 then
-                                    local name = inZone[1]
-                                    if name ~= nil then
-                                        o.tables.descriptions[name] = layer_object.text
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-
-            o.tables.blueSamZonesPerStage = {}
-            for _, stageZoneName in pairs(o.tables.stage_zones) do
-            
-                if o.tables.blueSamZonesPerStage[stageZoneName] == nil then
-                    o.tables.blueSamZonesPerStage[stageZoneName] = {}
-                end
-                
-                for _, blueSamStageName in pairs(o.tables.blue_sams) do
-                   
-                    if Spearhead.DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
-                        table.insert(o.tables.blueSamZonesPerStage[stageZoneName], blueSamStageName)
-                    end
-                end
-            end
-            
-            o.tables.missionZonesPerStage = {}
-            for key, missionZone in pairs(o.tables.mission_zones) do
-                local found = false
-                local i = 1
-                while found == false and i <= Spearhead.Util.tableLength(o.tables.stage_zones) do
-                    local stageZone = o.tables.stage_zones[i]
-                    if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZone) == true then
-                        if o.tables.missionZonesPerStage[stageZone] == nil then
-                            o.tables.missionZonesPerStage[stageZone] = {}
-                        end
-                        table.insert(o.tables.missionZonesPerStage[stageZone], missionZone)
-                    end
-                    i = i + 1
-                end
-            end
-
-            o.tables.randomMissionZonesPerStage = {}
-            for key, missionZone in pairs(o.tables.random_mission_zones) do
-                local found = false
-                local i = 1
-                while found == false and i <= Spearhead.Util.tableLength(o.tables.stage_zones) do
-                    local stageZone = o.tables.stage_zones[i]
-                    if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZone) == true then
-                        if o.tables.randomMissionZonesPerStage[stageZone] == nil then
-                            o.tables.randomMissionZonesPerStage[stageZone] = {}
-                        end
-                        table.insert(o.tables.randomMissionZonesPerStage[stageZone], missionZone)
-                    end
-                    i = i + 1
-                end
-            end
-
-            local isAirbaseInZone = {}
-            o.tables.airbasesPerStage = {}
-            o.tables.farpIdsInFarpZones = {}
-            local airbases = world.getAirbases()
-            for _, airbase in pairs(airbases) do
-                local baseId = airbase:getID()
-                local point = airbase:getPoint()
-                local found = false
-                for _, zoneName in pairs(o.tables.stage_zones) do
-                    if found == false then
-                        if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, zoneName) == true then
-                            found = true
-                            local baseIdString = tostring(baseId) or "nil"
-                            isAirbaseInZone[baseIdString] = true
-
-                            if airbase:getDesc().category == 0 then
-                                if o.tables.airbasesPerStage[zoneName] == nil then
-                                    o.tables.airbasesPerStage[zoneName] = {}
-                                end
-
-                                table.insert(o.tables.airbasesPerStage[zoneName], baseId)
-                            else
-                                -- farp
-                                local i = 1
-                                local farpFound = false
-                                while farpFound == false and i <= Spearhead.Util.tableLength(o.tables.farp_zones) do
-                                    local farpZoneName = o.tables.farp_zones[i]
-                                    if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, farpZoneName) == true then
-                                        farpFound = true
-
-                                        if o.tables.farpIdsInFarpZones[farpZoneName] == nil then
-                                            o.tables.farpIdsInFarpZones[farpZoneName] = {}
-                                        end
-
-                                        table.insert(o.tables.farpIdsInFarpZones[farpZoneName], baseIdString)
-                                    end
-                                    i = i + 1
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-
-
-
-            o.tables.farpZonesPerStage = {}
-            for _, farpZoneName in pairs(o.tables.farp_zones) do
-                local findFirst = function(farpZoneName)
-                    for _, stage_zone in pairs(o.tables.stage_zones) do
-                        if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stage_zone) then
-                            return stage_zone
-                        end
-                    end
-                    return nil
-                end
-
-                local found = findFirst(farpZoneName)
-                if found then
-                    if o.tables.farpZonesPerStage[found] == nil then
-                        o.tables.farpZonesPerStage[found] = {}
-                    end
-
-                    table.insert(o.tables.farpZonesPerStage[found], farpZoneName)
-                end
-            end
-
-
-            local is_group_taken = {}
-            do
-                local all_groups = Spearhead.DcsUtil.getAllGroupNames()
-                for _, value in pairs(all_groups) do
-                    is_group_taken[value] = false
-                end
-            end
-
-            local getAvailableGroups = function()
-                local result = {}
-                for name, value in pairs(is_group_taken) do
-                    if value == false then
-                        table.insert(result, name)
-                    end
-                end
-                return result
-            end
-
-            local getAvailableCAPGroups = function()
-                local result = {}
-                for name, value in pairs(is_group_taken) do
-                    if value == false and Spearhead.Util.startswith(name, "CAP") then
-                        table.insert(result, name)
-                    end
-                end
-                return result
-            end
-
-            --- airbaseId <> groupname[]
-            o.tables.capGroupsOnAirbase = {}
-            local loadCapUnits = function()
-                local all_groups = getAvailableCAPGroups()
-                local airbases = world.getAirbases()
-                for _, airbase in pairs(airbases) do
-                    local baseId = airbase:getID()
-                    local point = airbase:getPoint()
-                    local zone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or
-                    { x = point.x, z = point.z, radius = 4000 }
-                    o.tables.capGroupsOnAirbase[baseId] = {}
-                    local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
-                    for _, groupName in pairs(groups) do
-                        is_group_taken[groupName] = true
-                        table.insert(o.tables.capGroupsOnAirbase[baseId], groupName)
-                    end
-                end
-            end
-
-
-            o.tables.samUnitsPerSamZone = {}
-            local loadBlueSamUnits = function()
-                local all_groups = Spearhead.DcsUtil.getAllGroupNames()
-                for _, blueSamZone in pairs(o.tables.blue_sams) do
-                    o.tables.samUnitsPerSamZone[blueSamZone] = {}
-                    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
-                    for _, groupName in pairs(groups) do
-                        is_group_taken[groupName] = true
-                        table.insert(o.tables.samUnitsPerSamZone[blueSamZone], groupName)
-                    end
-                end
-            end
-
-
-            --- missionZoneName <> groupname[]
-            o.tables.groupsInMissionZone = {}
-            local loadMissionzoneUnits = function()
-                local all_groups = getAvailableGroups()
-                for _, missionZoneName in pairs(o.tables.mission_zones) do
-                    o.tables.groupsInMissionZone[missionZoneName] = {}
-                    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
-                    for _, groupName in pairs(groups) do
-                        is_group_taken[groupName] = true
-                        table.insert(o.tables.groupsInMissionZone[missionZoneName], groupName)
-                    end
-                end
-            end
-
-            --- missionZoneName <> groupname[]
-            o.tables.groupsInRandomMissions = {}
-            local loadRandomMissionzoneUnits = function()
-                local all_groups = getAvailableGroups()
-                for _, missionZoneName in pairs(o.tables.random_mission_zones) do
-                    o.tables.groupsInRandomMissions[missionZoneName] = {}
-                    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
-                    for _, groupName in pairs(groups) do
-                        is_group_taken[groupName] = true
-                        table.insert(o.tables.groupsInRandomMissions[missionZoneName], groupName)
-                    end
-                end
-            end
-
-            --- farpZoneName <> groupname[]
-            o.tables.groupsInFarpZone = {}
-            local loadFarpGroups = function()
-                local all_groups = getAvailableGroups()
-                for _, farpZone in pairs(o.tables.farp_zones) do
-                    o.tables.groupsInFarpZone[farpZone] = {}
-                    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, farpZone)
-                    for _, groupName in pairs(groups) do
-                        is_group_taken[groupName] = true
-                        table.insert(o.tables.groupsInFarpZone[farpZone], groupName)
-                    end
-                end
-            end
-
-            --- farpZoneName <> groupname[]
-            o.tables.redAirbaseGroupsPerAirbase = {}
-            o.tables.blueAirbaseGroupsPerAirbase = {}
-            local loadAirbaseGroups = function()
-                local all_groups = getAvailableGroups()
-                local airbases = world.getAirbases()
-                for _, airbase in pairs(airbases) do
-                    local baseId = tostring(airbase:getID())
-                    local point = airbase:getPoint()
-                    local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or
-                    { x = point.x, z = point.z, radius = 4000 }
-
-                    if isAirbaseInZone[tostring(baseId) or "something"] == true and airbaseZone and airbase:getDesc().category == Airbase.Category.AIRDROME then
-                        if debug then
-                            if airbaseZone.zone_type == Spearhead.DcsUtil.ZoneType.Polygon then
-                                local functionString = "trigger.action.markupToAll(7, -1, " .. baseId + 300 .. ","
-                                for _, vecpoint in pairs(airbaseZone.verts) do
-                                    functionString = functionString .. " { x=" .. vecpoint.x .. ", y=0,z=" .. vecpoint.z ..
-                                    "},"
-                                end
-                                functionString = functionString .. "{0,1,0,1}, {0,0,0,0}, 1)"
-
-                                env.info(functionString)
----@diagnostic disable-next-line: deprecated
-                                local f, err = loadstring(functionString)
-                                if f then
-                                    f()
-                                else
-                                    env.info(err)
-                                end
-                            else
-                                trigger.action.circleToAll(-1, baseId, { x = point.x, y = 0, z = point.z }, 2048,
-                                    { 1, 0, 0, 1 }, { 0, 0, 0, 0 }, 1, true)
-                            end
-                        end
-
-
-                        o.tables.redAirbaseGroupsPerAirbase[baseId] = {}
-                        o.tables.blueAirbaseGroupsPerAirbase[baseId] = {}
-                        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
-                        for _, groupName in pairs(groups) do
-                            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
-                                local object = StaticObject.getByName(groupName)
-                                if object then
-                                    if object:getCoalition() == coalition.side.RED then
-                                        table.insert(o.tables.redAirbaseGroupsPerAirbase[baseId], groupName)
-                                        is_group_taken[groupName] = true
-                                    elseif object:getCoalition() == coalition.side.BLUE then
-                                        table.insert(o.tables.blueAirbaseGroupsPerAirbase[baseId], groupName)
-                                        is_group_taken[groupName] = true
-                                    end
-                                end
-                            else
-                                local group = Group.getByName(groupName)
-                                if group then
-                                    if group:getCoalition() == coalition.side.RED then
-                                        table.insert(o.tables.redAirbaseGroupsPerAirbase[baseId], groupName)
-                                        is_group_taken[groupName] = true
-                                    elseif group:getCoalition() == coalition.side.BLUE then
-                                        table.insert(o.tables.blueAirbaseGroupsPerAirbase[baseId], groupName)
-                                        is_group_taken[groupName] = true
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-
-            o.tables.miscGroupsInStages = {}
-            local loadMiscGroupsInStages = function()
-                local all_groups = getAvailableGroups()
-                for _, stage_zone in pairs(o.tables.stage_zones) do
-                    o.tables.miscGroupsInStages[stage_zone] = {}
-                    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stage_zone)
-                    for _, groupName in pairs(groups) do
-                        if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
-                            local object = StaticObject.getByName(groupName)
-                            if object and object:getCoalition() ~= coalition.side.NEUTRAL then
-                                is_group_taken[groupName] = true
-                                table.insert(o.tables.miscGroupsInStages[stage_zone], groupName)
-                            end
+                        if Spearhead.Util.startswith(layer_object.name,  "stagebriefing", true) then
+                            
                         else
-                            local group = Group.getByName(groupName)
-                            if group and group:getCoalition() ~= coalition.side.NEUTRAL then
-                                is_group_taken[groupName] = true
-                                table.insert(o.tables.miscGroupsInStages[stage_zone], groupName)
+                            local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
+                            o.tables.mission_zones)
+                            if Spearhead.Util.tableLength(inZone) >= 1 then
+                                local name = inZone[1]
+                                if name ~= nil then
+                                    o.tables.descriptions[name] = layer_object.text
+                                end
                             end
-                        end
-                    end
-                end
-            end
 
-            loadCapUnits()
-            loadBlueSamUnits()
-            loadMissionzoneUnits()
-            loadRandomMissionzoneUnits()
-            loadFarpGroups()
-            loadAirbaseGroups()
-            loadMiscGroupsInStages()
-
-            --- key: zoneName value: { current, routes = [ { point1, point2 } ] }
-            o.tables.capRoutesPerStageNumber = {}
-            for _, zoneName in pairs(o.tables.stage_zones) do
-                local number = tostring(o.tables.stage_numberPerzone[zoneName] or "unknown")
-
-                if o.tables.capRoutesPerStageNumber[number] == nil then
-                    o.tables.capRoutesPerStageNumber[number] = {
-                        current = 0,
-                        routes = {}
-                    }
-                end
-
-                for _, cap_route_zone in pairs(o.tables.cap_route_zones) do
-                    if Spearhead.DcsUtil.isZoneInZone(cap_route_zone, zoneName) == true then
-                        local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
-                        if zone then
-                            if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                                table.insert(o.tables.capRoutesPerStageNumber[number].routes,
-                                    { point1 = { x = zone.x, z = zone.z }, point2 = nil })
-                            else
-                                local function getDist(a, b)
-                                    return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
-                                end
-
-                                local biggest = nil
-                                local biggestA = nil
-                                local biggestB = nil
-
-                                for i = 1, 3 do
-                                    for ii = i + 1, 4 do
-                                        local a = zone.verts[i]
-                                        local b = zone.verts[ii]
-                                        local dist = getDist(a, b)
-
-                                        if biggest == nil or dist > biggest then
-                                            biggestA = a
-                                            biggestB = b
-                                            biggest = dist
-                                        end
-                                    end
-                                end
-
-                                if biggestA and biggestB then
-                                    table.insert(o.tables.capRoutesPerStageNumber[number].routes,
-                                        {
-                                            point1 = { x = biggestA.x, z = biggestA.z },
-                                            point2 = { x = biggestB.x, z = biggestB.z }
-                                        })
+                            local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
+                                o.tables.random_mission_zones)
+                            if Spearhead.Util.tableLength(inZone) >= 1 then
+                                local name = inZone[1]
+                                if name ~= nil then
+                                    o.tables.descriptions[name] = layer_object.text
                                 end
                             end
                         end
+
+                        
                     end
                 end
             end
-
-            o.Logger:debug(o.tables.capRoutesPerStageNumber)
-
-            o.tables.missionCodes = {}
         end
+    end
+
+    o.tables.blueSamZonesPerStage = {}
+    for _, stageZoneName in pairs(o.tables.stage_zones) do
+    
+        if o.tables.blueSamZonesPerStage[stageZoneName] == nil then
+            o.tables.blueSamZonesPerStage[stageZoneName] = {}
+        end
+        
+        for _, blueSamStageName in pairs(o.tables.blue_sams) do
+            
+            if Spearhead.DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
+                table.insert(o.tables.blueSamZonesPerStage[stageZoneName], blueSamStageName)
+            end
+        end
+    end
+    
+    o.tables.missionZonesPerStage = {}
+    for key, missionZone in pairs(o.tables.mission_zones) do
+        local found = false
+        local i = 1
+        while found == false and i <= Spearhead.Util.tableLength(o.tables.stage_zones) do
+            local stageZone = o.tables.stage_zones[i]
+            if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZone) == true then
+                if o.tables.missionZonesPerStage[stageZone] == nil then
+                    o.tables.missionZonesPerStage[stageZone] = {}
+                end
+                table.insert(o.tables.missionZonesPerStage[stageZone], missionZone)
+            end
+            i = i + 1
+        end
+    end
+
+    o.tables.randomMissionZonesPerStage = {}
+    for key, missionZone in pairs(o.tables.random_mission_zones) do
+        local found = false
+        local i = 1
+        while found == false and i <= Spearhead.Util.tableLength(o.tables.stage_zones) do
+            local stageZone = o.tables.stage_zones[i]
+            if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZone) == true then
+                if o.tables.randomMissionZonesPerStage[stageZone] == nil then
+                    o.tables.randomMissionZonesPerStage[stageZone] = {}
+                end
+                table.insert(o.tables.randomMissionZonesPerStage[stageZone], missionZone)
+            end
+            i = i + 1
+        end
+    end
+
+    local isAirbaseInZone = {}
+    o.tables.airbasesPerStage = {}
+    o.tables.farpIdsInFarpZones = {}
+    local airbases = world.getAirbases()
+    for _, airbase in pairs(airbases) do
+        local baseId = airbase:getID()
+        local point = airbase:getPoint()
+        local found = false
+        for _, zoneName in pairs(o.tables.stage_zones) do
+            if found == false then
+                if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, zoneName) == true then
+                    found = true
+                    local baseIdString = tostring(baseId) or "nil"
+                    isAirbaseInZone[baseIdString] = true
+
+                    if airbase:getDesc().category == 0 then
+                        if o.tables.airbasesPerStage[zoneName] == nil then
+                            o.tables.airbasesPerStage[zoneName] = {}
+                        end
+
+                        table.insert(o.tables.airbasesPerStage[zoneName], baseId)
+                    else
+                        -- farp
+                        local i = 1
+                        local farpFound = false
+                        while farpFound == false and i <= Spearhead.Util.tableLength(o.tables.farp_zones) do
+                            local farpZoneName = o.tables.farp_zones[i]
+                            if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, farpZoneName) == true then
+                                farpFound = true
+
+                                if o.tables.farpIdsInFarpZones[farpZoneName] == nil then
+                                    o.tables.farpIdsInFarpZones[farpZoneName] = {}
+                                end
+
+                                table.insert(o.tables.farpIdsInFarpZones[farpZoneName], baseIdString)
+                            end
+                            i = i + 1
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+
+
+    o.tables.farpZonesPerStage = {}
+    for _, farpZoneName in pairs(o.tables.farp_zones) do
+        local findFirst = function(farpZoneName)
+            for _, stage_zone in pairs(o.tables.stage_zones) do
+                if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stage_zone) then
+                    return stage_zone
+                end
+            end
+            return nil
+        end
+
+        local found = findFirst(farpZoneName)
+        if found then
+            if o.tables.farpZonesPerStage[found] == nil then
+                o.tables.farpZonesPerStage[found] = {}
+            end
+
+            table.insert(o.tables.farpZonesPerStage[found], farpZoneName)
+        end
+    end
+
+
+    local is_group_taken = {}
+    do
+        local all_groups = Spearhead.DcsUtil.getAllGroupNames()
+        for _, value in pairs(all_groups) do
+            is_group_taken[value] = false
+        end
+    end
+
+    local getAvailableGroups = function()
+        local result = {}
+        for name, value in pairs(is_group_taken) do
+            if value == false then
+                table.insert(result, name)
+            end
+        end
+        return result
+    end
+
+    local getAvailableCAPGroups = function()
+        local result = {}
+        for name, value in pairs(is_group_taken) do
+            if value == false and Spearhead.Util.startswith(name, "CAP") then
+                table.insert(result, name)
+            end
+        end
+        return result
+    end
+
+    --- airbaseId <> groupname[]
+    o.tables.capGroupsOnAirbase = {}
+    local loadCapUnits = function()
+        local all_groups = getAvailableCAPGroups()
+        local airbases = world.getAirbases()
+        for _, airbase in pairs(airbases) do
+            local baseId = airbase:getID()
+            local point = airbase:getPoint()
+            local zone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or
+            { x = point.x, z = point.z, radius = 4000 }
+            o.tables.capGroupsOnAirbase[baseId] = {}
+            local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
+            for _, groupName in pairs(groups) do
+                is_group_taken[groupName] = true
+                table.insert(o.tables.capGroupsOnAirbase[baseId], groupName)
+            end
+        end
+    end
+
+
+    o.tables.samUnitsPerSamZone = {}
+    local loadBlueSamUnits = function()
+        local all_groups = Spearhead.DcsUtil.getAllGroupNames()
+        for _, blueSamZone in pairs(o.tables.blue_sams) do
+            o.tables.samUnitsPerSamZone[blueSamZone] = {}
+            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
+            for _, groupName in pairs(groups) do
+                is_group_taken[groupName] = true
+                table.insert(o.tables.samUnitsPerSamZone[blueSamZone], groupName)
+            end
+        end
+    end
+
+
+    --- missionZoneName <> groupname[]
+    o.tables.groupsInMissionZone = {}
+    local loadMissionzoneUnits = function()
+        local all_groups = getAvailableGroups()
+        for _, missionZoneName in pairs(o.tables.mission_zones) do
+            o.tables.groupsInMissionZone[missionZoneName] = {}
+            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
+            for _, groupName in pairs(groups) do
+                is_group_taken[groupName] = true
+                table.insert(o.tables.groupsInMissionZone[missionZoneName], groupName)
+            end
+        end
+    end
+
+    --- missionZoneName <> groupname[]
+    o.tables.groupsInRandomMissions = {}
+    local loadRandomMissionzoneUnits = function()
+        local all_groups = getAvailableGroups()
+        for _, missionZoneName in pairs(o.tables.random_mission_zones) do
+            o.tables.groupsInRandomMissions[missionZoneName] = {}
+            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
+            for _, groupName in pairs(groups) do
+                is_group_taken[groupName] = true
+                table.insert(o.tables.groupsInRandomMissions[missionZoneName], groupName)
+            end
+        end
+    end
+
+    --- farpZoneName <> groupname[]
+    o.tables.groupsInFarpZone = {}
+    local loadFarpGroups = function()
+        local all_groups = getAvailableGroups()
+        for _, farpZone in pairs(o.tables.farp_zones) do
+            o.tables.groupsInFarpZone[farpZone] = {}
+            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, farpZone)
+            for _, groupName in pairs(groups) do
+                is_group_taken[groupName] = true
+                table.insert(o.tables.groupsInFarpZone[farpZone], groupName)
+            end
+        end
+    end
+
+    --- farpZoneName <> groupname[]
+    o.tables.redAirbaseGroupsPerAirbase = {}
+    o.tables.blueAirbaseGroupsPerAirbase = {}
+    local loadAirbaseGroups = function()
+        local all_groups = getAvailableGroups()
+        local airbases = world.getAirbases()
+        for _, airbase in pairs(airbases) do
+            local baseId = tostring(airbase:getID())
+            local point = airbase:getPoint()
+            local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or
+            { x = point.x, z = point.z, radius = 4000 }
+
+            if isAirbaseInZone[tostring(baseId) or "something"] == true and airbaseZone and airbase:getDesc().category == Airbase.Category.AIRDROME then
+                if debug then
+                    if airbaseZone.zone_type == Spearhead.DcsUtil.ZoneType.Polygon then
+                        local functionString = "trigger.action.markupToAll(7, -1, " .. baseId + 300 .. ","
+                        for _, vecpoint in pairs(airbaseZone.verts) do
+                            functionString = functionString .. " { x=" .. vecpoint.x .. ", y=0,z=" .. vecpoint.z ..
+                            "},"
+                        end
+                        functionString = functionString .. "{0,1,0,1}, {0,0,0,0}, 1)"
+
+                        env.info(functionString)
+                        local f, err = loadstring(functionString)
+                        if f then
+                            f()
+                        else
+                            env.info(err)
+                        end
+                    else
+                        trigger.action.circleToAll(-1, baseId, { x = point.x, y = 0, z = point.z }, 2048,
+                            { 1, 0, 0, 1 }, { 0, 0, 0, 0 }, 1, true)
+                    end
+                end
+
+
+                o.tables.redAirbaseGroupsPerAirbase[baseId] = {}
+                o.tables.blueAirbaseGroupsPerAirbase[baseId] = {}
+                local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
+                for _, groupName in pairs(groups) do
+                    if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+                        local object = StaticObject.getByName(groupName)
+                        if object then
+                            if object:getCoalition() == coalition.side.RED then
+                                table.insert(o.tables.redAirbaseGroupsPerAirbase[baseId], groupName)
+                                is_group_taken[groupName] = true
+                            elseif object:getCoalition() == coalition.side.BLUE then
+                                table.insert(o.tables.blueAirbaseGroupsPerAirbase[baseId], groupName)
+                                is_group_taken[groupName] = true
+                            end
+                        end
+                    else
+                        local group = Group.getByName(groupName)
+                        if group then
+                            if group:getCoalition() == coalition.side.RED then
+                                table.insert(o.tables.redAirbaseGroupsPerAirbase[baseId], groupName)
+                                is_group_taken[groupName] = true
+                            elseif group:getCoalition() == coalition.side.BLUE then
+                                table.insert(o.tables.blueAirbaseGroupsPerAirbase[baseId], groupName)
+                                is_group_taken[groupName] = true
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    o.tables.miscGroupsInStages = {}
+    local loadMiscGroupsInStages = function()
+        local all_groups = getAvailableGroups()
+        for _, stage_zone in pairs(o.tables.stage_zones) do
+            o.tables.miscGroupsInStages[stage_zone] = {}
+            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stage_zone)
+            for _, groupName in pairs(groups) do
+                if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+                    local object = StaticObject.getByName(groupName)
+                    if object and object:getCoalition() ~= coalition.side.NEUTRAL then
+                        is_group_taken[groupName] = true
+                        table.insert(o.tables.miscGroupsInStages[stage_zone], groupName)
+                    end
+                else
+                    local group = Group.getByName(groupName)
+                    if group and group:getCoalition() ~= coalition.side.NEUTRAL then
+                        is_group_taken[groupName] = true
+                        table.insert(o.tables.miscGroupsInStages[stage_zone], groupName)
+                    end
+                end
+            end
+        end
+    end
+
+    loadCapUnits()
+    loadBlueSamUnits()
+    loadMissionzoneUnits()
+    loadRandomMissionzoneUnits()
+    loadFarpGroups()
+    loadAirbaseGroups()
+    loadMiscGroupsInStages()
+
+    --- key: zoneName value: { current, routes = [ { point1, point2 } ] }
+    o.tables.capRoutesPerStageNumber = {}
+    for _, zoneName in pairs(o.tables.stage_zones) do
+        local number = tostring(o.tables.stage_numberPerzone[zoneName] or "unknown")
+
+        if o.tables.capRoutesPerStageNumber[number] == nil then
+            o.tables.capRoutesPerStageNumber[number] = {
+                current = 0,
+                routes = {}
+            }
+        end
+
+        for _, cap_route_zone in pairs(o.tables.cap_route_zones) do
+            if Spearhead.DcsUtil.isZoneInZone(cap_route_zone, zoneName) == true then
+                local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
+                if zone then
+                    if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
+                        table.insert(o.tables.capRoutesPerStageNumber[number].routes,
+                            { point1 = { x = zone.x, z = zone.z }, point2 = nil })
+                    else
+                        local function getDist(a, b)
+                            return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
+                        end
+
+                        local biggest = nil
+                        local biggestA = nil
+                        local biggestB = nil
+
+                        for i = 1, 3 do
+                            for ii = i + 1, 4 do
+                                local a = zone.verts[i]
+                                local b = zone.verts[ii]
+                                local dist = getDist(a, b)
+
+                                if biggest == nil or dist > biggest then
+                                    biggestA = a
+                                    biggestB = b
+                                    biggest = dist
+                                end
+                            end
+                        end
+
+                        if biggestA and biggestB then
+                            table.insert(o.tables.capRoutesPerStageNumber[number].routes,
+                                {
+                                    point1 = { x = biggestA.x, z = biggestA.z },
+                                    point2 = { x = biggestB.x, z = biggestB.z }
+                                })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    o.Logger:debug(o.tables.capRoutesPerStageNumber)
+
+    o.tables.missionCodes = {}
+
+end
 
         function o:GetDescriptionForMission(missionZoneName)
             return self.tables.descriptions[missionZoneName]
@@ -710,6 +723,6 @@ do -- DB
         singleton = o
         return o
     end
-end
+
 
 Spearhead.DB = SpearheadDB
