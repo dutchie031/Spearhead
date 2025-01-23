@@ -45,7 +45,7 @@ function Database.New(Logger, debug)
     
     ---@type DatabaseTables
     local tables = {
-
+        
     }
 
     Database.__index = Database
