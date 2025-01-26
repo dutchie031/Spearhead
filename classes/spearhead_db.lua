@@ -1,42 +1,22 @@
 
 ---@class DatabaseTables
----@field AllZoneNames Array<string>
----@field StageZones Array<string>
----@field MissionZones Array<string>
----@field RandomMissionZone Array<string>
----@field FarpZones Array<string>
----@field CapRoutes Array<string>
----@field CarrierRouteZones Array<string>
----@field BlueSams Array<string>
+---@field AllZoneNames Array<string> All Zone Names
+---@field StageZones Array<string> All Stage Zone Names
+---@field MissionZones Array<string> All Mission Zone Names
+---@field StageZonesByNumber table<integer, Array<string>> Stage zones grouped by index number
+---@field StageNumberByZone table<string, string> : table<ZoneName, IndexAsString>
+---@field RandomMissionZones Array<string> All Random mission names
+---@field FarpZones Array<string> All farp zone names
+---@field CapRoutes Array<string> All Cap route zone names
+---@field CarrierRouteZones Array<string> All Carrier routes zones
+---@field BlueSams Array<string> All blue sam zones
+---@field DescriptionsByMission table<string,string> table<ZoneName, Description>
 
 
 ---@class Database
 ---@field private _tables DatabaseTables
 ---@field private _logger Logger 
 local Database = {}
-
-    ---@class Databaseb
-    ---@field private tables table tables
-    ---@field private Logger Logger 
-    ---@field GetNewMissionCode fun(self:Database): integer
-    ---@field GetDescriptionForMission fun(self:Database, MissionZoneName:string) : string|nil
-    ---@field getAirbaseIdsInStage fun(self:Database, stageZoneName:string) : Array<integer>
-    ---@field getBlueGroupsAtAirbase fun(self:Database, airbaseId:integer) : Array<string>
-    ---@field getRedGroupsAtAirbase fun(self:Database, airbaseId:integer) : Array<string>
-    ---@field getBlueSamGroupsInZone fun(self:Database, samZoneName:string) : Array<string>
-    ---@field getBlueSamsInStage fun(self:Database, stageZoneName:string) : Array<string>
-    ---@field getCapGroupsAtAirbase fun(self:Database, airbaseId0:integer) : Array<string>
-    ---@field getCapRouteInZone fun(self:Database, stageNumber:integer, baseId:integer) : Array<string>
-    ---@field getCarrierRouteZones fun(self:Database) : Array<string>
-    ---@field getFarpPadsInFarpZone fun(self:Database, farpZoneName:string) : Array<string>
-    ---@field getFarpZonesInStage fun(self:Database, stageZoneName:string) : Array<string>
-    ---@field getGroupsForMissionZone fun(self:Database, missionZoneName:string) : Array<string>
-    ---@field getGroupsInFarpZone fun(self:Database, farpZoneName:string) : Array<string>
-    ---@field getMiscGroupsAtStage fun(self:Database, stageZoneName:string) : Array<string>
-    ---@field getMissionBriefingForMissionZone fun(self:Database, missionZoneName:string): string
-    ---@field getMissionsForStage fun(self:Database, stageZoneName:string) : Array<string>
-    ---@field getRandomMissionsForStage fun(self:Database, stageZoneName:string) : Array<string>
-    ---@field getStagezoneNames fun(self:Database) : Array<string>
 
 ---comment
 ---@param Logger table
@@ -45,7 +25,17 @@ function Database.New(Logger, debug)
     
     ---@type DatabaseTables
     local tables = {
-        
+        AllZoneNames = {},
+        BlueSams = {},
+        CapRoutes = {},
+        CarrierRouteZones = {},
+        FarpZones = {},
+        MissionZones = {},
+        RandomMissionZones = {},
+        StageZones = {},
+        StageZonesByNumber = {},
+        StageNumberByZone = {},
+        DescriptionsByMission = {}
     }
 
     Database.__index = Database
@@ -56,68 +46,55 @@ function Database.New(Logger, debug)
 
     Logger:debug("Initiating tables")
 
-    o.tables.all_zones = {}
-    o.tables.stage_zones = {}
-    o.tables.mission_zones = {}
-    o.tables.random_mission_zones = {}
-    o.tables.farp_zones = {}
-    o.tables.cap_route_zones = {}
-    o.tables.carrier_route_zones = {}
-    o.tables.blue_sams = {}
-
-    o.tables.stage_zonesByNumer = {}
-    o.tables.stage_numberPerzone = {}
-
     do -- INIT ZONE TABLES
         for zone_ind, zone_data in pairs(Spearhead.DcsUtil.__trigger_zones) do
             local zone_name = zone_data.name
             local split_string = Spearhead.Util.split_string(zone_name, "_")
-            table.insert(o.tables.all_zones, zone_name)
+            table.insert(self._tables.AllZoneNames, zone_name)
 
             if string.lower(split_string[1]) == "missionstage" then
-                table.insert(o.tables.stage_zones, zone_name)
+                table.insert(self._tables.StageZones, zone_name)
                 if split_string[2] then
                     local stringified = tostring(split_string[2]) or "unknown"
-                    if o.tables.stage_zonesByNumer[stringified] == nil then
-                        o.tables.stage_zonesByNumer[stringified] = {}
+                    if self._tables.StageZonesByNumber[stringified] == nil then
+                        self._tables.StageZonesByNumber[stringified] = {}
                     end
-                    table.insert(o.tables.stage_zonesByNumer[stringified], zone_name)
-                    o.tables.stage_numberPerzone[zone_name] = stringified
+                    table.insert(self._tables.StageZonesByNumber[stringified], zone_name)
+                    self._tables.StageNumberByZone[zone_name] = stringified
                 end
             end
 
             if string.lower(split_string[1]) == "waitingstage" then
-                table.insert(o.tables.stage_zones, zone_name)
+                table.insert(self._tables.StageZones, zone_name)
             end
 
             if string.lower(split_string[1]) == "mission" then
-                table.insert(o.tables.mission_zones, zone_name)
+                table.insert(self._tables.MissionZones, zone_name)
             end
 
             if string.lower(split_string[1]) == "randommission" then
-                table.insert(o.tables.random_mission_zones, zone_name)
+                table.insert(self._tables.RandomMissionZones, zone_name)
             end
 
             if string.lower(split_string[1]) == "farp" then
-                table.insert(o.tables.farp_zones, zone_name)
+                table.insert(self._tables.FarpZones, zone_name)
             end
 
             if string.lower(split_string[1]) == "caproute" then
-                table.insert(o.tables.cap_route_zones, zone_name)
+                table.insert(self._tables.CapRoutes, zone_name)
             end
 
             if string.lower(split_string[1]) == "carrierroute" then
-                table.insert(o.tables.carrier_route_zones, zone_name)
+                table.insert(self._tables.CarrierRouteZones, zone_name)
             end
 
             if string.lower(split_string[1]) == "bluesam" then
-                table.insert(o.tables.blue_sams, zone_name)
+                table.insert(self._tables.BlueSams, zone_name)
             end
         end
     end
 
     Logger:debug("initiated zone tables, continuing with descriptions")
-    o.tables.descriptions = {}
     do --load markers
         if env.mission.drawings and env.mission.drawings.layers then
             for i, layer in pairs(env.mission.drawings.layers) do
@@ -132,7 +109,7 @@ function Database.New(Logger, debug)
                             if Spearhead.Util.tableLength(inZone) >= 1 then
                                 local name = inZone[1]
                                 if name ~= nil then
-                                    o.tables.descriptions[name] = layer_object.text
+                                    self._tables.DescriptionsByMission[name] = layer_object.text
                                 end
                             end
 
