@@ -1,17 +1,31 @@
 
 ---@class DatabaseTables
 ---@field AllZoneNames Array<string> All Zone Names
----@field StageZones Array<string> All Stage Zone Names
+---@field StageZoneNames Array<string> All Stage Zone Names
+---@field StageZones table<string, StageZoneData> table<StageZoneName, StageZoneData>
 ---@field MissionZones Array<string> All Mission Zone Names
----@field StageZonesByNumber table<integer, Array<string>> Stage zones grouped by index number
----@field StageNumberByZone table<string, string> : table<ZoneName, IndexAsString>
 ---@field RandomMissionZones Array<string> All Random mission names
----@field FarpZones Array<string> All farp zone names
+---@field StageZonesByNumber table<integer, Array<string>> Stage zones grouped by index number
+---@field AllFarpZones Array<string>
+---@field FarpIdsInFarpZones table<string, Array<integer>> farp pad Id's in farp zones.
 ---@field CapRoutes Array<string> All Cap route zone names
 ---@field CarrierRouteZones Array<string> All Carrier routes zones
 ---@field BlueSams Array<string> All blue sam zones
 ---@field DescriptionsByMission table<string,string> table<ZoneName, Description>
+---@field AirbaseDataPerAirfield table<string, AirbaseData>
 
+---@class StageZoneData
+---@field StageZoneName string
+---@field AirbaseIds Array<integer>
+---@field FarpZones Array<string>
+---@field MissionZones Array<string>
+---@field RandomMissionZones Array<string>
+---@field StageIndex string
+---@field BlueSamZones Array<string>
+---@field MiscGroups Array<string>
+
+---@class AirbaseData
+---@field CapGroups Array<string>
 
 ---@class Database
 ---@field private _tables DatabaseTables
@@ -29,13 +43,14 @@ function Database.New(Logger, debug)
         BlueSams = {},
         CapRoutes = {},
         CarrierRouteZones = {},
-        FarpZones = {},
+        DescriptionsByMission = {},
+        FarpIdsInFarpZones = {},
         MissionZones = {},
+        StageZoneNames = {},
         RandomMissionZones = {},
         StageZones = {},
         StageZonesByNumber = {},
-        StageNumberByZone = {},
-        DescriptionsByMission = {}
+        AllFarpZones = {}
     }
 
     Database.__index = Database
@@ -53,19 +68,30 @@ function Database.New(Logger, debug)
             table.insert(self._tables.AllZoneNames, zone_name)
 
             if string.lower(split_string[1]) == "missionstage" then
-                table.insert(self._tables.StageZones, zone_name)
+                table.insert(self._tables.StageZoneNames, zone_name)
                 if split_string[2] then
                     local stringified = tostring(split_string[2]) or "unknown"
                     if self._tables.StageZonesByNumber[stringified] == nil then
                         self._tables.StageZonesByNumber[stringified] = {}
                     end
                     table.insert(self._tables.StageZonesByNumber[stringified], zone_name)
-                    self._tables.StageNumberByZone[zone_name] = stringified
+
+                    ---@type StageZoneData
+                    local stageData = {
+                        StageZoneName = zone_name,
+                        StageIndex = stringified,
+                        AirbaseIds = {},
+                        BlueSamZones = {},
+                        FarpZones = {},
+                        MissionZones = {},
+                        RandomMissionZones = {}
+                    }
+                    self._tables.StageZones[zone_name] = zone_data
                 end
             end
 
             if string.lower(split_string[1]) == "waitingstage" then
-                table.insert(self._tables.StageZones, zone_name)
+                table.insert(self._tables.StageZoneNames, zone_name)
             end
 
             if string.lower(split_string[1]) == "mission" then
@@ -77,7 +103,7 @@ function Database.New(Logger, debug)
             end
 
             if string.lower(split_string[1]) == "farp" then
-                table.insert(self._tables.FarpZones, zone_name)
+                table.insert(self._tables.AllFarpZones, zone_name)
             end
 
             if string.lower(split_string[1]) == "caproute" then
@@ -102,10 +128,11 @@ function Database.New(Logger, debug)
                     for key, layer_object in pairs(layer.objects) do
 
                         if Spearhead.Util.startswith(layer_object.name,  "stagebriefing", true) then
-                            
+                            --[[
+                                TODO: Stage Briefings
+                            ]]
                         else
-                            local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
-                            o.tables.mission_zones)
+                            local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY, self._tables.MissionZones)
                             if Spearhead.Util.tableLength(inZone) >= 1 then
                                 local name = inZone[1]
                                 if name ~= nil then
@@ -114,11 +141,11 @@ function Database.New(Logger, debug)
                             end
 
                             local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
-                                o.tables.random_mission_zones)
+                                self._tables.RandomMissionZones)
                             if Spearhead.Util.tableLength(inZone) >= 1 then
                                 local name = inZone[1]
                                 if name ~= nil then
-                                    o.tables.descriptions[name] = layer_object.text
+                                    self._tables.DescriptionsByMission[name] = layer_object.text
                                 end
                             end
                         end
@@ -130,121 +157,58 @@ function Database.New(Logger, debug)
         end
     end
 
-    o.tables.blueSamZonesPerStage = {}
-    for _, stageZoneName in pairs(o.tables.stage_zones) do
-    
-        if o.tables.blueSamZonesPerStage[stageZoneName] == nil then
-            o.tables.blueSamZonesPerStage[stageZoneName] = {}
-        end
-        
-        for _, blueSamStageName in pairs(o.tables.blue_sams) do
-            
-            if Spearhead.DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
-                table.insert(o.tables.blueSamZonesPerStage[stageZoneName], blueSamStageName)
-            end
-        end
-    end
-    
-    o.tables.missionZonesPerStage = {}
-    for key, missionZone in pairs(o.tables.mission_zones) do
-        local found = false
-        local i = 1
-        while found == false and i <= Spearhead.Util.tableLength(o.tables.stage_zones) do
-            local stageZone = o.tables.stage_zones[i]
-            if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZone) == true then
-                if o.tables.missionZonesPerStage[stageZone] == nil then
-                    o.tables.missionZonesPerStage[stageZone] = {}
+    for _, stageZoneName in pairs(self._tables.StageZoneNames) do
+        local stageData = self._tables.StageZones[stageZoneName]
+        if stageData then
+
+            -- fill blue sams
+            for _, blueSamStageName in pairs(self._tables.BlueSams) do
+                if Spearhead.DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
+                    table.insert(stageData.BlueSamZones, blueSamStageName)
                 end
-                table.insert(o.tables.missionZonesPerStage[stageZone], missionZone)
             end
-            i = i + 1
-        end
-    end
 
-    o.tables.randomMissionZonesPerStage = {}
-    for key, missionZone in pairs(o.tables.random_mission_zones) do
-        local found = false
-        local i = 1
-        while found == false and i <= Spearhead.Util.tableLength(o.tables.stage_zones) do
-            local stageZone = o.tables.stage_zones[i]
-            if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZone) == true then
-                if o.tables.randomMissionZonesPerStage[stageZone] == nil then
-                    o.tables.randomMissionZonesPerStage[stageZone] = {}
+            -- fill missions
+            for key, missionZone in pairs(self._tables.MissionZones) do
+                if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZoneName) == true then
+                    table.insert(stageData.MissionZones, missionZone)
                 end
-                table.insert(o.tables.randomMissionZonesPerStage[stageZone], missionZone)
             end
-            i = i + 1
-        end
-    end
 
-    local isAirbaseInZone = {}
-    o.tables.airbasesPerStage = {}
-    o.tables.farpIdsInFarpZones = {}
-    local airbases = world.getAirbases()
-    for _, airbase in pairs(airbases) do
-        local baseId = airbase:getID()
-        local point = airbase:getPoint()
-        local found = false
-        for _, zoneName in pairs(o.tables.stage_zones) do
-            if found == false then
-                if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, zoneName) == true then
-                    found = true
-                    local baseIdString = tostring(baseId) or "nil"
-                    isAirbaseInZone[baseIdString] = true
+            -- fill random missions
+            for key, missionZone in pairs(self._tables.RandomMissionZones) do
+                if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZoneName) == true then
+                    table.insert(stageData.RandomMissionZones, missionZone)
+                end
+            end
 
+            -- fill airbases
+            for _, airbase in pairs(world.getAirbases()) do
+                local baseId = airbase:getID()
+                local point = airbase:getPoint()
+                
+                if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, stageZoneName)  == true then
                     if airbase:getDesc().category == 0 then
-                        if o.tables.airbasesPerStage[zoneName] == nil then
-                            o.tables.airbasesPerStage[zoneName] = {}
-                        end
-
-                        table.insert(o.tables.airbasesPerStage[zoneName], baseId)
-                    else
+                        table.insert(stageData.AirbaseIds, baseId)
+                    elseif airbase:getDesc().category == 1 then
                         -- farp
-                        local i = 1
-                        local farpFound = false
-                        while farpFound == false and i <= Spearhead.Util.tableLength(o.tables.farp_zones) do
-                            local farpZoneName = o.tables.farp_zones[i]
-                            if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, farpZoneName) == true then
-                                farpFound = true
-
-                                if o.tables.farpIdsInFarpZones[farpZoneName] == nil then
-                                    o.tables.farpIdsInFarpZones[farpZoneName] = {}
-                                end
-
-                                table.insert(o.tables.farpIdsInFarpZones[farpZoneName], baseIdString)
-                            end
-                            i = i + 1
-                        end
+                        --[[
+                            TODO: FARP ZONES FILL
+                        ]]
                     end
                 end
             end
-        end
-    end
 
-
-
-    o.tables.farpZonesPerStage = {}
-    for _, farpZoneName in pairs(o.tables.farp_zones) do
-        local findFirst = function(farpZoneName)
-            for _, stage_zone in pairs(o.tables.stage_zones) do
-                if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stage_zone) then
-                    return stage_zone
+            --- fill farp zones
+            for _, farpZoneName in pairs(self._tables.AllFarpZones) do
+                if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stageZoneName) then
+                    table.insert(stageData.FarpZones, farpZoneName)
                 end
             end
-            return nil
-        end
 
-        local found = findFirst(farpZoneName)
-        if found then
-            if o.tables.farpZonesPerStage[found] == nil then
-                o.tables.farpZonesPerStage[found] = {}
-            end
-
-            table.insert(o.tables.farpZonesPerStage[found], farpZoneName)
         end
     end
-
-
+    
     local is_group_taken = {}
     do
         local all_groups = Spearhead.DcsUtil.getAllGroupNames()

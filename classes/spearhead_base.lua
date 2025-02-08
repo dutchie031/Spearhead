@@ -634,7 +634,7 @@ do     -- INIT DCS_UTIL
     --- takes a x, y poistion and checks if it is inside any of the zones
     ---@param x number North South position
     ---@param z number West East position
-    ---@param zone_name table zone names
+    ---@param zone_name string zone name
     ---@return boolean result
     function DCS_UTIL.isPositionInZone(x, z, zone_name)
         local zone = DCS_UTIL.__trigger_zones[zone_name]
