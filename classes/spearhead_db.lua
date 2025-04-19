@@ -355,13 +355,14 @@ function Database.New(Logger, debug)
     end
 
     function Database:loadAirbaseGroups()
+
+
         local all_groups = getAvailableGroups()
         local airbases = world.getAirbases()
         for _, airbase in pairs(airbases) do
             local baseId = tostring(airbase:getID())
             local point = airbase:getPoint()
-            local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or
-            { x = point.x, z = point.z, radius = 4000 }
+            local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
 
             local airbaseData = self:getOrCreateAirbaseData(baseId)
             if isAirbaseInZone[tostring(baseId) or "something"] == true and airbaseZone and airbase:getDesc().category == Airbase.Category.AIRDROME then
