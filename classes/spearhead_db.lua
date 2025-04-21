@@ -5,10 +5,11 @@
 ---@field StageZones table<string, StageZoneData> table<StageZoneName, StageZoneData>
 ---@field MissionZones Array<string> All Mission Zone Names
 ---@field RandomMissionZones Array<string> All Random mission names
----@field StageZonesByNumber table<integer, Array<string>> Stage zones grouped by index number
+---@field StageZonesByNumber table<string, Array<string>> Stage zones grouped by index number
 ---@field AllFarpZones Array<string>
 ---@field FarpIdsInFarpZones table<string, Array<integer>> farp pad Id's in farp zones.
 ---@field CapRoutes Array<string> All Cap route zone names
+---@field CapDataPerStageNumber table<integer, CapData> table<StageNumber, table>
 ---@field CarrierRouteZones Array<string> All Carrier routes zones
 ---@field BlueSams Array<string> All blue sam zones
 ---@field DescriptionsByMission table<string,string> table<ZoneName, Description>
@@ -17,9 +18,17 @@
 ---@field MissionZoneData table<string, BlueSamData>
 ---@field FarpZoneData table<string,FarpZoneData>
 
+---@class CapData
+---@field routes Array<CapRoute>
+---@field current integer
+
+---@class CapRoute 
+---@field point1 Vec3
+---@field point2 Vec3?
+
 ---@class StageZoneData
 ---@field StageZoneName string
----@field AirbaseIds Array<integer>
+---@field AirbaseNames Array<string>
 ---@field FarpZones Array<string>
 ---@field MissionZones Array<string>
 ---@field RandomMissionZones Array<string>
@@ -56,6 +65,7 @@ function Database.New(Logger, debug)
         AllZoneNames = {},
         BlueSams = {},
         CapRoutes = {},
+        CapDataPerStageNumber = {},
         CarrierRouteZones = {},
         DescriptionsByMission = {},
         FarpIdsInFarpZones = {},
@@ -98,7 +108,7 @@ function Database.New(Logger, debug)
                     local stageData = {
                         StageZoneName = zone_name,
                         StageIndex = stringified,
-                        AirbaseIds = {},
+                        AirbaseNames = {},
                         BlueSamZones = {},
                         FarpZones = {},
                         MissionZones = {},
@@ -203,12 +213,11 @@ function Database.New(Logger, debug)
 
             -- fill airbases
             for _, airbase in pairs(world.getAirbases()) do
-                local baseId = airbase:getID()
                 local point = airbase:getPoint()
                 
                 if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, stageZoneName)  == true then
                     if airbase:getDesc().category == 0 then
-                        table.insert(stageData.AirbaseIds, baseId)
+                        table.insert(stageData.AirbaseNames, airbase:getName())
                     elseif airbase:getDesc().category == 1 then
                         -- farp
                         --[[
@@ -257,17 +266,17 @@ function Database.New(Logger, debug)
     end
 
     ---@private
-    ---@param baseId string
+    ---@param baseName string
     ---@return AirbaseData
-    function Database:getOrCreateAirbaseData(baseId)
-        local baseData = self._tables.AirbaseDataPerAirfield[tostring(baseId)]
+    function Database:getOrCreateAirbaseData(baseName)
+        local baseData = self._tables.AirbaseDataPerAirfield[baseName]
         if baseData == nil then
             baseData = {
                 CapGroups = {},
                 RedGroups = {},
                 BlueGroups = {}
             }
-            self._tables.AirbaseDataPerAirfield[tostring(baseId)] = baseData
+            self._tables.AirbaseDataPerAirfield[baseName] = baseData
         end
         return baseData
     end
@@ -281,7 +290,7 @@ function Database.New(Logger, debug)
             local point = airbase:getPoint()
             local zone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
 
-            local baseData = self:getOrCreateAirbaseData(baseId)
+            local baseData = self:getOrCreateAirbaseData(airbase:getName())
             local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
             for _, groupName in pairs(groups) do
                 is_group_taken[groupName] = true
@@ -356,63 +365,43 @@ function Database.New(Logger, debug)
 
     function Database:loadAirbaseGroups()
 
-
         local all_groups = getAvailableGroups()
-        local airbases = world.getAirbases()
-        for _, airbase in pairs(airbases) do
-            local baseId = tostring(airbase:getID())
-            local point = airbase:getPoint()
-            local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
+        for _, stageZone in pairs(self._tables.StageZones) do
+            
+            for _, baseName in pairs(stageZone.AirbaseNames) do
+                local base = Airbase.getByName(baseName)
 
-            local airbaseData = self:getOrCreateAirbaseData(baseId)
-            if isAirbaseInZone[tostring(baseId) or "something"] == true and airbaseZone and airbase:getDesc().category == Airbase.Category.AIRDROME then
-                if debug then
-                    if airbaseZone.zone_type == Spearhead.DcsUtil.ZoneType.Polygon then
-                        local functionString = "trigger.action.markupToAll(7, -1, " .. baseId + 300 .. ","
-                        for _, vecpoint in pairs(airbaseZone.verts) do
-                            functionString = functionString .. " { x=" .. vecpoint.x .. ", y=0,z=" .. vecpoint.z ..
-                            "},"
-                        end
-                        functionString = functionString .. "{0,1,0,1}, {0,0,0,0}, 1)"
+                if base then
+                    local basedata = self:getOrCreateAirbaseData(baseName)
+                    local baseId = base:getID()
+                    local point = base:getPoint()
+                    local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
 
-                        env.info(functionString)
-                        local f, err = loadstring(functionString)
-                        if f then
-                            f()
-                        else
-                            env.info(err)
-                        end
-                    else
-                        trigger.action.circleToAll(-1, baseId, { x = point.x, y = 0, z = point.z }, 2048,
-                            { 1, 0, 0, 1 }, { 0, 0, 0, 0 }, 1, true)
-                    end
-                end
-
-
-                o.tables.redAirbaseGroupsPerAirbase[baseId] = {}
-                o.tables.blueAirbaseGroupsPerAirbase[baseId] = {}
-                local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
-                for _, groupName in pairs(groups) do
-                    if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
-                        local object = StaticObject.getByName(groupName)
-                        if object then
-                            if object:getCoalition() == coalition.side.RED then
-                                table.insert(o.tables.redAirbaseGroupsPerAirbase[baseId], groupName)
-                                is_group_taken[groupName] = true
-                            elseif object:getCoalition() == coalition.side.BLUE then
-                                table.insert(o.tables.blueAirbaseGroupsPerAirbase[baseId], groupName)
-                                is_group_taken[groupName] = true
-                            end
-                        end
-                    else
-                        local group = Group.getByName(groupName)
-                        if group then
-                            if group:getCoalition() == coalition.side.RED then
-                                table.insert(o.tables.redAirbaseGroupsPerAirbase[baseId], groupName)
-                                is_group_taken[groupName] = true
-                            elseif group:getCoalition() == coalition.side.BLUE then
-                                table.insert(o.tables.blueAirbaseGroupsPerAirbase[baseId], groupName)
-                                is_group_taken[groupName] = true
+                    if airbaseZone and base:getDesc().category == Airbase.Category.AIRDROME then
+                        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
+                        for _, groupName in pairs(groups) do
+                            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+                                local object = StaticObject.getByName(groupName)
+                                if object then
+                                    if object:getCoalition() == coalition.side.RED then
+                                        table.insert(basedata.RedGroups, groupName)
+                                        is_group_taken[groupName] = true
+                                    elseif object:getCoalition() == coalition.side.BLUE then
+                                        table.insert(basedata.BlueGroups, groupName)
+                                        is_group_taken[groupName] = true
+                                    end
+                                end
+                            else
+                                local group = Group.getByName(groupName)
+                                if group then
+                                    if group:getCoalition() == coalition.side.RED then
+                                        table.insert(basedata.RedGroups, groupName)
+                                        is_group_taken[groupName] = true
+                                    elseif group:getCoalition() == coalition.side.BLUE then
+                                        table.insert(basedata.BlueGroups, groupName)
+                                        is_group_taken[groupName] = true
+                                    end
+                                end
                             end
                         end
                     end
@@ -421,57 +410,62 @@ function Database.New(Logger, debug)
         end
     end
 
-    o.tables.miscGroupsInStages = {}
-    local loadMiscGroupsInStages = function()
+    ---@private
+    function Database:loadMiscGroupsInStages()
         local all_groups = getAvailableGroups()
-        for _, stage_zone in pairs(o.tables.stage_zones) do
-            o.tables.miscGroupsInStages[stage_zone] = {}
-            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stage_zone)
+        for _, stageZone in pairs(self._tables.StageZones) do
+            stageZone.MiscGroups = {}
+
+            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stageZone.StageZoneName)
             for _, groupName in pairs(groups) do
                 if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
                     local object = StaticObject.getByName(groupName)
                     if object and object:getCoalition() ~= coalition.side.NEUTRAL then
                         is_group_taken[groupName] = true
-                        table.insert(o.tables.miscGroupsInStages[stage_zone], groupName)
+                        table.insert(stageZone.MiscGroups, groupName)
                     end
                 else
                     local group = Group.getByName(groupName)
                     if group and group:getCoalition() ~= coalition.side.NEUTRAL then
                         is_group_taken[groupName] = true
-                        table.insert(o.tables.miscGroupsInStages[stage_zone], groupName)
+                        table.insert(stageZone.MiscGroups, groupName)
                     end
                 end
             end
         end
     end
 
-    loadCapUnits()
-    loadBlueSamUnits()
-    loadMissionzoneUnits()
-    loadRandomMissionzoneUnits()
-    loadFarpGroups()
-    loadAirbaseGroups()
-    loadMiscGroupsInStages()
+    self:loadCapUnits()
+    self:loadBlueSamUnits()
+    self:loadMissionzoneUnits()
+    self:loadRandomMissionzoneUnits()
+    self:loadFarpGroups()
+    self:loadAirbaseGroups()
+    self:loadMiscGroupsInStages()
 
-    --- key: zoneName value: { current, routes = [ { point1, point2 } ] }
-    o.tables.capRoutesPerStageNumber = {}
-    for _, zoneName in pairs(o.tables.stage_zones) do
-        local number = tostring(o.tables.stage_numberPerzone[zoneName] or "unknown")
+   
+    for _, zoneData in pairs(self._tables.StageZones) do
 
-        if o.tables.capRoutesPerStageNumber[number] == nil then
-            o.tables.capRoutesPerStageNumber[number] = {
-                current = 0,
-                routes = {}
-            }
-        end
+        local number = zoneData.StageIndex
 
-        for _, cap_route_zone in pairs(o.tables.cap_route_zones) do
-            if Spearhead.DcsUtil.isZoneInZone(cap_route_zone, zoneName) == true then
+        for _, cap_route_zone in pairs(self._tables.CapRoutes) do
+            if Spearhead.DcsUtil.isZoneInZone(cap_route_zone, zoneData.StageZoneName) == true then
                 local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
                 if zone then
+                    
+                    ---@type CapData
+                    local capData = self._tables.CapDataPerStageNumber[number]
+                    if capData == nil then
+                        capData = {
+                            routes = {},
+                            current = 0
+                        }
+                        self._tables.CapDataPerStageNumber[number] = capData
+                    end
+                    
+
                     if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                        table.insert(o.tables.capRoutesPerStageNumber[number].routes,
-                            { point1 = { x = zone.x, z = zone.z }, point2 = nil })
+                        table.insert(capData.routes, { point1 = { x = zone.x, z = zone.z }, point2 = nil })
                     else
                         local function getDist(a, b)
                             return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
@@ -496,7 +490,7 @@ function Database.New(Logger, debug)
                         end
 
                         if biggestA and biggestB then
-                            table.insert(o.tables.capRoutesPerStageNumber[number].routes,
+                            table.insert(capData.routes,
                                 {
                                     point1 = { x = biggestA.x, z = biggestA.z },
                                     point2 = { x = biggestB.x, z = biggestB.z }
@@ -508,72 +502,71 @@ function Database.New(Logger, debug)
         end
     end
 
-    o.Logger:debug(o.tables.capRoutesPerStageNumber)
-
-    o.tables.missionCodes = {}
+    return self
 
 end
 
-        function o:GetDescriptionForMission(missionZoneName)
-            return self.tables.descriptions[missionZoneName]
-        end
 
-        function o.getCapRouteInZone(stageNumber, baseId)
-            local stageNumber = tostring(stageNumber) or "nothing"
-            local routeData = self.tables.capRoutesPerStageNumber[stageNumber]
-            if routeData then
-                local count = Spearhead.Util.tableLength(routeData.routes)
-                if count > 0 then
-                    routeData.current = routeData.current + 1
-                    if count < routeData.current then
-                        routeData.current = 1
-                    end
-                    return routeData.routes[routeData.current]
-                end
+function Database:GetDescriptionForMission(missionZoneName)
+    return self._tables.DescriptionsByMission[missionZoneName]
+end
+
+function Database:getCapRouteInZone(stageNumber, baseId)
+    local stageNumber = tostring(stageNumber) or "nothing"
+    local routeData = self._tables.CapDataPerStageNumber[stageNumber]
+    if routeData then
+        local count = Spearhead.Util.tableLength(routeData.routes)
+        if count > 0 then
+            routeData.current = routeData.current + 1
+            if count < routeData.current then
+                routeData.current = 1
             end
-            do
-                local function GetClosestPointOnCircle(pC, radius, p)
-                    local vX = p.x - pC.x;
-                    local vY = p.z - pC.z;
-                    local magV = math.sqrt(vX * vX + vY * vY);
-                    local aX = pC.x + vX / magV * radius;
-                    local aY = pC.z + vY / magV * radius;
-                    return { x = aX, z = aY }
-                end
-                local stageZoneName = Spearhead.Util.randomFromList(self.tables.stage_zonesByNumer[stageNumber]) or
-                "none"
-                local stagezone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
-                if stagezone then
-                    local base = Spearhead.DcsUtil.getAirbaseById(baseId)
-                    if base then
-                        local closest = nil
-                        if stagezone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                            closest = GetClosestPointOnCircle({ x = stagezone.x, z = stagezone.z }, stagezone.radius,
-                                base:getPoint())
-                        else
-                            local function getDist(a, b)
-                                return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
-                            end
+            return routeData.routes[routeData.current]
+        end
+    end
+    do
+        local function GetClosestPointOnCircle(pC, radius, p)
+            local vX = p.x - pC.x;
+            local vY = p.z - pC.z;
+            local magV = math.sqrt(vX * vX + vY * vY);
+            local aX = pC.x + vX / magV * radius;
+            local aY = pC.z + vY / magV * radius;
+            return { x = aX, z = aY }
+        end
+        local stageZoneName = Spearhead.Util.randomFromList(self._tables.StageZonesByNumber[stageNumber]) or
+        "none"
+        local stagezone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
+        if stagezone then
+            local base = Spearhead.DcsUtil.getAirbaseById(baseId)
+            if base then
+                local closest = nil
+                if stagezone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
+                    closest = GetClosestPointOnCircle({ x = stagezone.x, z = stagezone.z }, stagezone.radius,
+                        base:getPoint())
+                else
+                    local function getDist(a, b)
+                        return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
+                    end
 
-                            local closestDistance = -1
-                            for _, vert in pairs(stagezone.verts) do
-                                local distance = getDist(vert, base:getPoint())
-                                if closestDistance == -1 or distance < closestDistance then
-                                    closestDistance = distance
-                                    closest = vert
-                                end
-                            end
-                        end
-
-                        if math.random(1, 2) % 2 == 0 then
-                            return { point1 = closest, point2 = { x = stagezone.x, z = stagezone.z } }
-                        else
-                            return { point1 = { x = stagezone.x, z = stagezone.z }, point2 = closest }
+                    local closestDistance = -1
+                    for _, vert in pairs(stagezone.verts) do
+                        local distance = getDist(vert, base:getPoint())
+                        if closestDistance == -1 or distance < closestDistance then
+                            closestDistance = distance
+                            closest = vert
                         end
                     end
                 end
+
+                if math.random(1, 2) % 2 == 0 then
+                    return { point1 = closest, point2 = { x = stagezone.x, z = stagezone.z } }
+                else
+                    return { point1 = { x = stagezone.x, z = stagezone.z }, point2 = closest }
+                end
             end
         end
+    end
+end
         ---comment
         ---@param self table
         ---@return table result a  list of stage zone names
