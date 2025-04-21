@@ -905,11 +905,14 @@ do     -- INIT DCS_UTIL
         bingoSetting = bingoSetting + offset
 
         local group = Group.getByName(groupName)
-        for _, unit in pairs(group:getUnits()) do
-            if unit and unit:isExist() == true and unit:inAir() == true and unit:getFuel() < bingoSetting then
-                return true
+        if group then
+            for _, unit in pairs(group:getUnits()) do
+                if unit and unit:isExist() == true and unit:inAir() == true and unit:getFuel() < bingoSetting then
+                    return true
+                end
             end
         end
+        
         return false
     end
 

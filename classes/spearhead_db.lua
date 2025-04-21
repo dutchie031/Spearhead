@@ -15,7 +15,7 @@
 ---@field DescriptionsByMission table<string,string> table<ZoneName, Description>
 ---@field AirbaseDataPerAirfield table<string, AirbaseData>
 ---@field BlueSamDataPerZone table<string, BlueSamData>
----@field MissionZoneData table<string, BlueSamData>
+---@field MissionZoneData table<string, MissionZoneData>
 ---@field FarpZoneData table<string,FarpZoneData>
 
 ---@class CapData
@@ -42,6 +42,9 @@
 ---@field BlueGroups Array<string>
 
 ---@class BlueSamData
+---@field Groups Array<string>
+
+---@class MissionZoneData
 ---@field Groups Array<string>
 
 ---@class MissionData
@@ -231,6 +234,27 @@ function Database.New(Logger, debug)
             for _, farpZoneName in pairs(self._tables.AllFarpZones) do
                 if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stageZoneName) then
                     table.insert(stageData.FarpZones, farpZoneName)
+                end
+            end
+
+            Logger:info("initiated the database with amount of zones: ")
+            Logger:info("Stages:            " .. Spearhead.Util.tableLength(self._tables.StageZones))
+            Logger:info("Total Missions:    " .. Spearhead.Util.tableLength(self._tables.MissionZoneData))
+            Logger:info("Random Missions:   " .. Spearhead.Util.tableLength(self._tables.RandomMissionZones))
+            Logger:info("Farps:             " .. Spearhead.Util.tableLength(self._tables.AllFarpZones))
+            Logger:info("Airbases:          " .. Spearhead.Util.tableLength(self._tables.AirbaseDataPerAirfield))
+
+            for _, missionZone in pairs(self._tables.MissionZones) do
+                if self._tables.DescriptionsByMission[missionZone] == nil then
+                    Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
+                    missionZone .. " does not have a briefing")
+                end
+            end
+
+            for _, missionZone in pairs(self._tables.RandomMissionZones) do
+                if self._tables.DescriptionsByMission[missionZone] == nil then
+                    Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
+                    missionZone .. " does not have a briefing")
                 end
             end
 
@@ -567,136 +591,117 @@ function Database:getCapRouteInZone(stageNumber, baseId)
         end
     end
 end
-        ---comment
-        ---@param self table
-        ---@return table result a  list of stage zone names
-        o.getStagezoneNames = function(self)
-            return self.tables.stage_zones
+
+
+---@return table result a  list of stage zone names
+function Database:getStagezoneNames()
+    return self._tables.AllZoneNames
+end
+
+function Database:getCarrierRouteZones()
+    return self._tables.CarrierRouteZones
+end
+
+---@return Array<string>
+function Database:getMissionsForStage(stagename)
+    local stageZone = self._tables.StageZones[stagename]
+    if not stageZone then return {} end
+    return stageZone.MissionZones
+end
+
+---@return Array<string>
+function Database:getRandomMissionsForStage(stagename)
+    local stageZone = self._tables.StageZones[stagename]
+    if not stageZone then return {} end
+    return stageZone.RandomMissionZones
+end
+
+---@return Array<string>?
+function Database:getGroupsForMissionZone(missionZoneName)
+    local missionZoneData = self._tables.MissionZoneData[missionZoneName]
+    if not missionZoneData then return nil end
+    return missionZoneData.Groups
+end
+
+---@return string?
+function Database:getMissionBriefingForMissionZone(missionZoneName)
+    return self._tables.DescriptionsByMission[missionZoneName]
+end
+
+---@param self table
+---@param stageName string
+---@return table result airbase Names
+function Database:getAirbaseIdsInStage(stageName)
+    return self.tables.airbasesPerStage[stageName] or {}
+end
+
+
+---@param airbaseName string
+---@return Array<string>?
+function Database:getCapGroupsAtAirbase(airbaseName)
+    local airbaseData = self._tables.AirbaseDataPerAirfield[airbaseName]
+    if not airbaseData then return nil end
+    return airbaseData.CapGroups
+end
+
+---@param stageName string
+---@return Array<string>
+function Database:getBlueSamsInStage(stageName)
+    local stageData = self._tables.StageZones[stageName]
+    if not stageData then return {} end
+    return stageData.BlueSamZones
+end
+
+---@param samZone string
+---@return Array<string>
+function Database:getBlueSamGroupsInZone(samZone)
+    local blueSamData = self._tables.BlueSamDataPerZone[samZone]
+    if not blueSamData then return {} end
+    return blueSamData.Groups
+end
+
+---@param airbaseName string
+---@return Array<string>
+function Database:getRedGroupsAtAirbase(airbaseName)
+    local airbaseData = self._tables.AirbaseDataPerAirfield[airbaseName]
+    if not airbaseData then return {} end
+    return airbaseData.RedGroups
+end
+
+---@param airbaseName string
+---@return Array<string>
+function Database:getBlueGroupsAtAirbase(airbaseName)
+    local airbaseData = self._tables.AirbaseDataPerAirfield[airbaseName]
+    if not airbaseData then return {} end
+    return airbaseData.BlueGroups
+end
+
+function Database:getMiscGroupsAtStage(stageName)
+    local stageZone = self._tables.StageZones[stageName]
+    if not stageZone then return {} end
+    return stageZone.MiscGroups
+end
+
+---comment
+---@param self table
+---@return integer|nil
+function Database:GetNewMissionCode(self)
+    local code = nil
+    local tries = 0
+    while code == nil and tries < 10 do
+        local random = math.random(1000, 9999)
+        if self.tables.missionCodes[random] == nil then
+            code = random
         end
-
-        o.getCarrierRouteZones = function(self)
-            return self.tables.carrier_route_zones
-        end
-
-        o.getMissionsForStage = function(self, stagename)
-            return self.tables.missionZonesPerStage[stagename] or {}
-        end
-
-        o.getRandomMissionsForStage = function(self, stagename)
-            return self.tables.randomMissionZonesPerStage[stagename] or {}
-        end
-
-        o.getGroupsForMissionZone = function(self, missionZoneName)
-            if Spearhead.Util.startswith(missionZoneName, "RANDOMMISSION") == true then
-                return self.tables.groupsInRandomMissions[missionZoneName] or {}
-            end
-            return self.tables.groupsInMissionZone[missionZoneName] or {}
-        end
-
-        o.getMissionBriefingForMissionZone = function(self, missionZoneName)
-            return self.tables.descriptions[missionZoneName] or ""
-        end
-
-        ---@param self table
-        ---@param stageName string
-        ---@return table result airbase IDs. Use Spearhead.DcsUtil.getAirbaseById
-        o.getAirbaseIdsInStage = function(self, stageName)
-            return self.tables.airbasesPerStage[stageName] or {}
-        end
-
-        o.getFarpZonesInStage = function(self, stageName)
-            return self.tables.farpZonesPerStage[stageName]
-        end
-
-        o.getFarpPadsInFarpZone = function(self, farpZoneName)
-            return self.tables.farpIdsInFarpZones[farpZoneName]
-        end
-
-        o.getGroupsInFarpZone = function(self, farpZoneName)
-            return self.tables.groupsInFarpZone[farpZoneName]
-        end
-
-        ---@param self table
-        ---@param airbaseId number
-        ---@return table
-        o.getCapGroupsAtAirbase = function(self, airbaseId)
-            return self.tables.capGroupsOnAirbase[airbaseId] or {}
-        end
-
-        ---@param stageName string
-        ---@return table
-        function o:getBlueSamsInStage(stageName)
-            return self.tables.blueSamZonesPerStage[stageName] or {}
-        end
-
-        ---@param self table
-        ---@param samZone string
-        ---@return table
-        o.getBlueSamGroupsInZone = function(self, samZone)
-            return self.tables.samUnitsPerSamZone[samZone] or {}
-        end
-
-        o.getRedGroupsAtAirbase = function(self, airbaseId)
-            local baseId = tostring(airbaseId)
-            return self.tables.redAirbaseGroupsPerAirbase[baseId] or {}
-        end
-
-        o.getBlueGroupsAtAirbase = function(self, airbaseId)
-            local baseId = tostring(airbaseId)
-            return self.tables.blueAirbaseGroupsPerAirbase[baseId] or {}
-        end
-
-        o.getMiscGroupsAtStage = function(self, stageName)
-            return self.tables.miscGroupsInStages[stageName] or {}
-        end
-
-        ---comment
-        ---@param self table
-        ---@return integer|nil
-        o.GetNewMissionCode = function(self)
-            local code = nil
-            local tries = 0
-            while code == nil and tries < 10 do
-                local random = math.random(1000, 9999)
-                if self.tables.missionCodes[random] == nil then
-                    code = random
-                end
-                tries = tries + 1
-            end
-            return code
-
-            --[[
-                TODO: What to do when there's no random possible
-            ]]
-        end
-
-        do -- LOG STATE
-            Logger:info("initiated the database with amount of zones: ")
-            Logger:info("Stages:            " .. Spearhead.Util.tableLength(o.tables.stage_zones))
-            Logger:info("Missions:          " .. Spearhead.Util.tableLength(o.tables.mission_zones))
-            Logger:info("Random Missions:   " .. Spearhead.Util.tableLength(o.tables.random_mission_zones))
-            Logger:info("Farps:             " .. Spearhead.Util.tableLength(o.tables.farp_zones))
-            Logger:info("Airbases:          " .. Spearhead.Util.tableLength(o.tables.airbasesPerStage))
-            Logger:info("RedAirbase Groups: " .. Spearhead.Util.tableLength(o.tables.redAirbaseGroupsPerAirbase["21"]))
-
-
-            for _, missionZone in pairs(o.tables.mission_zones) do
-                if o.tables.descriptions[missionZone] == nil then
-                    Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
-                    missionZone .. " does not have a briefing")
-                end
-            end
-
-            for _, randomMission in pairs(o.tables.random_mission_zones) do
-                if o.tables.descriptions[randomMission] == nil then
-                    Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
-                    randomMission .. " does not have a briefing")
-                end
-            end
-        end
-        singleton = o
-        return o
+        tries = tries + 1
     end
+    return code
+
+    --[[
+        TODO: What to do when there's no random possible
+    ]]
+end
 
 
-Spearhead.DB = SpearheadDB
+
+Spearhead.DB = Database
