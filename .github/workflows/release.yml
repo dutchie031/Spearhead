@@ -26,11 +26,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    - name: Check branch
-      if: github.ref != 'refs/heads/master'
-      run: |
-        echo "This workflow can only be run on the master branch."
-        exit 1
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
