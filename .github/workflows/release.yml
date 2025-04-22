@@ -32,44 +32,52 @@ jobs:
         mkdir -p ./output
         python3 SpearheadCompile.py . ./output/spearhead.lua
 
-
-    - name: Check Change size PC
-      id: change_size 
-      run: |
-        size="${{ inputs.change_size }}"
-        if [ "${{ inputs.release_candidate }}" = "true" ]; then
-          echo "patch_size=pre$size" >> "$GITHUB_OUTPUT"
-        else
-          echo "patch_size=$size" >> "$GITHUB_OUTPUT"
-        fi
-
-
     - name: Calculate Tag
-      id: tag_version
+      id: tag_version_dry
       uses: mathieudutour/github-tag-action@v6.2
       with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ steps.change_size.outputs.patch_size }}
           default_prerelease_bump: ${{ steps.change_size.outputs.patch_size }}
           custom_release_rules: ""
-          append_to_pre_release_tag: "rc"
+          dry_run: true
 
-    - name: Create GitHub Release
-      uses: actions/create-release@v1
-      with:
-        tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        release_name: Release ${{ steps.tag_version.outputs.new_tag }}
-        draft: true
-        prerelease: ${{ inputs.release_candidate }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Check Change size PC
+      id: retag
+      run: |
+        tag="${{ steps.tag_version_dry.outputs.new_tag }}"
+        if [ "${{ inputs.release_candidate }}" = "true" ]; then
+          echo "tag=$tag-rc" >> "$GITHUB_OUTPUT"
+        else
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+        fi
 
-    - name: Upload Spearhead.lua Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Calculate Tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.2
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./output/spearhead.lua
-        asset_name: spearhead.lua
-        asset_content_type: application/octet-stream
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        custom_tag : ${{ steps.retag.outputs.tag }}
+        create_annotated_tag: true
+
+
+    # - name: Create GitHub Release
+    #   uses: actions/create-release@v1
+    #   id: create_release
+    #   with:
+    #     tag_name: ${{ steps.tag_version.outputs.new_tag }}
+    #     release_name: Release ${{ steps.tag_version.outputs.new_tag }}
+    #     draft: true
+    #     prerelease: ${{ inputs.release_candidate }}
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # - name: Upload Spearhead.lua Asset
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_path: ./output/spearhead.lua
+    #     asset_name: spearhead.lua
+    #     asset_content_type: application/octet-stream
