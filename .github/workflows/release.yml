@@ -37,7 +37,7 @@ jobs:
       uses: mathieudutour/github-tag-action@v6.2
       with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: ${{ steps.change_size.outputs.patch_size }}
+          default_bump: ${{ inputs.change_size }}
           custom_release_rules: ""
           dry_run: true
 
