@@ -634,7 +634,7 @@ do     -- INIT DCS_UTIL
     --- takes a x, y poistion and checks if it is inside any of the zones
     ---@param x number North South position
     ---@param z number West East position
-    ---@param zone_name table zone names
+    ---@param zone_name string zone name
     ---@return boolean result
     function DCS_UTIL.isPositionInZone(x, z, zone_name)
         local zone = DCS_UTIL.__trigger_zones[zone_name]
@@ -905,11 +905,14 @@ do     -- INIT DCS_UTIL
         bingoSetting = bingoSetting + offset
 
         local group = Group.getByName(groupName)
-        for _, unit in pairs(group:getUnits()) do
-            if unit and unit:isExist() == true and unit:inAir() == true and unit:getFuel() < bingoSetting then
-                return true
+        if group then
+            for _, unit in pairs(group:getUnits()) do
+                if unit and unit:isExist() == true and unit:inAir() == true and unit:getFuel() < bingoSetting then
+                    return true
+                end
             end
         end
+        
         return false
     end
 

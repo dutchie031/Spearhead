@@ -121,7 +121,6 @@ function Stage.New(database, stageConfig, logger, initData, missionPriority)
         end
 
         local randomMissionNames = database:getRandomMissionsForStage(self.zoneName)
-
         local randomMissionByName = {}
         for _, missionZoneName in pairs(randomMissionNames) do
             local mission = Spearhead.classes.stageClasses.Missions.Mission.New(missionZoneName, "primary", database, logger)

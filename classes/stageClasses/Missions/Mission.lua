@@ -154,6 +154,8 @@ function Mission:SpawnActive()
         group:Spawn()
     end
 
+    Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.AddMissionToCommands(self)
+
     self:StartCheckingContinuous()
 end
 
@@ -174,44 +176,55 @@ function Mission:StartCheckingContinuous()
     timer.scheduleFunction(Check, self, timer.getTime() + 30)
 end
 
+---@private
+---@return string?
+function Mission:ToStateString()
+    if self._missionGroups.hasTargets == true then
+        local dead = 0
+        local total = 0
+        if self._missionGroups.targetsAlive then
+            for _, group in pairs(self._missionGroups.targetsAlive) do
+                for _, isAlive in pairs(group) do
+                    total = total + 1
+                    if isAlive == false then
+                        dead = dead + 1
+                    end
+                end
+            end
+        end
+        
+        if total > 0 then
+            local completionPercentage = math.floor((dead / total) * 100)
+            return "Targets Destroyed: " .. completionPercentage .. "%"
+        end
+    else
+        local dead = 0
+        local total = 0
+        if self._missionGroups.unitsAlive then
+            for _, group in pairs(self._missionGroups.unitsAlive) do
+                for _, isAlive in pairs(group) do
+                    total = total + 1
+                    if isAlive == false then
+                        dead = dead + 1
+                    end
+                end
+            end
+        end
+       
+        if total > 0 then
+            local completionPercentage = math.floor((dead / total) * 100)
+            return "Units Destroyed: " .. completionPercentage .. "%"
+        end
+    end
+end
 
 ---comment
 ---@param groupId integer
 function Mission:ShowBriefing(groupId)
-    local ToStateString = function(self)
-        if self._hasSpecificTargets then
-            local dead = 0
-            local total = 0
-            for _, group in pairs(self._targetAliveStates) do
-                for _, isAlive in pairs(group) do
-                    total = total + 1
-                    if isAlive == false then
-                        dead = dead + 1
-                    end
-                end
-            end
-            local completionPercentage = math.floor((dead / total) * 100)
-            return "Targets Destroyed: " .. completionPercentage .. "%"
-        else
-            local dead = 0
-            local total = 0
-            for _, group in pairs(self._groupUnitAliveDict) do
-                for _, isAlive in pairs(group) do
-                    total = total + 1
-                    if isAlive == false then
-                        dead = dead + 1
-                    end
-                end
-            end
 
-            local completionPercentage = math.floor((dead / total) * 100)
-            return "Targets Destroyed: " .. completionPercentage .. "%"
-        end
-    end
+    local stateString = self:ToStateString()
 
-    local stateString = ToStateString(self)
-
-    if self._missionBriefing == nil then self._missionBriefing = "No briefing available" end
+    if self._missionBriefing == nil or self._missionBriefing == ""  then self._missionBriefing = "No briefing available" end
     local text = "Mission [" .. self.code .. "] ".. self.name .. "\n \n" .. self._missionBriefing .. " \n \n" .. stateString
     trigger.action.outTextForGroup(groupId, text, 30);
 end
@@ -333,7 +346,7 @@ end
 
 ---private usage advised
 function Mission:NotifyMissionComplete()
-
+    Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.RemoveMissionToCommands(self)
     self._logger:info("Mission Completed: " .. self._zoneName)
     trigger.action.outText("Mission " .. self.name .. " [" .. self.code .. "] was completed succesfully" , 20)
 
