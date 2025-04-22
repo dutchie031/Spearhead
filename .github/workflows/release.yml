@@ -34,21 +34,21 @@ jobs:
         mkdir -p ./output
         python3 SpearheadCompile.py . ./output/spearhead.lua
 
+    - name: Calculate Tag
+      id: tag_version_dry
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        default_bump: ${{ inputs.change_size }}
+        custom_release_rules: ""
+        dry_run: true
+
     - name: Generate Release Notes
       id: generate_release_notes
       run: |
         git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'- %s%n  %b' > release_notes.txt
         cat release_notes.txt
       shell: bash
-
-    # - name: Calculate Tag
-    #   id: tag_version_dry
-    #   uses: mathieudutour/github-tag-action@v6.2
-    #   with:
-    #     github_token: ${{ secrets.GITHUB_TOKEN }}
-    #     default_bump: ${{ inputs.change_size }}
-    #     custom_release_rules: ""
-    #     dry_run: true
 
     # - name: Check Change size PC
     #   id: retag
