@@ -18,6 +18,7 @@ on:
         default: patch
     branches:
       - main
+      - automation
 
 jobs:
   build:
@@ -46,47 +47,53 @@ jobs:
     - name: Generate Release Notes
       id: generate_release_notes
       run: |
-        git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'- %s%n  %b' > release_notes.txt
+        if [ "${{ inputs.release_candidate }}" != "true" ]; then
+          git log $(git describe --tags --abbrev=0 $(git tag --sort=-v:refname | grep -v '-rc' | head -n 1))..HEAD --pretty=format:'- %s%n  %b' > release_notes.txt
+        else
+          git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'- %s%n  %b' > release_notes.txt
+        fi
+        awk -i inplace '!seen[$0]++' release_notes.txt
         cat release_notes.txt
       shell: bash
 
-    # - name: Check Change size PC
-    #   id: retag
-    #   run: |
-    #     tag="${{ steps.tag_version_dry.outputs.new_tag }}"
-    #     if [ "${{ inputs.release_candidate }}" = "true" ]; then
-    #       echo "tag=$tag-rc" >> "$GITHUB_OUTPUT"
-    #     else
-    #       echo "tag=$tag" >> "$GITHUB_OUTPUT"
-    #     fi
+    - name: Check Change size PC
+      id: retag
+      run: |
+        tag="${{ steps.tag_version_dry.outputs.new_tag }}"
+        if [ "${{ inputs.release_candidate }}" = "true" ]; then
+          echo "tag=$tag-rc" >> "$GITHUB_OUTPUT"
+        else
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+        fi
 
-    # - name: Calculate Tag
-    #   id: tag_version
-    #   uses: mathieudutour/github-tag-action@v6.2
-    #   with:
-    #     github_token: ${{ secrets.GITHUB_TOKEN }}
-    #     tag_prefix : ""
-    #     custom_tag : ${{ steps.retag.outputs.tag }}
+    - name: Calculate Tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        tag_prefix : ""
+        custom_tag : ${{ steps.retag.outputs.tag }}
+        
 
-    # - name: Create GitHub Release
-    #   uses: actions/create-release@v1
-    #   id: create_release
-    #   with:
-    #     tag_name: ${{ steps.tag_version.outputs.new_tag }}
-    #     release_name: Release ${{ steps.tag_version.outputs.new_tag }}
-    #     draft: true
-    #     body: ${{ steps.tag_version.outputs.changelog }}
-    #     prerelease: ${{ inputs.release_candidate }}
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      id: create_release
+      with:
+        tag_name: ${{ steps.tag_version.outputs.new_tag }}
+        release_name: Release ${{ steps.tag_version.outputs.new_tag }}
+        draft: true
+        body_path: release_notes.txt
+        prerelease: ${{ inputs.release_candidate }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # - name: Upload Spearhead.lua Asset
-    #   uses: actions/upload-release-asset@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   with:
-    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #     asset_path: ./output/spearhead.lua
-    #     asset_name: spearhead.lua
-    #     asset_content_type: application/octet-stream
+    - name: Upload Spearhead.lua Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./output/spearhead.lua
+        asset_name: spearhead.lua
+        asset_content_type: application/octet-stream
 
