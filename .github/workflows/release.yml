@@ -50,7 +50,7 @@ jobs:
       with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ steps.change_size.outputs.patch_size }}
-          default_bump_prerelease: ${{ steps.change_size.outputs.patch_size }}
+          default_prerelease_bump: ${{ steps.change_size.outputs.patch_size }}
           dry_run: true
           custom_release_rules: ""
           append_to_pre_release_tag: "rc"
