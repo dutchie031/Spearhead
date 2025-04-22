@@ -48,6 +48,7 @@ jobs:
       id: generate_release_notes
       run: |
         git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'- %s%n  %b' > release_notes.txt
+        awk -i inplace '!seen[$0]++' release_notes.txt
         cat release_notes.txt
       shell: bash
 
