@@ -38,9 +38,9 @@ jobs:
       run: |
         size="${{ inputs.change_size }}"
         if [ "${{ inputs.release_candidate }}" = "true" ]; then
-          echo "BUMP=pre$size" >> "$GITHUB_OUTPUT"
+          echo "patch_size=pre$size" >> "$GITHUB_OUTPUT"
         else
-          echo "BUMP=$size" >> "$GITHUB_OUTPUT"
+          echo "patch_size=$size" >> "$GITHUB_OUTPUT"
         fi
 
 
