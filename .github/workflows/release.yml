@@ -18,6 +18,7 @@ on:
         default: patch
     branches:
       - main
+      - automation
 
 jobs:
   build:
