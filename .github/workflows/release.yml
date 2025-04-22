@@ -1,0 +1,71 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_candidate:
+        description: 'Is this a release candidate?'
+        required: true
+        default: true
+        type: boolean
+      change_size:
+        type: choice
+        description: Version Bump
+        options: 
+        - patch
+        - minor
+        - major
+        default: patch
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Check branch
+      if: github.ref != 'refs/heads/master'
+      run: |
+        echo "This workflow can only be run on the master branch."
+        exit 1
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run SpearheadCompile
+      run: |
+        python SpearheadCompile.py ./spearhead ./output/spearhead.lua
+
+    - name: Check Change size
+      id: change_size 
+      if: inputs.release_candidate == 'true'
+      run: |
+        size="${{ inputs.change_size }}"
+        echo "title=pre$size" >> "$GITHUB_OUTPUT"
+
+
+    - name: Calculate Tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: ${{ inputs.change_size }}
+          custom_release_rules: ""
+          append_to_pre_release_tag: "rc"
+
+    # - name: Create GitHub Release
+    #   uses: actions/create-release@v1
+    #   with:
+    #     tag_name: ${{ github.ref_name }}
+    #     release_name: Release ${{ github.ref_name }}
+    #     draft: true
+    #     prerelease: ${{ inputs.release_candidate }}
+    #     files: |
+    #       ./output/spearhead.lua
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
