@@ -54,6 +54,7 @@ jobs:
       with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: ${{ inputs.change_size }}
+          dry_run: true
           custom_release_rules: ""
           append_to_pre_release_tag: "rc"
 
