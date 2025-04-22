@@ -27,14 +27,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
     - name: Run SpearheadCompile
       run: |
-        python SpearheadCompile.py ./spearhead ./output/spearhead.lua
+        python3 SpearheadCompile.py ./spearhead ./output/spearhead.lua
 
     - name: Check Change size
       id: change_size 
