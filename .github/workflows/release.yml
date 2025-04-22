@@ -29,6 +29,7 @@ jobs:
 
     - name: Run SpearheadCompile
       run: |
+        mkdir -p ./output
         python3 SpearheadCompile.py . ./output/spearhead.lua
 
     - name: Check Change size
