@@ -1,6 +1,6 @@
 #start
 
-name: Release
+name: Docs
 on:
   push:
     branches:
