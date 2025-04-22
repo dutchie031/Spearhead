@@ -12,6 +12,12 @@
         "coalition",
         "timer",
         "AI",
-        "net"
+        "net",
+        "lfs"
+    ],
+    "cSpell.words": [
+        "farp",
+        "Sams",
+        "SEAD"
     ]
 }

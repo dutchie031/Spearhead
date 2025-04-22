@@ -55,7 +55,7 @@ SpearheadConfig = {
         startingStage = 1,
 
         ---DEBUG logging. Consider keeping this disabled
-        debugEnabled = false
+        debugEnabled = true
     },
     Persistence = {
         --- io and lfs cannot be sanitized in the MissionScripting.lua

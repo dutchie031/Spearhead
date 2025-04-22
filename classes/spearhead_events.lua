@@ -1,26 +1,39 @@
 
 local SpearheadEvents = {}
 do
+
+    ---@type Logger
+    local logger = nil
+
+    ---@param logLevel LogLevel
+    SpearheadEvents.Init = function(logLevel)
+        logger = Spearhead.LoggerTemplate:new("Events", logLevel)
+    end
+
+
+    local warn = function(text)
+        if logger then
+            logger:warn(text)
+        end
+    end
+
+    local logError = function(text)
+        if logger then logger:error(text) end
+    end
+
+    local logDebug = function(text)
+        if logger then logger:debug(text) end
+    end
+
+    ---@class OnStageChangedListener
+    ---@field OnStageNumberChanged fun(self:OnStageChangedListener, number:integer)
+
     do -- STAGE NUMBER CHANGED
         local OnStageNumberChangedListeners = {}
         local OnStageNumberChangedHandlers = {}
-
-
-        local warn = function(text)
-            env.warn("[Spearhead][Events] " .. (text or "nil"))
-        end
-    
-        local error = function(text)
-            env.error("[Spearhead][Events] " .. (text or "nil"))
-        end
-
         ---Add a stage zone number changed listener
-        ---@param listener table object with function OnStageNumberChanged(self, number)
+        ---@param listener OnStageChangedListener object with function OnStageNumberChanged(self, number)
         SpearheadEvents.AddStageNumberChangedListener = function(listener)
-            if type(listener) ~= "table" then
-                warn("Event listener not of type table, did you mean to use handler?")
-                return
-            end
             table.insert(OnStageNumberChangedListeners, listener)
         end
 
@@ -36,21 +49,27 @@ do
 
         ---@param newStageNumber number
         SpearheadEvents.PublishStageNumberChanged = function(newStageNumber)
+            pcall(function ()
+                Spearhead.classes.persistence.Persistence.SetActiveStage(newStageNumber)
+            end)
+
             for _, callable in pairs(OnStageNumberChangedListeners) do
                 local succ, err = pcall(function()
                     callable:OnStageNumberChanged(newStageNumber)
                 end)
                 if err then
-                    error(err)
+                    logError(err)
                 end
             end
 
             for _, callable in pairs(OnStageNumberChangedHandlers) do
                 local succ, err = pcall(callable, newStageNumber)
                 if err then
-                    error(err)
+                    logError(err)
                 end
             end
+
+            Spearhead.StageNumber = newStageNumber
         end
     end
 
@@ -72,11 +91,15 @@ do
         table.insert(onLandEventListeners[unitName], landListener)
     end
 
+    ---@class OnUnitLostListener
+    ---@field OnUnitLost fun(self:OnUnitLostListener, unit:table)
+
+    ---@type table<string,Array<OnUnitLostListener>>
     local OnUnitLostListeners = {}
     ---This listener gets fired for any event that can indicate a loss of a unit.
     ---Such as: Eject, Crash, Dead, Unit_Lost,
     ---@param unitName any
-    ---@param unitLostListener table Object with function: OnUnitLost(initiatorUnit)
+    ---@param unitLostListener OnUnitLostListener 
     SpearheadEvents.addOnUnitLostEventListener = function(unitName, unitLostListener)
         if type(unitLostListener) ~= "table" then
             warn("Unit lost Event listener not of type table/object")
@@ -119,7 +142,7 @@ do
                             callable:OnGroupRTB(groupName)
                         end)
                         if err then
-                            error(err)
+                            logError(err)
                         end
                     end
                 end
@@ -154,7 +177,7 @@ do
                             callable:OnGroupRTBInTen(groupName)
                         end)
                         if err then
-                            error(err)
+                            logError(err)
                         end
                     end
                 end
@@ -190,44 +213,11 @@ do
                             callable:OnGroupOnStation(groupName)
                         end)
                         if err then
-                            error(err)
+                            logError(err)
                         end
                     end
                 end
             end
-        end
-    end
-
-    do     --COMMANDS
-        do -- status updates
-            local onStatusRequestReceivedListeners = {}
-            ---comment
-            ---@param listener table object with OnStatusRequestReceived(self, groupId)
-            SpearheadEvents.AddOnStatusRequestReceivedListener = function(listener)
-                if type(listener) ~= "table" then
-                    warn("Unit lost Event listener not of type table/object")
-                    return
-                end
-
-                table.insert(onStatusRequestReceivedListeners, listener)
-            end
-
-            local triggerStatusRequestReceived = function(groupId)
-                for _, callable in pairs(onStatusRequestReceivedListeners) do
-                    local succ, err = pcall(function()
-                        callable:OnStatusRequestReceived(groupId)
-                    end)
-                end
-            end
-
-            SpearheadEvents.AddCommandsToGroup = function(groupId)
-                local base = "MISSIONS"
-                if groupId then
-                    missionCommands.addCommandForGroup(groupId, "Stage Status", nil, triggerStatusRequestReceived,
-                        groupId)
-                end
-            end
-
         end
     end
 
@@ -252,12 +242,26 @@ do
                             callable:OnPlayerEntersUnit(unit)
                         end)
                         if err then
-                           error(err)
+                            logError(err)
                         end
                     end
                 end
             end
         end
+    end
+
+    do -- Ejection events
+    
+        local unitEjectListeners = {}
+        SpearheadEvents.AddOnUnitEjectedListener = function(listener)
+            if type(listener) ~= "table" then
+                warn("Unit lost Event listener not of type table/object")
+                return
+            end
+
+            table.insert(unitEjectListeners, listener)
+        end
+
     end
 
     local e = {}
@@ -273,7 +277,7 @@ do
                             callable:OnUnitLanded(unit, airbase)
                         end)
                         if err then
-                            error(err)
+                            logError(err)
                         end
                     end
                 end
@@ -285,6 +289,11 @@ do
             event.id == world.event.S_EVENT_EJECTION or
             event.id == world.event.S_EVENT_UNIT_LOST then
             local object = event.initiator
+
+            if object and object.getName then
+                logDebug("Receiving death event from: " .. object:getName())
+            end
+            
             if object and object.getName and OnUnitLostListeners[object:getName()] then
                 for _, callable in pairs(OnUnitLostListeners[object:getName()]) do
                     local succ, err = pcall(function()
@@ -292,10 +301,18 @@ do
                     end)
 
                     if err then
-                        error(err)
+                        logError(err)
                     end
                 end
             end
+        end
+
+        if event.id == world.event.S_EVENT_EJECTION then
+            
+        end
+
+        if event.id == world.event.S_EVENT_MISSION_END then
+            Spearhead.classes.persistence.Persistence.UpdateNow()
         end
 
         local AI_GROUPS = {}
