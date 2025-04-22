@@ -34,7 +34,7 @@ jobs:
 
     - name: Check Change size
       id: change_size 
-      if: inputs.release_candidate == 'true'
+      if: ${{ inputs.release_candidate == 'true' }}
       run: |
         size="${{ inputs.change_size }}"
         echo "title=pre$size" >> "$GITHUB_OUTPUT"
