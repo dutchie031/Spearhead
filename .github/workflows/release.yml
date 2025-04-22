@@ -58,7 +58,6 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         tag_prefix : ""
         custom_tag : ${{ steps.retag.outputs.tag }}
-        create_annotated_tag: true
 
     - name: Create GitHub Release
       uses: actions/create-release@v1
@@ -67,17 +66,17 @@ jobs:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
         release_name: Release ${{ steps.tag_version.outputs.new_tag }}
         draft: true
-        body: ${{ steps.tag_version.outputs.changelog}}
+        body: ${{ steps.tag_version.outputs.changelog }}
         prerelease: ${{ inputs.release_candidate }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # - name: Upload Spearhead.lua Asset
-    #   uses: actions/upload-release-asset@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #   with:
-    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #     asset_path: ./output/spearhead.lua
-    #     asset_name: spearhead.lua
-    #     asset_content_type: application/octet-stream
+    - name: Upload Spearhead.lua Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./output/spearhead.lua
+        asset_name: spearhead.lua
+        asset_content_type: application/octet-stream
