@@ -14,7 +14,7 @@ Spearhead.Events.Init("DEBUG")
 
 local dbLogger = Spearhead.LoggerTemplate:new("database", "INFO")
 local standardLogger = Spearhead.LoggerTemplate:new("", "INFO")
-local databaseManager = Spearhead.DB:new(dbLogger, debug)
+local databaseManager = Spearhead.DB.New(dbLogger, debug)
 
 local capConfig = Spearhead.internal.configuration.CapConfig:new();
 local stageConfig = Spearhead.internal.configuration.StageConfig:new();

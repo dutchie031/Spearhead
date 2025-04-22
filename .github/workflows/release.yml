@@ -80,3 +80,20 @@ jobs:
         asset_path: ./output/spearhead.lua
         asset_name: spearhead.lua
         asset_content_type: application/octet-stream
+
+    - name: Generate Release Notes
+      id: generate_release_notes
+      run: |
+        git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'- %s' > release_notes.txt
+        cat release_notes.txt
+      shell: bash
+
+    # - name: Upload Release Notes
+    #   uses: actions/upload-release-asset@v1
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_path: ./release_notes.txt
+    #     asset_name: release_notes.txt
+    #     asset_content_type: text/plain

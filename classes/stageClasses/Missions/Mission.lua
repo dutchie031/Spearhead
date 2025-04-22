@@ -9,7 +9,7 @@
 ---@field private _zoneName string
 ---@field private _database Database
 ---@field private _logger Logger 
----@field private _missionBriefing string
+---@field private _missionBriefing string?
 ---@field private _missionGroups MissionGroups
 ---@field private _completeListeners Array<MissionCompleteListener> 
 local Mission = {}
@@ -258,8 +258,7 @@ function Mission:UpdateState(checkHealth, messageIfDone)
             else
                 local unit = Unit.getByName(unitName)
 
-                local alive = unit ~= nil and unit:isExist() == true
-                if alive == true then
+                if unit and unit:isExist() then
                     if unit:getLife() / unit:getLife0() < 0.2 then
                         self._logger:debug("exploding unit")
                         trigger.action.explosion(unit:getPoint(), 100)

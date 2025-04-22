@@ -55,7 +55,7 @@ do -- timer
     ---@field getTime fun() : number returns the time in the mission (in seconds. 3 decimals)
     ---@field getAbsTime fun() : number returns the real time in seconds. 0 for midnight, 43200 for noon
     ---@field getTime0 fun() : number returns the mission start time in seconds
-    ---@field scheduleFunction fun(functionToCall: function, arguments: table|nil, modelTime: number) : number schedule the function to be run at 'modelTime' and returns the functionID
+    ---@field scheduleFunction fun(functionToCall: function, arguments: any|nil, modelTime: number) : number schedule the function to be run at 'modelTime' and returns the functionID
     ---@field removeFunction fun(functionID:number) removes a scheduled function from the scheduler
     ---@field setFunctionTime fun(functionID:number, modelTime:number) reschedules an scheduled function
     timer = timer

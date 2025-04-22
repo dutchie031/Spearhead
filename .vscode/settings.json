@@ -1,23 +1,10 @@
 {
-    "Lua.diagnostics.globals": [
-        "missionCommands",
-        "env",
-        "Airbase",
-        "world",
-        "trigger",
-        "StaticObject",
-        "Group",
-        "Unit",
-        "Object",
-        "coalition",
-        "timer",
-        "AI",
-        "net",
-        "lfs"
-    ],
     "cSpell.words": [
         "farp",
         "Sams",
         "SEAD"
+    ],
+    "Lua.diagnostics.globals": [
+        "lfs"
     ]
 }

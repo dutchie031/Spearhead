@@ -616,10 +616,10 @@ function Database:getRandomMissionsForStage(stagename)
     return stageZone.RandomMissionZones
 end
 
----@return Array<string>?
+---@return Array<string>
 function Database:getGroupsForMissionZone(missionZoneName)
     local missionZoneData = self._tables.MissionZoneData[missionZoneName]
-    if not missionZoneData then return nil end
+    if not missionZoneData then return {} end
     return missionZoneData.Groups
 end
 
