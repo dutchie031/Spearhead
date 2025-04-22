@@ -47,10 +47,9 @@ jobs:
     - name: Generate Release Notes
       id: generate_release_notes
       run: |
-        release_notes=$(git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'- %s%n  %b')
-        echo "release_notes<<EOF" >> $GITHUB_ENV
-        echo "$release_notes" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
+        git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:'- %s%n  %b' > release_notes.txt
+        awk -i inplace '!seen[$0]++' release_notes.txt
+        cat release_notes.txt
       shell: bash
 
     - name: Check Change size PC
@@ -78,7 +77,7 @@ jobs:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
         release_name: Release ${{ steps.tag_version.outputs.new_tag }}
         draft: true
-        body: ${{ steps.generate_release_notes.outputs.release_notes}}
+        body_path: release_notes.txt
         prerelease: ${{ inputs.release_candidate }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
