@@ -36,8 +36,8 @@ function FleetGroup:new(fleetGroupName, database, logger)
                             end
 
                             local biggest = nil
-                            local biggestA = nil
-                            local biggestB = nil
+                            local biggestA = zone.verts[1]
+                            local biggestB = zone.verts[2]
 
                             for i = 1, 3 do
                                 for ii = i + 1, 4 do
