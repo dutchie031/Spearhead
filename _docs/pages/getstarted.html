@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spearhead</title>
+    <link rel="stylesheet" href="../style/style.css">
+</head>
+<body>
+    <header>
+        <a style="font-size: 3em;" href="../index.html">Spearhead</a>
+        <nav style="margin-left: 10%;">
+            <a href="../pages/GetStarted.html">Get Started</a>
+            <a href="Persistence.md">Persistence</a>
+            <a href="./Reference.md">Reference</a>
+            <a href="./SpearheadApi.md">API</a>
+        </nav>
+    </header>
+    <main>
+        <h1>Get Started</h1>
+        <p>
+            This guide is to get you started building your first Spearhead mission. <br/>
+            Spearhead was created to enable the mission maker to worry as little about the running, timing and scripting and most about the setting and looks and feel of the mission. <br/>
+            In the example we'll show how you can create a simple island hopping mission 
+        </p>
+
+        <h2>1. Include the Script</h2>
+        <p>
+            Download the latest version of Spearhead. You can choose which version you feel comfortable with. <br/>
+            Versions that end in -rc are not stable. Versions that do not have the "release candidate" (rc) tag are. <br/>
+            <a style="text-decoration: underline;" target="_blank" href="https://github.com/dutchie031/Spearhead/releases">See All releases here</a>
+        </p>
+
+        <p>
+            Then run the script in the mission. <br/>
+            Please do exactly as it's done below. <br/>
+        </p>
+        <div style="width: 100%;">
+            <img style="width: 100%;" src="../img/script_install.png"></img>
+        </div>
+
+        <div class="note">
+            <p>
+                Spearhead does not require any dependencies (eg. MIST or MOOSE). Compatibility with other frameworks is not tested at this time, so cannot be guaranteed, but there should be no conflicts if they are not controlling the same units. 
+            </p>
+        </div>
+        
+        <h2>2. Stages</h2>
+        
+            
+        <p>
+            So first of all think about the stages.<br/>
+            These are logically ordered zones that will activate one by one based on the mission status in them. <br/>
+            There is a little more to it, but you'll find out. <br/>
+
+            Stages need to be named according to the convention: <span class="inline-ref">MISSIONSTAGE_[OrderNumber]_[FreeForm]</span> <br/>
+            The first stage will be called <span class="inline-ref">MISSIONSTAGE_1</span> or  <span class="inline-ref">MISSIONSTAGE_1_EAST</span> for example. <br/>
+            <br/><br/>
+            Stages are divided in primary stages: <span class="inline-ref">MISSIONSTAGE_[number]</span> <br/>
+            or secondary stages: <span class="inline-ref">MISSIONSTAGE_x[number]</span> <br/>
+            Note the x before the number. This marks it as "extra"
+        </p>
+
+        <p>
+            For this mission we started with the three stages: <span class="inline-ref">MISSIONSTAGE_1_GROUND</span>, <span class="inline-ref">MISSIONSTAGE_2_WATER</span> and <span class="inline-ref">MISSIONSTAGE_1_AIRBASE</span> as you see in the image. 
+        </p>
+        <img src="../img/starting_stages.png" style="width: 100%;"></img>
+        
+    </main>
+    <footer>
+        <p>&copy; 2025 Spearhead Project</p>
+    </footer>
+</body>
+</html>
