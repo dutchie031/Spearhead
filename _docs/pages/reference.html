@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spearhead Reference</title>
+    <link rel="stylesheet" href="../style/style.css">
+    <script src="../js/site.js"></script>
+</head>
+
+<body>
+    <header>
+        <div class="header-box">
+            <a class="logo" href="../index.html">Spearhead</a>
+            <div class="header-right">
+                <nav>
+                    <a href="../index.html">Home</a>
+                    <a href="../pages/tutorials.html">Tutorials</a>
+                    <a href="../pages/persistence.html">Persistence</a>
+                    <a href="../pages/reference.html">Reference</a>
+                    <a href="../pages/spearheadapi.html">API</a>
+                </nav>
+                <button id="theme-toggle" class="theme-toggle" title="Toggle light/dark theme">
+                    <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 11.807A9.002 9.002 0 0 1 10.049 2a9.942 9.942 0 0 0-5.12 2.735c-3.905 3.905-3.905 10.237 0 14.142 3.906 3.906 10.237 3.905 14.143 0a9.946 9.946 0 0 0 2.735-5.119A9.003 9.003 0 0 1 12 11.807z"/>
+                    </svg>
+                    <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: none;">
+                        <path d="M6.995 12c0 2.761 2.246 5.007 5.007 5.007s5.007-2.246 5.007-5.007-2.246-5.007-5.007-5.007S6.995 9.239 6.995 12zM12 8.993c1.658 0 3.007 1.349 3.007 3.007S13.658 15.007 12 15.007 8.993 13.658 8.993 12 10.342 8.993 12 8.993zM10.998 19H12.998V22H10.998zM10.998 2H12.998V5H10.998zM1.998 11H4.998V13H1.998zM18.998 11H21.998V13H18.998z"/>
+                        <path transform="rotate(-45.017 5.986 18.01)" d="M4.986 17.01H6.986V19.01H4.986z"/>
+                        <path transform="rotate(-45.001 18.008 5.99)" d="M17.008 4.99H19.008V6.99H17.008z"/>
+                        <path transform="rotate(-134.983 5.988 5.99)" d="M4.988 4.99H6.988V6.99H4.988z"/>
+                        <path transform="rotate(134.999 18.008 18.01)" d="M17.008 17.01H19.008V19.01H17.008z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="reference-container">
+            <div class="side-nav">
+                <h4>Contents</h4>
+                <ul>
+                    <li><a href="#configuration" class="side-nav-h2">Configuration</a></li>
+                    <li><a href="#general-naming-conventions" class="side-nav-h2">General Naming Conventions</a>
+                        <ul>
+                            <li><a href="#stage-zones" class="side-nav-h3">Stage Zones</a></li>
+                            <li><a href="#waiting-stages" class="side-nav-h3">Waiting Stages</a></li>
+                            <li><a href="#mission-zones" class="side-nav-h3">Mission Zones</a></li>
+                            <li><a href="#cap-routes" class="side-nav-h3">CAP Routes</a></li>
+                            <li><a href="#cap-zones" class="side-nav-h3">CAP Zones</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#mission-types" class="side-nav-h2">Mission Types</a>
+                        <ul>
+                            <li><a href="#sam" class="side-nav-h3">SAM</a></li>
+                            <li><a href="#dead" class="side-nav-h3">DEAD</a></li>
+                            <li><a href="#bai" class="side-nav-h3">BAI</a></li>
+                            <li><a href="#strike" class="side-nav-h3">STRIKE</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#cap-configuration" class="side-nav-h2">CAP Configuration</a>
+                        <ul>
+                            <li><a href="#cap-group-naming" class="side-nav-h3">CAP Group Naming</a></li>
+                            <li><a href="#cap-group-config" class="side-nav-h3">CAP Group Config</a></li>
+                            <li><a href="#active-and-backup-cap" class="side-nav-h3">Active and Backup CAP</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#randomization" class="side-nav-h2">Randomization</a></li>
+                </ul>
+            </div>
+
+            <div class="content-wrapper">
+                <h1>Spearhead Reference</h1>
+                <p>
+                    This page provides a detailed overview of all settings, naming conventions, and logic used in
+                    Spearhead. <br />
+                    For a quick start guide, visit the <a href="./tutorials.html">Tutorials</a> page.
+                </p>
+                <h2 id="configuration">Configuration</h2>
+                <p>
+                    For the configuration you can reference the configuration as it is below: 
+                    
+                </p>
+
+                <pre>
+<span class="lua-variable">SpearheadConfig</span> <span class="lua-operator">=</span> {
+
+    <span class="lua-variable">CapConfig</span> <span class="lua-operator">=</span> {
+        <span class="lua-comment">--quickly enable of disable the entire CAP Logic</span> 
+        <span class="lua-comment">--(you can also just rename all units to not be named "CAP_")</span>
+        <span class="lua-variable">enabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">true</span>, <span class="lua-comment">-- default true</span>
+        
+        <span class="lua-comment">--min ground speed for CAP aircraft during patrol</span>
+        <span class="lua-comment">-- unit: knots</span>
+        <span class="lua-variable">minSpeed</span> <span class="lua-operator">=</span> <span class="lua-variable">400</span>, <span class="lua-comment">-- default 400</span>
+
+        <span class="lua-comment">--max speed for CAP aircraft during patrol</span>
+        <span class="lua-comment">-- unit: knots</span>
+        <span class="lua-variable">maxSpeed</span> <span class="lua-operator">=</span> <span class="lua-variable">500</span>, <span class="lua-comment">-- default 500</span>
+
+        <span class="lua-comment">--minAlt for aircraft on patrol</span>
+        <span class="lua-comment">-- unit: feet</span>
+        <span class="lua-variable">minAlt</span> <span class="lua-operator">=</span> <span class="lua-variable">18000</span>, <span class="lua-comment">-- default 18000</span>
+
+        <span class="lua-comment">--maxAlt for aircraft on patrol</span>
+        <span class="lua-comment">-- unit: feet</span>
+        <span class="lua-variable">maxAlt</span> <span class="lua-operator">=</span> <span class="lua-variable">28000</span>, <span class="lua-comment">-- default 28000</span>
+
+        <span class="lua-comment">--Delay for aircraft from touchdown to off the chocks.</span>
+        <span class="lua-comment">-- unit: seconds</span>
+        <span class="lua-variable">rearmDelay</span> <span class="lua-operator">=</span> <span class="lua-variable">600</span>, <span class="lua-comment">-- default 600</span>
+
+        <span class="lua-comment">--Delay for aircraft from death to takeoff.</span>
+        <span class="lua-comment">--When the seconds remaining is the same at the rearmDelay it will be spawned on the ramp and follow the rearm logic.</span>
+        <span class="lua-comment">-- !! Can not be lower than rearmDelay</span>
+        <span class="lua-comment">-- unit: seconds</span>
+        <span class="lua-variable">deathDelay</span> <span class="lua-operator">=</span> <span class="lua-variable">1800</span>, <span class="lua-comment">-- default 1800</span>
+    },
+    <span class="lua-variable">StageConfig</span> <span class="lua-operator">=</span> {
+        
+        <span class="lua-comment">-- management of stages and its missions.</span> 
+        <span class="lua-comment">-- This is not related to CAP managers which will continue to work even if stage management is disabled</span>
+        <span class="lua-variable">enabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">true</span>, <span class="lua-comment">-- default true</span>
+
+        <span class="lua-comment">--Will draw the active and the next stage</span> 
+        <span class="lua-variable">drawStages</span> <span class="lua-operator">=</span> <span class="lua-keyword">true</span>, <span class="lua-comment">-- default true</span>
+
+        <span class="lua-comment">--AutoStages will continue to the next stage automatically on completion of the missions within the stage.</span> 
+        <span class="lua-comment">-- If you want to make it so the next stage triggers only when you want to disable it here and manually implement the actions needed.</span>
+        <span class="lua-comment">--[
+            TODO: Add manual stage transition documentation
+        ]]</span>
+        <span class="lua-variable">autoStages</span> <span class="lua-operator">=</span> <span class="lua-keyword">true</span>, <span class="lua-comment">--default true</span>
+
+        <span class="lua-comment">--Maximum missions per stage (includes all types of missions)</span>
+        <span class="lua-variable">maxMissionStage</span> <span class="lua-operator">=</span> <span class="lua-variable">10</span>,
+
+        <span class="lua-comment">--Stage starting number</span>
+        <span class="lua-variable">startingStage</span> <span class="lua-operator">=</span> <span class="lua-variable">1</span>,
+
+        <span class="lua-comment">---DEBUG logging. Consider keeping this disabled</span>
+        <span class="lua-variable">debugEnabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">false</span>
+    },
+    <span class="lua-variable">Persistence</span> <span class="lua-operator">=</span> {
+        <span class="lua-comment">--- io and lfs cannot be sanitized in the MissionScripting.lua</span>
+        
+        <span class="lua-comment">--- enables or disables the persistence logic in spearhead</span>
+        <span class="lua-variable">enabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">false</span>,
+
+        <span class="lua-comment">--- sets the directory where the persistence file is stored</span>
+        <span class="lua-comment">--- if nil then lfs.writedir() will be used.</span> 
+        <span class="lua-comment">--- which will</span> 
+        <span class="lua-variable">directory</span> <span class="lua-operator">=</span> <span class="lua-keyword">nil</span>,
+
+        <span class="lua-comment">--- the filename of the persistence file. Should end with .json for convention, but any text extension should do.</span>
+        <span class="lua-variable">fileName</span> <span class="lua-operator">=</span> <span class="lua-string">"Spearhead_Persistence.json"</span>
+
+    }
+}</pre>
+
+
+                <h2 id="general-naming-conventions">General Naming Conventions</h2>
+                <p>
+                    Spearhead uses specific naming conventions for zones, missions, and CAP configurations. These
+                    conventions are critical for the framework to function correctly.
+                </p>
+
+                <h3 id="stage-zones">Stage Zones</h3>
+                <p>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_[OrderNumber]_[FreeForm]</span></span>
+                    <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_1_EAST</span></span>
+                </p>
+                <p>
+                    Stages are logical parts of a mission. They encapsulate multiple missions, airbases, and other
+                    objects. <br />
+                    Secondary stages can be defined using the format: <span
+                        class="inline-lua"><span class="lua-variable">MISSIONSTAGE_x[OrderNumber]</span></span>.
+                </p>
+
+                <h3 id="waiting-stages">Waiting Stages</h3>
+                <p>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">WAITINGSTAGE_[Order]_[Seconds]</span></span> <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">WAITINGSTAGE_2_180</span></span>
+                </p>
+                <p>
+                    Waiting stages introduce delays between stages. They activate only after the previous stage is
+                    completed.
+                </p>
+
+                <h3 id="mission-zones">Mission Zones</h3>
+                <p>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">MISSION_[Type]_[Name]</span></span> <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">MISSION_DEAD_BYRON</span></span>
+                </p>
+                <p>
+                    Missions are completable objectives with specific types, such as DEAD, BAI, STRIKE, or SAM. <br />
+                    Randomized missions can be defined using the format: <span
+                        class="inline-lua"><span class="lua-variable">RANDOMMISSION_[Type]_[Name]_[Index]</span></span>.
+                </p>
+
+                <h3 id="cap-routes">CAP Routes</h3>
+                <p>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">CAPROUTE_[Name]</span></span> <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">CAPROUTE_ALPHA</span></span>
+                </p>
+                <p>
+                    CAP routes define the patrol paths for CAP units. They are tied to specific stages and zones.
+                </p>
+
+                <h3 id="cap-zones">CAP Zones</h3>
+                <p>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">CAPZONE_[Name]</span></span> <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">CAPZONE_BRAVO</span></span>
+                </p>
+                <p>
+                    CAP zones are areas where CAP units operate. They are linked to CAP routes and stages.
+                </p>
+
+                <h2 id="mission-types">Mission Types</h2>
+                <p>
+                    Each mission type has specific logic and completion criteria. Below are the supported types:
+                </p>
+
+                <h3 id="sam">SAM</h3>
+                <p>
+                    SAM missions involve surface-to-air missile sites. These missions are activated when a stage is
+                    "Pre-Active." <br />
+                    <strong>Completion Logic:</strong> Destroy all air defenses in the zone.
+                </p>
+
+                <h3 id="dead">DEAD</h3>
+                <p>
+                    DEAD missions target enemy air defenses. They are activated at the start of a stage. <br />
+                    <strong>Completion Logic:</strong> Destroy all designated targets in the zone.
+                </p>
+
+                <h3 id="bai">BAI</h3>
+                <p>
+                    BAI missions involve battlefield air interdiction. These missions target enemy ground forces.
+                </p>
+
+                <h3 id="strike">STRIKE</h3>
+                <p>
+                    STRIKE missions target strategic objectives, such as supply depots or command centers. <br />
+                    <strong>Completion Logic:</strong> Destroy all designated targets in the zone.
+                </p>
+
+                <h2 id="cap-configuration">CAP Configuration</h2>
+                <p>
+                    CAP (Combat Air Patrol) units are managed using specific naming conventions and configurations.
+                </p>
+
+                <h3 id="cap-group-naming">CAP Group Naming</h3>
+                <p>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">CAP_[A|B][Config]_[FreeForm]</span></span> <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">CAP_A[1-4]5_SomeName</span></span>
+                </p>
+
+                <h3 id="cap-group-config">CAP Group Config</h3>
+                <pre>
+                <span class="lua-comment">1 at x:</span>               <span class="lua-variable">[&lt;activeStage&gt;]&lt;capStage&gt;</span>
+                <span class="lua-comment">n and n  at x:</span>        <span class="lua-variable">[&lt;activeStage&gt;,&lt;activeStage&gt;]&lt;capStage&gt;</span>
+                <span class="lua-comment">n till n at x:</span>        <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;]&lt;capStage&gt;</span>
+                <span class="lua-comment">n till n and n at x:</span>  <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;,&lt;activeStage&gt;]&lt;capStage&gt;</span>
+                <span class="lua-comment">n till n at Active:</span>   <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;]A</span>
+
+                <span class="lua-comment">Divider: |</span>
+
+                <span class="lua-comment">Examples:</span>
+                <span class="lua-variable">CAP_A[1-4,6]7|[5,7]8_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at stage 7 when stages 1 through 4 and 6 are active and will fly CAP at 8 when 5 and 7 are active.</span>
+                <span class="lua-variable">CAP_A[2-5]5|[6]6_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at stage 5 when stages 2 through 5 are active and will fly CAP at 6 when 6 is active.</span>
+                <span class="lua-variable">CAP_A[1-5]A|[6]7_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at the ACTIVE stage if stages 1-5 are active. Then when 6 is active, it will fly in 7.</span>
+                </pre>
+
+                <h3 id="active-and-backup-cap">Active and Backup CAP</h3>
+                <p>
+                    <strong>Active Units:</strong> Define the maximum number of groups in a zone at a time. <br />
+                    <strong>Backup Units:</strong> Fill in when active units are unavailable due to RTB, death, or
+                    rearming.
+                </p>
+
+                <h2 id="randomization">Randomization</h2>
+                <p>
+                    Missions can be randomized using the <span class="inline-lua"><span class="lua-variable">RANDOMMISSION</span></span> prefix. <br />
+                    Spearhead will pick one random mission from zones with the same name.
+                </p>
+            </div>
+        </div>
+
+        <div style="clear: both;"></div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Spearhead Project</p>
+    </footer>
+</body>
+
+</html>

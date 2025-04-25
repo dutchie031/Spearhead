@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spearhead Persistence</title>
+    <link rel="stylesheet" href="../style/style.css">
+    <script src="../js/site.js"></script>
+</head>
+
+<body>
+    <header>
+        <div class="header-box">
+            <a class="logo" href="../index.html">Spearhead</a>
+            <div class="header-right">
+                <nav>
+                    <a href="../index.html">Home</a>
+                    <a href="../pages/tutorials.html">Tutorials</a>
+                    <a href="../pages/persistence.html">Persistence</a>
+                    <a href="../pages/reference.html">Reference</a>
+                    <a href="../pages/spearheadapi.html">API</a>
+                </nav>
+                <button id="theme-toggle" class="theme-toggle" title="Toggle light/dark theme">
+                    <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 11.807A9.002 9.002 0 0 1 10.049 2a9.942 9.942 0 0 0-5.12 2.735c-3.905 3.905-3.905 10.237 0 14.142 3.906 3.906 10.237 3.905 14.143 0a9.946 9.946 0 0 0 2.735-5.119A9.003 9.003 0 0 1 12 11.807z"/>
+                    </svg>
+                    <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: none;">
+                        <path d="M6.995 12c0 2.761 2.246 5.007 5.007 5.007s5.007-2.246 5.007-5.007-2.246-5.007-5.007-5.007S6.995 9.239 6.995 12zM12 8.993c1.658 0 3.007 1.349 3.007 3.007S13.658 15.007 12 15.007 8.993 13.658 8.993 12 10.342 8.993 12 8.993zM10.998 19H12.998V22H10.998zM10.998 2H12.998V5H10.998zM1.998 11H4.998V13H1.998zM18.998 11H21.998V13H18.998z"/>
+                        <path transform="rotate(-45.017 5.986 18.01)" d="M4.986 17.01H6.986V19.01H4.986z"/>
+                        <path transform="rotate(-45.001 18.008 5.99)" d="M17.008 4.99H19.008V6.99H17.008z"/>
+                        <path transform="rotate(-134.983 5.988 5.99)" d="M4.988 4.99H6.988V6.99H4.988z"/>
+                        <path transform="rotate(134.999 18.008 18.01)" d="M17.008 17.01H19.008V19.01H17.008z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="reference-container">
+            <div class="side-nav">
+                <h4>Contents</h4>
+                <ul>
+                    <li><a href="#settings" class="side-nav-h2">Settings</a></li>
+                    <li><a href="#feedback" class="side-nav-h2">Feedback</a></li>
+                    <li><a href="#basic-behavior" class="side-nav-h2">Basic Behavior</a></li>
+                    <li><a href="#misc-units" class="side-nav-h2">Misc Units</a></li>
+                    <li><a href="#missions" class="side-nav-h2">Missions</a></li>
+                    <li><a href="#blue-sams" class="side-nav-h2">Blue SAMs</a></li>
+                    <li><a href="#airbases" class="side-nav-h2">Airbases</a></li>
+                    <li><a href="#warehouses" class="side-nav-h2">Warehouses</a></li>
+                </ul>
+            </div>
+
+            <div class="content-wrapper">
+                <h1>Spearhead Persistence</h1>
+
+                <p>
+                    Spearhead comes with a custom Persistence option. <br/>
+                    It will even save burned out vehicles to give players a consistent battlefield even after the restart. <br/>
+                </p>
+                <p>
+                    Most is pretty straightforward, however, some zones are somewhat special. <br/>
+                    Underneath you'll see all special zones listed.
+                </p>
+
+                <h2 id="settings">Settings</h2>
+                <p>
+                    To see the full config check: <a href="./Reference.html#Configuration">Reference</a>
+                </p>
+
+                <h2 id="feedback">Feedback</h2>
+                <p>
+                    Since this feature is still very much in development, please let any issues be known as soon as possible and as concise as possible so a fix can be made quickly. <br/>
+                    Currently implemented is local file storage. <br/>
+                    If enough interest is expressed, cloud-based persistence would be possible. <br/>
+                </p>
+
+                <pre>
+        <span class="lua-comment">... Rest of config</span>
+           <span class="lua-variable">Persistence</span> <span class="lua-operator">=</span> {
+                <span class="lua-comment">--- io and lfs cannot be sanitized in the MissionScripting.lua</span>
+
+                <span class="lua-comment">--- enables or disables the persistence logic in spearhead</span>
+                <span class="lua-variable">enabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">false</span>,
+
+                <span class="lua-comment">--- sets the directory where the persistence file is stored
+                --- if nil then lfs.writedir() will be used.</span> 
+                <span class="lua-variable">directory</span> <span class="lua-operator">=</span> <span class="lua-keyword">nil</span>,
+
+                <span class="lua-comment">--- the filename of the persistence file. Should end with .json for convention, but any text extension should do.</span>
+                <span class="lua-variable">fileName</span> <span class="lua-operator">=</span> <span class="lua-string">"Spearhead_Persistence.json"</span>
+            }
+        <span class="lua-comment">... Rest of config</span>
+                </pre>
+
+                <h2 id="basic-behavior">Basic Behavior</h2>
+                <p>
+                    While playing the mission, Spearhead is keeping track of all units killed. <br/>
+                    These units are stored in memory internally and written to file. <br/>
+                    This happens every 2 minutes AND during the "onMissionStop" event to make sure the mission is as up-to-date as possible without having to call IO methods on each event.<br/>
+                </p>
+
+                <h2 id="misc-units">Misc Units</h2>
+                <p>
+                    Miscellaneous units will follow basic behavior. <br/>
+                    These are units that are part of a stage but are not in a mission or airbase. <br/>
+                    These units will be replaced by a static "DEAD" unit after a mission restart at the location it was killed. <br/>
+                    Due to blue units spawning afterwards, it's generally best to not have these units move through or over areas where BLUESAMS and Airbase units will spawn after a stage completion.
+                </p>
+
+                <h2 id="missions">Missions</h2>
+                <p>
+                    Missions follow the same logic as Misc Units. <br/>
+                </p>
+
+                <h2 id="blue-sams">Blue SAMs</h2>
+                <p>
+                    For Blue SAMs, due to placements easily overlapping between red and blue units within a BLUESAM trigger zone, red units that overlap with blue units will be deleted. <br/>
+                    This will ensure that the blue units are placed as needed. <br/>
+                </p>
+
+                <h2 id="airbases">Airbases</h2>
+                <p>
+                    Airbase units will also be checked for overlap. As the blue units will be spawned after the RED unit. <br/>
+                    Units that were alive when the stage was completed will be removed. Units that died will have corpses spawned. <br/>
+                </p>
+
+                <h2 id="warehouses">Warehouses</h2>
+                <p>
+                    Currently, warehouses are not implemented and therefore warehouses are not persisted. <br/>
+                    When supply missions and logistics get implemented, warehouses will be persisted as well. <br/>
+                </p>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Spearhead Project</p>
+    </footer>
+</body>
+
+</html>
