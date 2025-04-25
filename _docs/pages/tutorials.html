@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spearhead Tutorials</title>
+    <link rel="stylesheet" href="../style/style.css">
+    <script src="../js/site.js"></script>
+</head>
+
+<body>
+    <header>
+        <div class="header-box">
+            <a class="logo" href="../index.html">Spearhead</a>
+            <div class="header-right">
+                <nav>
+                    <a href="../index.html">Home</a>
+                    <a href="../pages/tutorials.html">Tutorials</a>
+                    <a href="../pages/persistence.html">Persistence</a>
+                    <a href="../pages/reference.html">Reference</a>
+                    <a href="../pages/spearheadapi.html">API</a>
+                </nav>
+                <button id="theme-toggle" class="theme-toggle" title="Toggle light/dark theme">
+                    <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12 11.807A9.002 9.002 0 0 1 10.049 2a9.942 9.942 0 0 0-5.12 2.735c-3.905 3.905-3.905 10.237 0 14.142 3.906 3.906 10.237 3.905 14.143 0a9.946 9.946 0 0 0 2.735-5.119A9.003 9.003 0 0 1 12 11.807z"/>
+                    </svg>
+                    <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: none;">
+                        <path d="M6.995 12c0 2.761 2.246 5.007 5.007 5.007s5.007-2.246 5.007-5.007-2.246-5.007-5.007-5.007S6.995 9.239 6.995 12zM12 8.993c1.658 0 3.007 1.349 3.007 3.007S13.658 15.007 12 15.007 8.993 13.658 8.993 12 10.342 8.993 12 8.993zM10.998 19H12.998V22H10.998zM10.998 2H12.998V5H10.998zM1.998 11H4.998V13H1.998zM18.998 11H21.998V13H18.998z"/>
+                        <path transform="rotate(-45.017 5.986 18.01)" d="M4.986 17.01H6.986V19.01H4.986z"/>
+                        <path transform="rotate(-45.001 18.008 5.99)" d="M17.008 4.99H19.008V6.99H17.008z"/>
+                        <path transform="rotate(-134.983 5.988 5.99)" d="M4.988 4.99H6.988V6.99H4.988z"/>
+                        <path transform="rotate(134.999 18.008 18.01)" d="M17.008 17.01H19.008V19.01H17.008z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="reference-container">
+            <div class="side-nav">
+                <h4>Contents</h4>
+                <ul>
+                    <li><a href="#include-the-script" class="side-nav-h2">Include the Script</a></li>
+                    <li><a href="#stages" class="side-nav-h2">Stages</a></li>
+                    <li><a href="#setting-up-cap" class="side-nav-h2">Setting up CAP</a>
+                        <ul>
+                            <li><a href="#creating-cap-routes" class="side-nav-h3">Creating CAP Routes</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#setting-up-the-missions" class="side-nav-h2">Setting up the Missions</a>
+                        <ul>
+                            <li><a href="#mission-1-dead" class="side-nav-h3">Mission: DEAD</a></li>
+                            <li><a href="#mission-2-strike" class="side-nav-h3">Mission: STRIKE</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#mission-briefings" class="side-nav-h2">Mission Briefings</a></li>
+                </ul>
+            </div>
+
+            <div class="content-wrapper">
+                <h1>Tutorials</h1>
+                <p>
+                    This guide is to get you started building your first Spearhead mission. <br />
+                    Spearhead was created to enable the mission maker to worry as little about the running, timing and scripting
+                    and most about the setting and looks and feel of the mission. <br />
+                    In the example we'll show how you can create a simple island hopping mission
+                </p>
+
+                <h2 id="include-the-script">Include the Script</h2>
+                <p>
+                    Download the latest version of Spearhead. You can choose which version you feel comfortable with. <br />
+                    Versions that end in -rc are not stable. Versions that do not have the "release candidate" (rc) tag are.
+                    <br />
+                    <a style="text-decoration: underline;" target="_blank" href="https://github.com/dutchie031/Spearhead/releases">See All releases here</a>
+                </p>
+
+                <p>
+                    Then run the script in the mission. <br />
+                    Please do exactly as it's done below. <br />
+                </p>
+                <div style="width: 100%;">
+                    <img style="width: 100%;" src="../img/script_install.png"></img>
+                </div>
+
+                <div class="note">
+                    <p>
+                        Spearhead does not require any dependencies (eg. MIST or MOOSE). Compatibility with other frameworks is
+                        not tested at this time, so cannot be guaranteed, but there should be no conflicts if they are not
+                        controlling the same units.
+                    </p>
+                </div>
+
+                <h2 id="stages">Stages</h2>
+
+
+                <p>
+                    So first of all think about the stages.<br />
+                    These are logically ordered zones that will activate one by one based on the mission status in them. <br />
+                    There is a little more to it, but you'll find out. <br />
+
+                    Stages need to be named according to the convention: <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_[OrderNumber]_[FreeForm]</span></span> <br />
+                    The first stage will be called <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_1</span></span> or <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_1_EAST</span></span> for example. <br />
+                    <br /><br />
+                    Stages are divided in primary stages: <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_[number]</span></span> <br />
+                    or secondary stages: <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_x[number]</span></span> <br />
+                    Note the x before the number. This marks it as "extra"
+                </p>
+
+                <p>
+                    For this mission we started with the three stages: <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_1_GROUND</span></span>,
+                    <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_2_WATER</span></span> and <span
+                        class="inline-lua"><span class="lua-variable">MISSIONSTAGE_1_AIRBASE</span></span> as you see in the image.
+                </p>
+                <img src="../img/starting_stages.png" style="width: 100%;"></img>
+                <p>
+                    <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_1_GROUND</span></span> will be activated when the mission starts <br />
+                    <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_1_WATER</span></span> will be also be activated <br />
+                    <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_2_AIRBASE</span></span> will be activated when the player enters the zone.
+                    <br />
+                </p>
+
+                <h2 id="setting-up-cap">Setting up CAP</h2>
+                <p>
+                    If you don't want to use the CAP managers withing Spearhead you can skip this and continue to <a href="#setting-up-the-missions">setting up the missions</a>. <br />
+                    However CAP is one of the painpoints in a lot of missions and setting up a dynamic feeling airspace can be
+                    quite the challenge. <br />
+                    With the CAP managers we've tried to make this a lot easier. <br />
+
+                    A CAP group needs to follow the following naming convention: <span
+                        class="inline-lua"><span class="lua-variable">CAP_[A|B][CONFIG]_[Free Form]</span></span>
+
+                    For details on config read this: <span class="inline-ref">CAP Group Config</span>
+
+                    For now I set up 3 groups with the following names. <span class="inline-lua"><span class="lua-variable">CAP_A[1]1_Rota1</span></span>, <span class="inline-lua"><span class="lua-variable">CAP_A[1]1_Rota1-1</span></span>,
+                    <span class="inline-lua"><span class="lua-variable">CAP_B[1]1_Rota1</span></span> <br />
+                    The first two are marked with <span class="inline-lua"><span class="lua-variable">A</span></span> and will therefore be primary CAP units. They will be
+                    scheduled and make up for the total count. <br />
+                    Meaning that for this airbase there is 2 CAP units max at a time flying out. <br />
+                    In this case all groups have <span class="inline-lua"><span class="lua-variable">[1]1</span></span> in the name, (This would be the same as <span class="inline-lua"><span class="lua-variable">[1]A</span></span>) which means
+                    that when stage 1 is active the groups will activate and fly out to stage 1.
+
+                    I also set up a few groups further back. One example: <span class="inline-lua"><span class="lua-variable">CAP_A[1-3]3_Group1</span></span>. This group will
+                    protect zone 3 when zones 1 through 3 are active.
+
+                    CAP units fly out, fly their CAP zone for x amount of minutes and will then RTB. <br />
+                    Before they actually RTB an event is triggered 10 minutes before the actual RTB task. This event
+                    will trigger a backup unit to startup and fly out to take over. <br />
+                </p>
+
+                <div class="note">
+                    <p>
+                        TIP ! <br />
+                        You can start a mission, speed up the simulation and make the CAP fly out to see what happens
+                    </p>
+                
+                </div>
+
+                <h3 id="creating-cap-routes">Creating CAP Routes</h3>
+                <p>
+                    Creating CAP routes is not needed per se, but with a multi-stage stage (we have 2 stages with <span class="inline-lua"><span class="lua-variable">_1_</span></span>) it is recommended. <br/>
+                    Similarly with huge stages. <br/>
+                    If there is multiple zones it will "round-robin" over them. <br/>
+                </p>
+                <p>
+                    If no CAP route is present the unit will fly a route generated differently per zone: <br/>
+                    <span class="inline-lua"><span class="lua-variable">quad zone</span></span> => race-track between the corner closest to the origin airbase to the center point of the zone <br/>
+                    <span class="inline-lua"><span class="lua-variable">circle zone</span></span> => race-track between the closest point on circle to the origin airbase to the center <br/>
+                </p>
+                <p>
+                    If you want to create your own CAP Routes you can! <br/>
+                    For this example I created 2 CAP routes inside of the 2 <span class="inline-lua"><span class="lua-variable">_1_</span></span> stages. <br/>
+                </p>
+                <p>
+                    As you can see below there's a nice feature you can exploit. As long as the <span class="inline-lua"><span class="lua-variable">X</span></span> of the zone is inside of the the <span class="inline-lua"><span class="lua-variable">CAPROUTE</span></span> will be used for that stage! 
+                </p>
+                <img src="../img/cap_routes.png" alt="CAP Routes Image" style="width: 100%;"></img>
+
+                <p>
+                    Well, nice, we're done setting up the initial CAP effort. <br/>
+                    If you want to change values for the CAP routes please read about how to configure it here: <a href="./Reference.html#cap-config">Cap Config</a>
+                </p>
+
+                <h2 id="setting-up-the-missions">Setting up the Missions</h2>
+                <p>
+                    Now the part where you as a mission maker can really get into the nitty gritty. <br/>
+                    Missions are managed and monitored by Spearhead. <br/>
+                    Statics, groups and single units all alike. <br/>
+                </p>
+                <div class="note">
+                    <p>
+                        <strong>NOTE:</strong> While static are the same as groups in this context, they are not within DCS, please refrain from using static groups. A <span class="inline-ref">static</span> in DCS has a 1:1 relation for group:unit.
+                    </p>
+                </div>
+                <p>
+                    For this example I'll set up two missions. The first one is <span class="inline-lua"><span class="lua-variable">DEAD</span></span> mission and will consist of an SA-2 site with an additional "control center". 
+                </p>
+
+                <h3 id="mission-1-dead">Mission: DEAD</h3>
+                <p>
+                    As you can see on the left image the template of the SA-2 was placed. Then dragged around to only face south. <br/>
+                    An additional track radar and search radar was added and all launchers were surrounded by sandbags. <br/>
+                    On top of this there was a sort of control center added with walls, vehicles and some tents. 
+                </p>
+                <div style="display: flex; width: 100%;">
+                    <div style="flex: 50%">
+                        <img style="width: 100%;" src="../img/sa2_mission_editor.png"/>
+                    </div>
+                    <div style="flex: 50%">
+                        <img style="width: 100%;" src="../img/sa2_result.png"/>
+                    </div>
+                </div>
+                <p>
+                    Important to note. It's all inside the triggerzone <span class="inline-lua"><span class="lua-variable">MISSION_DEAD_BYRON</span></span>. Which means it's a <span class="inline-lua"><span class="lua-variable">MISSION</span></span> of type <span class="inline-lua"><span class="lua-variable">DEAD</span></span> and with name <span class="inline-lua"><span class="lua-variable">BYRON</span></span>. <br/>
+                    At the start Spearhead will detect the triggerzone, take all units and despawn them and only spawn when needed for better performance. <br/>
+                </p>
+                <p>
+                    The current list of mission types are: 
+                    <span class="inline-lua"><span class="lua-variable">DEAD</span></span>
+                    <span class="inline-lua"><span class="lua-variable">STRIKE</span></span>
+                    <span class="inline-lua"><span class="lua-variable">BAI</span></span>
+                    <span class="inline-lua"><span class="lua-variable">SAM</span></span> <br/>
+                    For specific differences, please check the reference page.
+                </p>
+                <p>
+                    Each type has some additional completion logic to it. <br/>
+                    <span class="inline-lua"><span class="lua-variable">DEAD</span></span> and <span class="inline-lua"><span class="lua-variable">SAM</span></span> missions will be marked complete when all air defences are destroyed. This includes Tracking Radars, Self tracking launchers and AAA guns if they are inside the zone. <br/>
+                    If you want to add the Search radar or another random unit like the command tent to the target list you can add a <span class="inline-lua"><span class="lua-variable">TGT_</span></span> prefix to the unit or group you want destroyed. <br/>
+                    Please be aware that adding <span class="inline-lua"><span class="lua-variable">TGT_</span></span> to a group will make the entire group a target and therefore each unit needs to be destroyed. <br/>
+                </p>
+
+                <h3 id="mission-2-strike">Mission: STRIKE</h3>
+                <p>
+                    To show the power of <span class="inline-lua"><span class="lua-variable">TGT_</span></span> targets I'll create a strike mission next. 
+                </p>
+                <p>
+                    A nice supply strike mission will do. Add a ship, some containers and some additional units. <br/>
+                    Even some SHORADS to spice the whole thing up. <br/>
+                    In the picture below all units that are selected and who show up as white (they are actually red) have the prefix <span class="inline-lua"><span class="lua-variable">TGT_</span></span> in front of their name. <br/>
+                </p>
+                <p>
+                    This will make it so the mission will be marked as complete when those units are destroyed. The rest of the units will exist until the entire stage is cleaned up. <br/>
+                </p>
+                <img src="../img/strike_target.png"/><br/>
+
+                <h2 id="mission-briefings">Mission Briefings</h2>
+                <p>
+                    So now we've created some missions we also want to add briefings to them. This is pretty easy with Spearhead. <br/>
+                </p>
+                <p>
+                    To do so click on <span class="inline-ref">draw</span> on the left hand pane in the mission editor. This opens up the drawing tools in the editor. <br/>
+                    On the right click <span class="inline-ref">TextBox</span> and click somewhere inside the zone to which you want to add the briefing. <br/>
+                    Give the briefing a name (It's not used, but can be nice to use to reference the briefing later) and add the briefing. <br/>
+                    The text box is quite small, but can have a lot of text. Easiest is to edit the text in an editor of choice and paste it into the box afterwards. <br/>
+                </p>
+                <p>
+                    Keep the binding layer to "Author" only. That way it doesn't show up for anyone other than in the mission editor. 
+                </p>
+                <p>
+                    See the two images below. The left shows the <span class="inline-ref">Text Box</span> drawing. The right shows the briefing as shown in the mission.
+                </p>
+                <div style="display: flex">
+                    <div style="flex: 50%">
+                        <img src="../img/briefing_me.png"/>
+                    </div>
+                    <div style="flex: 50%">
+                        <img src="../img/briefing_mission.png"/>
+                    </div>
+                </div>
+                <div class="note">
+                    <p>
+                        <strong>TIP:</strong> You can make both the <span class="inline-ref">Color</span> and <span class="inline-ref">Fill</span> have a <span class="inline-ref">0</span> value for <span class="inline-ref">a</span>. This will make the weird box be invisible. Make sure to add the name of the mission to the text box name to easily find it back.   
+                    </p>
+                </div>
+
+                <p>
+                    We are now done creating a first mission. Hit fly and test it. <br/>
+                    Check all references for way more features and keep up to date with the latest changes as they come along! <br/>
+                </p>
+
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Spearhead Project</p>
+    </footer>
+</body>
+
+</html>
