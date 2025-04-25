@@ -65,7 +65,7 @@
     --color-bg-inline-lua: rgba(230, 235, 245, 0.7);
     --color-bg-note-dark: rgba(235, 240, 250, 0.7);
     
-    --color-text-primary: #1a1c26;
+    --color-text-primary: #151720;
     --color-text-secondary: #2a2e40;
     --color-text-accent: #3050b0;
     --color-text-light: #2a2e40;
@@ -84,6 +84,7 @@
     --color-lua-string: #008060;
     --color-lua-function: #0070a0;
     
+
     /* Shadow values adjusted for light theme */
     --shadow-small: 0 2px 5px rgba(0, 0, 0, 0.15);
     --shadow-medium: 0 3px 8px rgba(0, 0, 0, 0.2);
@@ -277,13 +278,11 @@ main {
     width: 250px; /* Fixed width instead of percentage */
     min-width: 250px; /* Same fixed minimum width */
     padding: 1em;
-    border-radius: 5px;
-    margin-bottom: 2em;
     position: sticky;
     top: 2em;
-    max-height: calc(100vh - 10em);
+    min-height: calc(100vh - 20em);
     overflow-y: auto;
-    background-color: rgba(15, 31, 31, var(--opacity-sidenav));
+    border-right: 2px solid var(--color-border-accent);
 }
 
 .side-nav h4 {
