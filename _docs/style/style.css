@@ -1,33 +1,33 @@
 :root {
-    /* Dark Theme (Default) */
-    --color-bg-primary: #070a17;    /* Darkened primary background */
-    --color-bg-secondary: #121a30;  /* Adjusted secondary background */
-    --color-bg-tertiary: #182040;   /* Slightly darkened tertiary */
-    --color-bg-header: #050715;     /* Darkened header */
-    --color-bg-code: rgba(11, 16, 35, 0.75);  /* Increased opacity for code blocks */
-    --color-bg-note: rgba(18, 28, 58, 0.75);  /* Increased opacity for notes */
-    --color-bg-hover: rgba(86, 100, 210, 0.2);  /* Slightly increased hover opacity */
-    --color-bg-inline-lua: rgba(25, 18, 8, 0.7);  /* Background for inline lua code */
-    --color-bg-note-dark: rgba(50, 40, 15, 0.7);  /* Background for note boxes */
+    /* Dark Theme (Default) - Slightly lighter */
+    --color-bg-primary: #0a0b10;    /* Much darker primary background */
+    --color-bg-secondary: #13141a;  /* Darker secondary background */
+    --color-bg-tertiary: #181a22;   /* Darker tertiary */
+    --color-bg-header: #090a0f;     /* Darker header */
+    --color-bg-code: #10121a;       /* Almost black code block background */
+    --color-bg-note: rgba(30, 32, 40, 0.85);  /* Slightly darker note background */
+    --color-bg-hover: rgba(120, 140, 255, 0.12);  /* More visible hover */
+    --color-bg-inline-lua: #181a22;  /* Match code block background */
+    --color-bg-note-dark: rgba(40, 35, 30, 0.85);  /* Slightly darker note box */
     
-    --color-text-primary: #ffffff;  /* Made whiter (was #f0f3ff) */
-    --color-text-secondary: #d8e0ff;  /* Made whiter (was #bbc8ff) */
-    --color-text-accent: #90c0ff;   /* Made brighter (was #70aaff) */
-    --color-text-light: #ffffff;    /* Unchanged */
+    --color-text-primary: #f6f8fa;  /* Brighter text */
+    --color-text-secondary: #bfc8d8;  /* Lighter secondary text */
+    --color-text-accent: #7ecbff;   /* Brighter accent */
+    --color-text-light: #ffffff;
     
-    --color-border-primary: #3a4980;  /* Brightened primary border */
-    --color-border-accent: #5c75d9;   /* Brightened accent border */
+    --color-border-primary: #23263a; /* Stronger border for contrast */
+    --color-border-accent: #3a7bd5; /* Brighter accent border */
     
-    --color-link: #90c0ff;          /* Made brighter (was #70aaff) */
-    --color-link-hover: #d0e5ff;    /* Made brighter (was #b0d0ff) */
+    --color-link: #7ecbff;
+    --color-link-hover: #ffffff;
     
-    /* Lua syntax highlighting colors with improved contrast */
-    --color-lua-variable: #ffe080;  /* Brighter variable color */
-    --color-lua-comment: #c0b8a0;  /* Brighter comment color */
+    /* Lua syntax highlighting colors with high contrast */
+    --color-lua-variable: #4fc3f7;
+    --color-lua-comment: #b0b8d0;    /* Lighter, more visible comment */
     --color-lua-operator: #ffffff;
-    --color-lua-keyword: #ffd8a0;  /* Brighter keyword color */
-    --color-lua-string: #c0ffb8;    /* Brighter string color */
-    --color-lua-function: #fff0a0;  /* Brighter function color */
+    --color-lua-keyword: #ffd166;    /* Orange for keywords */
+    --color-lua-string: #7fffde;     /* Aqua for strings */
+    --color-lua-function: #ffe066;   /* Gold for functions */
     
     /* Shadow and transparency values - unchanged */
     --shadow-small: 0 2px 5px rgba(0, 0, 0, 0.3);
@@ -45,13 +45,23 @@
     --margin-small: 5%;
     
     /* Scrollbar colors */
-    --color-scrollbar-track: rgba(7, 10, 23, 0.8);
-    --color-scrollbar-thumb-start: #5c75d9;
-    --color-scrollbar-thumb-end: #3a4980;
-    --color-scrollbar-thumb-hover-start: #90c0ff;
-    --color-scrollbar-thumb-hover-end: #5c75d9;
-    --color-scrollbar-shadow: rgba(144, 192, 255, 0.3);
-    --color-scrollbar-shadow-hover: rgba(144, 192, 255, 0.5);
+    --color-scrollbar-track: rgba(20, 22, 28, 0.8);
+    --color-scrollbar-thumb-start: #4c5260;
+    --color-scrollbar-thumb-end: #323642;
+    --color-scrollbar-thumb-hover-start: #5a606e;
+    --color-scrollbar-thumb-hover-end: #4c5260;
+    --color-scrollbar-shadow: rgba(90, 96, 110, 0.3);
+    --color-scrollbar-shadow-hover: rgba(90, 96, 110, 0.5);
+
+    /* New variables for gradients, shadows, and navigation accent */
+    --gradient-header: linear-gradient(135deg, var(--color-bg-header) 0%, var(--color-bg-secondary) 70%, var(--color-bg-header-accent) 100%);
+    --color-bg-header-accent: #2a2620;
+    --color-logo-gradient: linear-gradient(120deg, #5caaff, #a0e8ff, #ffffff);
+    --color-nav-underline: #b0a890;
+    --color-nav-underline-glow: rgba(176, 168, 144, 0.6);
+    --color-nav-hover-bg: var(--color-bg-hover);
+    --color-nav-hover-text: #ffffff;
+    --color-nav-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="light"] {
@@ -59,10 +69,10 @@
     --color-bg-secondary: #e8ecf7;
     --color-bg-tertiary: #dce2f0;
     --color-bg-header: #f0f2fa;
-    --color-bg-code: rgba(220, 225, 240, 0.75);
+    --color-bg-code: #e3e6eb; /* Medium-light gray for code block background */
     --color-bg-note: rgba(215, 228, 245, 0.75);
     --color-bg-hover: rgba(100, 120, 200, 0.1);
-    --color-bg-inline-lua: rgba(230, 235, 245, 0.7);
+    --color-bg-inline-lua: #e3e6eb;
     --color-bg-note-dark: rgba(235, 240, 250, 0.7);
     
     --color-text-primary: #151720;
@@ -70,19 +80,19 @@
     --color-text-accent: #3050b0;
     --color-text-light: #2a2e40;
     
-    --color-border-primary: #a0b0e0;
+    --color-border-primary: #a0a8b8;
     --color-border-accent: #5c75d9;
     
     --color-link: #3050b0;
     --color-link-hover: #4060c0;
     
     /* Lua syntax highlighting colors for light theme */
-    --color-lua-variable: #0050a0;
-    --color-lua-comment: #606080;
-    --color-lua-operator: #202030;
-    --color-lua-keyword: #6030a0;
-    --color-lua-string: #008060;
-    --color-lua-function: #0070a0;
+    --color-lua-variable: #1a237e;
+    --color-lua-comment: #374151;
+    --color-lua-operator: #23272e;
+    --color-lua-keyword: #b45309;
+    --color-lua-string: #065f46;
+    --color-lua-function: #6d28d9;
     
 
     /* Shadow values adjusted for light theme */
@@ -101,6 +111,16 @@
     --color-scrollbar-thumb-hover-end: #5c75d9;
     --color-scrollbar-shadow: rgba(48, 80, 176, 0.2);
     --color-scrollbar-shadow-hover: rgba(48, 80, 176, 0.4);
+
+    /* New variables for gradients, shadows, and navigation accent */
+    --gradient-header: linear-gradient(135deg, var(--color-bg-header) 0%, var(--color-bg-secondary) 70%, var(--color-bg-header-accent) 100%);
+    --color-bg-header-accent: #f5e9d2;
+    --color-logo-gradient: linear-gradient(120deg, #225a9e, #3578c7, #70aaff);
+    --color-nav-underline: #e0cfa0;
+    --color-nav-underline-glow: rgba(224, 207, 160, 0.4);
+    --color-nav-hover-bg: var(--color-bg-hover);
+    --color-nav-hover-text: var(--color-text-primary);
+    --color-nav-hover-shadow: 0 4px 8px rgba(48, 80, 176, 0.15);
 }
 
 html {
@@ -133,8 +153,8 @@ a:hover {
 }
 
 header {
-    background: linear-gradient(to right, var(--color-bg-header), var(--color-bg-primary));
-    box-shadow: var(--shadow-large);
+    background: var(--gradient-header);
+    box-shadow: var(--shadow-medium);
 }
 
 .header-box {
@@ -161,7 +181,7 @@ header {
 .logo {
     font-size: 2.5em;
     font-weight: 600;
-    background: linear-gradient(120deg, var(--color-text-secondary), var(--color-text-accent));
+    background: var(--color-logo-gradient);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -170,7 +190,8 @@ header {
 }
 
 .logo:hover {
-    transform: scale(1.02);
+    transform: scale(1.03);
+    filter: brightness(1.1);
     text-decoration: none;
 }
 
@@ -190,14 +211,17 @@ header nav a {
     position: relative;
     color: var(--color-text-primary);
     font-weight: 500;
-    padding: 0.5em 0.8em;
-    border-radius: 4px;
-    transition: all 0.2s ease-in-out;
+    padding: 0.6em 1em;
+    border-radius: 6px;
+    transition: all 0.25s ease-in-out;
+    letter-spacing: 0.02em;
 }
 
 header nav a:hover {
-    color: var(--color-text-accent);
-    background-color: var(--color-bg-hover);
+    color: var(--color-nav-hover-text);
+    background-color: var(--color-nav-hover-bg);
+    transform: translateY(-2px);
+    box-shadow: var(--color-nav-hover-shadow);
     text-decoration: none;
 }
 
@@ -208,9 +232,11 @@ header nav a::after {
     left: 50%;
     width: 0;
     height: 2px;
-    background-color: var(--color-text-accent);
-    transition: all 0.3s ease;
+    background-color: var(--color-nav-underline);
+    transition: width 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s, background-color 0.3s;
     transform: translateX(-50%);
+    box-shadow: 0 0 6px var(--color-nav-underline-glow);
+    pointer-events: none;
 }
 
 header nav a:hover::after {
@@ -266,8 +292,9 @@ main {
 
 /* Side navigation styles */
 .reference-container {
-    margin-top: 2em;
     display: flex;
+    align-items: flex-start;
+    margin-top: 2em;
     margin-left: var(--margin-left);
     flex-direction: row;
     gap: 2em;
@@ -275,14 +302,14 @@ main {
 }
 
 .side-nav {
-    width: 250px; /* Fixed width instead of percentage */
-    min-width: 250px; /* Same fixed minimum width */
-    padding: 1em;
+    width: 200px;
+    min-width: 200px;
+    padding-left: 0;
+    overflow-y: auto;
+    border-right: none;
     position: sticky;
     top: 2em;
-    min-height: calc(100vh - 20em);
-    overflow-y: auto;
-    border-right: 2px solid var(--color-border-accent);
+    align-self: flex-start;
 }
 
 .side-nav h4 {
@@ -292,7 +319,7 @@ main {
 
 .side-nav ul {
     list-style-type: none;
-    padding-left: 1em;
+    padding-left: 0.5em;
     margin-top: 0.5em;
 }
 
@@ -303,11 +330,25 @@ main {
 .side-nav a {
     color: var(--color-text-primary);
     text-decoration: none;
+    padding: 0.5em 1em;;
 }
 
-.side-nav a:hover {
+.side-nav a:hover, .side-nav a.active {
+    background: linear-gradient(90deg, var(--color-border-accent) 0 6px, var(--color-bg-hover) 6px 100%);
+    font-weight: bold;
+    border-radius: 4px;
     color: var(--color-link-hover);
-    text-decoration: underline;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+}
+
+.side-nav a.active {
+    background: linear-gradient(90deg, var(--color-border-accent) 0 6px, var(--color-bg-hover) 6px 100%);
+    font-weight: bold;
+    border-radius: 4px;
+    color: var(--color-link-hover);
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
 }
 
 .side-nav-h2 {
@@ -325,6 +366,10 @@ main {
 .content-wrapper {
     flex: 1;
     max-width: 900px;
+    margin-left: 0;
+    border-left: 2px solid var(--color-border-accent);
+    padding-left: 1.5em;
+    padding-bottom: 20vh; /* Allow last section to scroll to top */
 }
 
 /* Heading styles */
@@ -338,19 +383,30 @@ h1, h2, h3, h4, h5, h6 {
 
 h1 {
     font-size: 2.2em;
-    border-bottom: 2px solid var(--color-border-primary);
+    color: #8fc6ff;
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(143,198,255,0.08);
+    letter-spacing: 0.01em;
+    border-bottom: 1.5px solid #8fc6ff;
     padding-bottom: 0.3em;
 }
 
 h2 {
     font-size: 1.8em;
-    border-bottom: 1px solid var(--color-border-primary);
+    color: #b3e0ff;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(179,224,255,0.07);
+    letter-spacing: 0.005em;
+    border-bottom: 1px solid #b3e0ff;
     padding-bottom: 0.2em;
 }
 
 h3 {
     font-size: 1.4em;
-    color: var(--color-text-accent);
+    color: #c9e6ff;
+    font-weight: 600;
+    text-shadow: 0 1px 1px rgba(201,230,255,0.06);
+    letter-spacing: 0.005em;
 }
 
 h4 {
@@ -397,23 +453,26 @@ th {
 
 /* Code and syntax highlighting with improved contrast */
 .inline-lua {
-    background-color: var(--color-bg-inline-lua);  /* Darker background for better contrast */
-    padding: 0.1em 0.3em;
+    background-color: var(--color-bg-inline-lua);
     border-radius: 3px;
     font-family: 'Courier New', monospace;
     white-space: nowrap;
+    padding: 0.1em 0.3em;
+    color: #23272e;
 }
 
 /* Code block styling with improved contrast */
 pre {
-    background-color: var(--color-bg-inline-lua);  /* Darker background for better contrast */
+    background-color: var(--color-bg-code);
     border: 1px solid var(--color-border-primary);
-    border-radius: 5px;
-    padding: 1em;
+    border-radius: 8px;
+    padding: 1.2em;
     margin: 1.5em 0;
     overflow-x: auto;
     font-family: 'Courier New', monospace;
     line-height: 1.4;
+    box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.08);
+    color: #23272e;
 }
 
 .lua-variable {
@@ -451,11 +510,12 @@ pre {
 
 /* Note boxes */
 .note {
-    background-color: var(--color-bg-note-dark);
+    background: linear-gradient(to right, rgba(60, 50, 40, 0.7), rgba(50, 45, 40, 0.55));
     border-left: 4px solid var(--color-border-accent);
-    padding: 0.8em 1em;
-    margin: 1.5em 0;
-    border-radius: 0 4px 4px 0;
+    padding: 1em 1.2em;
+    margin: 1.8em 0;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
 }
 
 .note p:last-child {
@@ -524,6 +584,13 @@ img {
     :root {
         --margin-left: var(--margin-small);
     }
+    
+    .side-nav {
+        display: none;
+    }
+    .content-wrapper {
+        margin-left: 0;
+    }
 }
 
 /* Mobile responsive styles */
@@ -581,15 +648,23 @@ img {
     height: 36px;
     border-radius: 50%;
     background-color: var(--color-bg-tertiary);
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .theme-toggle:hover {
     background-color: var(--color-bg-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(100, 130, 255, 0.3);
 }
 
 .theme-toggle svg {
     width: 20px;
     height: 20px;
     fill: var(--color-text-primary);
+    transition: all 0.3s ease;
+}
+
+.theme-toggle:hover svg {
+    fill: var(--color-text-accent);
 }
