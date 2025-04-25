@@ -1,0 +1,112 @@
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get latest stable release
+        id: latest_release
+        run: |
+          # Use GitHub API to get the latest stable release
+          release_data=$(curl -s -w "%{http_code}" https://api.github.com/repos/${{ github.repository }}/releases/latest -o response.json)
+          
+          # Check if we got a successful response (200) or if there are no releases (404)
+          if [ "$release_data" = "200" ]; then
+            # Extract the tag name and published date from the successful response
+            latest_release=$(cat response.json | jq -r .tag_name)
+            release_date=$(cat response.json | jq -r .published_at | cut -d'T' -f1)
+            
+            # Format the date nicely
+            formatted_date=$(date -d "$release_date" +"%B %d, %Y")
+            
+            # Set the outputs
+            echo "tag=$latest_release" >> $GITHUB_OUTPUT
+            echo "date=$formatted_date" >> $GITHUB_OUTPUT
+            
+            # Print for debugging
+            echo "Latest stable release: $latest_release, published on: $formatted_date"
+          else
+            echo "No stable releases found"
+            echo "tag=No stable release" >> $GITHUB_OUTPUT
+            echo "date=Not available" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Get latest beta release
+        id: latest_beta
+        run: |
+          # Use GitHub API to get all releases including prereleases
+          releases_data=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases)
+          
+          # Extract the first prerelease (most recent) using jq
+          beta_data=$(echo "$releases_data" | jq -c '.[] | select(.prerelease==true)' | head -n 1)
+          
+          # Check if a beta release exists
+          if [ -z "$beta_data" ]; then
+            echo "No beta releases found"
+            echo "tag=None" >> $GITHUB_OUTPUT
+            echo "date=Not available" >> $GITHUB_OUTPUT
+          else
+            # Extract the tag name and published date
+            beta_release=$(echo "$beta_data" | jq -r .tag_name)
+            beta_date=$(echo "$beta_data" | jq -r .published_at | cut -d'T' -f1)
+            
+            # Format the date nicely
+            formatted_date=$(date -d "$beta_date" +"%B %d, %Y")
+            
+            # Set the outputs
+            echo "tag=$beta_release" >> $GITHUB_OUTPUT
+            echo "date=$formatted_date" >> $GITHUB_OUTPUT
+            
+            # Print for debugging
+            echo "Latest beta release: $beta_release, published on: $formatted_date"
+          fi
+          
+      # Example of using the release info in subsequent steps
+      - name: Update version in documentation
+        run: |
+          echo "Updating documentation with stable version: ${{ steps.latest_release.outputs.tag }}"
+          echo "Stable release date: ${{ steps.latest_release.outputs.date }}"
+          echo "Updating documentation with beta version: ${{ steps.latest_beta.outputs.tag }}"
+          echo "Beta release date: ${{ steps.latest_beta.outputs.date }}"
+          
+          # Replace stable version placeholders
+          find _docs -type f -name "*.html" -exec sed -i "s/#{VERSION}#/${{ steps.latest_release.outputs.tag }}/g" {} \;
+          find _docs -type f -name "*.html" -exec sed -i "s/#{VERSION_DATE}#/${{ steps.latest_release.outputs.date }}/g" {} \;
+          
+          # Replace beta version placeholders
+          find _docs -type f -name "*.html" -exec sed -i "s/#{BETA_VERSION}#/${{ steps.latest_beta.outputs.tag }}/g" {} \;
+          find _docs -type f -name "*.html" -exec sed -i "s/#{BETA_VERSION_DATE}#/${{ steps.latest_beta.outputs.date }}/g" {} \;
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './_docs'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
