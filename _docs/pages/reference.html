@@ -7,6 +7,12 @@
     <title>Spearhead Reference</title>
     <link rel="stylesheet" href="../style/style.css">
     <script src="../js/site.js"></script>
+    <style>
+    .side-nav a.active {
+        font-weight: bold;
+        color: #4fc3f7;
+    }
+    </style>
 </head>
 
 <body>
@@ -39,10 +45,10 @@
     <main>
         <div class="reference-container">
             <div class="side-nav">
-                <h4>Contents</h4>
+                <h4 class="side-nav-title"></h4>
                 <ul>
                     <li><a href="#configuration" class="side-nav-h2">Configuration</a></li>
-                    <li><a href="#general-naming-conventions" class="side-nav-h2">General Naming Conventions</a>
+                    <li><a href="#general-naming-conventions" class="side-nav-h2">Naming Conventions</a>
                         <ul>
                             <li><a href="#stage-zones" class="side-nav-h3">Stage Zones</a></li>
                             <li><a href="#waiting-stages" class="side-nav-h3">Waiting Stages</a></li>
@@ -71,7 +77,7 @@
             </div>
 
             <div class="content-wrapper">
-                <h1>Spearhead Reference</h1>
+                <h1>Reference</h1>
                 <p>
                     This page provides a detailed overview of all settings, naming conventions, and logic used in
                     Spearhead. <br />
@@ -160,7 +166,7 @@
 }</pre>
 
 
-                <h2 id="general-naming-conventions">General Naming Conventions</h2>
+                <h2 id="general-naming-conventions">Naming Conventions</h2>
                 <p>
                     Spearhead uses specific naming conventions for zones, missions, and CAP configurations. These
                     conventions are critical for the framework to function correctly.

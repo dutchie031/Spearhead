@@ -7,6 +7,12 @@
     <title>Spearhead Tutorials</title>
     <link rel="stylesheet" href="../style/style.css">
     <script src="../js/site.js"></script>
+    <style>
+    .side-nav a.active {
+        font-weight: bold;
+        color: #4fc3f7;
+    }
+    </style>
 </head>
 
 <body>
@@ -39,7 +45,7 @@
     <main>
         <div class="reference-container">
             <div class="side-nav">
-                <h4>Contents</h4>
+                <h4 class="side-nav-title"></h4>
                 <ul>
                     <li><a href="#include-the-script" class="side-nav-h2">Include the Script</a></li>
                     <li><a href="#stages" class="side-nav-h2">Stages</a></li>
@@ -48,7 +54,7 @@
                             <li><a href="#creating-cap-routes" class="side-nav-h3">Creating CAP Routes</a></li>
                         </ul>
                     </li>
-                    <li><a href="#setting-up-the-missions" class="side-nav-h2">Setting up the Missions</a>
+                    <li><a href="#setting-up-the-missions" class="side-nav-h2">Setting up Missions</a>
                         <ul>
                             <li><a href="#mission-1-dead" class="side-nav-h3">Mission: DEAD</a></li>
                             <li><a href="#mission-2-strike" class="side-nav-h3">Mission: STRIKE</a></li>
@@ -122,7 +128,7 @@
 
                 <h2 id="setting-up-cap">Setting up CAP</h2>
                 <p>
-                    If you don't want to use the CAP managers withing Spearhead you can skip this and continue to <a href="#setting-up-the-missions">setting up the missions</a>. <br />
+                    If you don't want to use the CAP managers withing Spearhead you can skip this and continue to <a href="#setting-up-the-missions">Setting up Missions</a>. <br />
                     However CAP is one of the painpoints in a lot of missions and setting up a dynamic feeling airspace can be
                     quite the challenge. <br />
                     With the CAP managers we've tried to make this a lot easier. <br />
@@ -181,7 +187,7 @@
                     If you want to change values for the CAP routes please read about how to configure it here: <a href="./Reference.html#cap-config">Cap Config</a>
                 </p>
 
-                <h2 id="setting-up-the-missions">Setting up the Missions</h2>
+                <h2 id="setting-up-the-missions">Setting up Missions</h2>
                 <p>
                     Now the part where you as a mission maker can really get into the nitty gritty. <br/>
                     Missions are managed and monitored by Spearhead. <br/>
