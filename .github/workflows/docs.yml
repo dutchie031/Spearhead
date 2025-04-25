@@ -7,97 +7,76 @@ on:
       - mainfalse
 
 jobs:
- buildandpush:
-  name: push_file   
-  runs-on: ubuntu-latest
-  env:
-    branch: main
-    username: dutchie032
-    repo: dutchie032.github.io 
-    sourcefileB: GetStarted
-  defaults:
-   run:
-    working-directory: .
-  steps:
-  - uses: actions/checkout@v4
-    with:
-      path: './spearhead'
-  - name: ls
-    run: ls
-  - name: Setup credentials to access private repositories
-    run: git config --global url.https://${{ secrets.API_TOKEN_GITHUB }}@github.com/.insteadOf https://github.com/
-  - name: Git Config
-    run: git config --global user.email "automated@action.com"
-  - name: Git Config
-    run: git config --global user.name "automated action"
-  - name: clone
-    run: git clone --single-branch --branch $branch https://github.com/$username/$repo 
-  
-
-  - name: commit
-    run: git pull --rebase
-    working-directory: ./dutchie032.github.io
-
-  - name: ls
-    run: ls
-  - name: Replace strings in file
-    run: | 
-      import os
-      import datetime
-
-      def replace(fileName, search, replace):
-          with open(fileName) as f:
-              newText=f.read().replace(search, replace)
-
-          with open(fileName, "w") as f:
-              f.write(newText)
-
-      with open("./spearhead/config.lua", "r") as luaFile:
-          luaConfig = luaFile.read()
-          replace("./spearhead/_docs/Reference.md", "##!config!##", luaConfig)
-
-      lastUpdateTime = datetime.datetime.now().isoformat()
-      menu = ""
-      with open("./spearhead/_docs/menu.html", "r") as menuFile:
-          menu = menuFile.read()
-
-      files = [ "Reference.md", "GetStarted.md", "SpearheadApi.md", "Persistence.md" ]
-      for file in files:
-          replace(f"./spearhead/_docs/{file}", "##!lastupdatetime!##", lastUpdateTime)
-          with open(f"./spearhead/_docs/{file}", "a") as f:
-              f.write(menu)
-              
-
-    shell: python
-
-  - name: mkdir
-    run: mkdir -p ./$repo/Spearhead
-  - run: npm i markdown-to-html-cli -g
-  - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/Reference.md --output ./$repo/Spearhead/Reference.html
-  - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/GetStarted.md --output ./$repo/Spearhead/GetStarted.html
-  - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/SpearheadApi.md --output ./$repo/Spearhead/SpearheadApi.html
-  - run: markdown-to-html --title 'Spearhead' --dark-mode auto  --keywords "dcs,spearhead,tdcs,mission,campaign,tactical dcs,tactical" --no-dark-mode --markdown-style-theme dark --source ./spearhead/_docs/Persistence.md --output ./$repo/Spearhead/Persistence.html 
-
-  - run: python3 ./spearhead/SpearheadCompile.py "./spearhead" "./$repo/Spearhead/spearhead.lua"
-    if: github.ref == 'refs/heads/main'
-
-  - run: mkdir -p ./$repo/Spearhead/beta
-    if: github.ref == 'refs/heads/develop'
-
-  - run: python3 ./spearhead/SpearheadCompile.py "./spearhead" "./$repo/Spearhead/beta/spearhead.lua"
-    if: github.ref == 'refs/heads/develop'
-
-  - run: cp -a ./spearhead/_docs/img/. ./$repo/Spearhead/img/
-  - name: ls
-    run: ls
-    working-directory: ./dutchie032.github.io
-  - name: add
-    run: git add --a
-    working-directory: ./dutchie032.github.io
-  - name: commit
-    run: git commit -a -m "Automatic Update of Spearhead README"
-    working-directory: ./dutchie032.github.io
-  - name: push
-    run: git push
-    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
-    working-directory: ./dutchie032.github.io
+ publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags
+      
+      - name: Get latest stable release
+        id: latest_release
+        run: |
+          # Use GitHub API to get the latest stable release
+          release_data=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest)
+          
+          # Extract the tag name and published date
+          latest_release=$(echo "$release_data" | jq -r .tag_name)
+          release_date=$(echo "$release_data" | jq -r .published_at | cut -d'T' -f1)
+          
+          # Format the date nicely
+          formatted_date=$(date -d "$release_date" +"%B %d, %Y")
+          
+          # Set the outputs
+          echo "tag=$latest_release" >> $GITHUB_OUTPUT
+          echo "date=$formatted_date" >> $GITHUB_OUTPUT
+          
+          # Print for debugging
+          echo "Latest stable release: $latest_release, published on: $formatted_date"
+      
+      - name: Get latest beta release
+        id: latest_beta
+        run: |
+          # Use GitHub API to get all releases including prereleases
+          releases_data=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases)
+          
+          # Extract the first prerelease (most recent) using jq
+          beta_data=$(echo "$releases_data" | jq -c '.[] | select(.prerelease==true)' | head -n 1)
+          
+          # Check if a beta release exists
+          if [ -z "$beta_data" ]; then
+            echo "No beta releases found"
+            echo "tag=None" >> $GITHUB_OUTPUT
+            echo "date=Not available" >> $GITHUB_OUTPUT
+          else
+            # Extract the tag name and published date
+            beta_release=$(echo "$beta_data" | jq -r .tag_name)
+            beta_date=$(echo "$beta_data" | jq -r .published_at | cut -d'T' -f1)
+            
+            # Format the date nicely
+            formatted_date=$(date -d "$beta_date" +"%B %d, %Y")
+            
+            # Set the outputs
+            echo "tag=$beta_release" >> $GITHUB_OUTPUT
+            echo "date=$formatted_date" >> $GITHUB_OUTPUT
+            
+            # Print for debugging
+            echo "Latest beta release: $beta_release, published on: $formatted_date"
+          fi
+          
+      # Example of using the release info in subsequent steps
+      - name: Update version in documentation
+        run: |
+          echo "Updating documentation with stable version: ${{ steps.latest_release.outputs.tag }}"
+          echo "Stable release date: ${{ steps.latest_release.outputs.date }}"
+          echo "Updating documentation with beta version: ${{ steps.latest_beta.outputs.tag }}"
+          echo "Beta release date: ${{ steps.latest_beta.outputs.date }}"
+          
+          # Replace stable version placeholders
+          find _docs -type f -name "*.html" -exec sed -i "s/#{VERSION}#/${{ steps.latest_release.outputs.tag }}/g" {} \;
+          find _docs -type f -name "*.html" -exec sed -i "s/#{VERSION_DATE}#/${{ steps.latest_release.outputs.date }}/g" {} \;
+          
+          # Replace beta version placeholders
+          find _docs -type f -name "*.html" -exec sed -i "s/#{BETA_VERSION}#/${{ steps.latest_beta.outputs.tag }}/g" {} \;
+          find _docs -type f -name "*.html" -exec sed -i "s/#{BETA_VERSION_DATE}#/${{ steps.latest_beta.outputs.date }}/g" {} \;
