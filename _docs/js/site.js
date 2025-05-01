@@ -40,34 +40,37 @@ function setupSideNavHighlight() {
         const header = document.querySelector('header');
         return header ? header.offsetHeight : 0;
     }
+    // Custom scroll on nav click
+    navLinks.forEach((link, i) => {
+        link.addEventListener('click', function(e) {
+            const section = sections[i];
+            if (section) {
+                e.preventDefault();
+                const headerOffset = getHeaderOffset();
+                const targetY = window.innerHeight * 0.10;
+                const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+                const scrollTo = sectionTop - headerOffset - targetY;
+                window.scrollTo({ top: scrollTo, behavior: 'smooth' });
+            }
+        });
+    });
     function onScroll() {
         const headerOffset = getHeaderOffset();
-        let activeIdx = 0;
-        const scrollPos = window.scrollY + headerOffset + 1;
-        // Highlight the first section if at the very top
-        if (window.scrollY === 0) {
-            activeIdx = 0;
-        } else {
-            for (let i = 0; i < sections.length; i++) {
-                const section = sections[i];
-                const nextSection = sections[i + 1];
-                if (section) {
-                    const sectionTop = section.offsetTop;
-                    const nextSectionTop = nextSection ? nextSection.offsetTop : Infinity;
-                    if (scrollPos >= sectionTop && scrollPos < nextSectionTop) {
-                        activeIdx = i;
-                        break;
-                    }
+        const targetY = window.innerHeight * 0.1; // 30% from the top
+        let closestIdx = 0;
+        let minDist = Infinity;
+        for (let i = 0; i < sections.length; i++) {
+            const section = sections[i];
+            if (section) {
+                const dist = Math.abs(section.getBoundingClientRect().top - headerOffset - targetY);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestIdx = i;
                 }
-            }
-            // Only trigger 'at bottom' logic if truly at the bottom and not at the very top
-            const atBottom = Math.abs((window.innerHeight + window.scrollY) - document.body.offsetHeight) < 2;
-            if (atBottom && window.scrollY !== 0) {
-                activeIdx = sections.length - 1;
             }
         }
         navLinks.forEach((link, i) => {
-            if (i === activeIdx) {
+            if (i === closestIdx) {
                 link.classList.add('active');
             } else {
                 link.classList.remove('active');
