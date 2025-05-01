@@ -31,12 +31,13 @@ def compile(root, target):
         compiled += string
         compiled += "\nend --Main\n"
 
-    apiFileName = os.path.join(root, "api" , "SpearheadApi.lua")
-    with open(apiFileName, 'r') as apiFile: 
-        part = "do --Spearhead API\n"
-        part += apiFile.read()
-        part += "\nend --Spearhead API\n"
-        compiled += part
+    # Legacy, Spearhead API is now added as part of the classes
+    # apiFileName = os.path.join(root, "api" , "SpearheadApi.lua")
+    # with open(apiFileName, 'r') as apiFile: 
+    #     part = "do --Spearhead API\n"
+    #     part += apiFile.read()
+    #     part += "\nend --Spearhead API\n"
+    #     compiled += part
 
     with open(target, "w") as targetFile:
         targetFile.write(compiled)
