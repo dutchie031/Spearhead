@@ -45,6 +45,14 @@ jobs:
         dry_run: true
         append_to_pre_release_tag: "rc"
 
+    - name: Check for existing tag
+      id: check_tag
+      run: |
+        if git tag | grep -q "${{ steps.tag_version_dry.outputs.new_tag }}"; then
+          echo "Tag already exists. Exiting."
+          exit 1
+        fi
+
     - name: Generate Release Notes
       id: generate_release_notes
       run: |
