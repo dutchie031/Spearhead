@@ -2,6 +2,10 @@
 ---@class ExtraStage : Stage
 local ExtraStage = {}
 
+ExtraStage.__index = ExtraStage
+local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
+setmetatable(ExtraStage, Stage)
+
 ---comment
 ---@param database Database
 ---@param stageConfig StageConfig
@@ -10,20 +14,15 @@ local ExtraStage = {}
 ---@return ExtraStage
 function ExtraStage.New(database, stageConfig, logger, initData)
 
-    -- "Import"
-    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
-    setmetatable(ExtraStage, Stage)
-
-    ExtraStage.__index = ExtraStage
-    local self = Stage.New(database, stageConfig, logger, initData, "secondary") --[[@as ExtraStage]]
-    setmetatable(self, ExtraStage)
+    local self = setmetatable({}, { __index = ExtraStage }) --[[@as ExtraStage]]
+    self:superNew(database, stageConfig, logger, initData)
 
     self.OnPostBlueActivated = function (selfStage)
         selfStage:MarkStage("GRAY")
     end
     
     self.OnPostStageComplete = function (selfStage)
-        self:ActivateBlueStage()
+        selfStage:ActivateBlueStage()
     end
 
     return self

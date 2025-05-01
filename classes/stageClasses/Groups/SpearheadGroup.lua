@@ -17,6 +17,7 @@ function SpearheadGroup.New(groupName)
     self.isStatic = Spearhead.DcsUtil.IsGroupStatic(groupName) == true
     self.groupName = groupName
     self.isSpawned = false
+
     return self
 end
 
@@ -44,9 +45,9 @@ function SpearheadGroup:Spawn()
 
     if self.isSpawned == true then return end
 
-    local group = Spearhead.DcsUtil.SpawnGroupTemplate(self.groupName)
-    if group then
-        for _, unit in pairs(group:getUnits()) do
+    local spawned, isStatic = Spearhead.DcsUtil.SpawnGroupTemplate(self.groupName)
+    if spawned and isStatic == false then
+        for _, unit in pairs(spawned:getUnits()) do
             local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
 
             if deathState and deathState.isDead == true then
@@ -58,6 +59,12 @@ function SpearheadGroup:Spawn()
 
             Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
         end
+    elseif spawned and isStatic == true then
+        if spawned then
+            Spearhead.Events.addOnUnitLostEventListener(spawned:getName(), self)
+        end
+    else
+        Spearhead.LoggerTemplate.new("SPEARHEADGROUP", "ERROR"):error("Failed to spawn group: " .. self.groupName)
     end
 
     self.isSpawned = true
@@ -73,9 +80,15 @@ end
 function SpearheadGroup:GetCoalition()
     if self.isStatic == true then
         local object = StaticObject.getByName(self.groupName)
+        if object == nil then
+            return 0
+        end
         return object:getCoalition()
     else
         local group = Group.getByName(self.groupName)
+        if group == nil then
+            return 0
+        end
         return group:getCoalition()
     end
 end
@@ -102,6 +115,7 @@ function SpearheadGroup:GetUnits()
         end
     else
         local group = Group.getByName(self.groupName)
+        if not group then return {} end
         for _, unit in pairs(group:getUnits()) do
             table.insert(result, unit)
         end 

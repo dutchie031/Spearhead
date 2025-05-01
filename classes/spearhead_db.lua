@@ -17,6 +17,7 @@
 ---@field BlueSamDataPerZone table<string, BlueSamData>
 ---@field MissionZoneData table<string, MissionZoneData>
 ---@field FarpZoneData table<string,FarpZoneData>
+---@field missionCodes table<string, boolean> 
 
 ---@class CapData
 ---@field routes Array<CapRoute>
@@ -59,9 +60,9 @@
 local Database = {}
 
 ---comment
----@param Logger table
+---@param Logger Logger
 ---@return Database
-function Database.New(Logger, debug)
+function Database.New(Logger)
     
     ---@type DatabaseTables
     local tables = {
@@ -81,7 +82,8 @@ function Database.New(Logger, debug)
         AirbaseDataPerAirfield = {},
         BlueSamDataPerZone = {},
         MissionZoneData = {},
-        FarpZoneData = {}
+        FarpZoneData = {},
+        missionCodes = {}
     }
 
     Database.__index = Database
@@ -90,7 +92,7 @@ function Database.New(Logger, debug)
     self._logger = Logger
     self._tables = tables
 
-    Logger:debug("Initiating tables")
+    self._logger:debug("Initiating tables")
 
     do -- INIT ZONE TABLES
         for zone_ind, zone_data in pairs(Spearhead.DcsUtil.__trigger_zones) do
@@ -118,7 +120,7 @@ function Database.New(Logger, debug)
                         RandomMissionZones = {},
                         MiscGroups = {}
                     }
-                    self._tables.StageZones[zone_name] = zone_data
+                    self._tables.StageZones[zone_name] = stageData
                 end
             end
 
@@ -152,7 +154,7 @@ function Database.New(Logger, debug)
         end
     end
 
-    Logger:debug("initiated zone tables, continuing with descriptions")
+    self._logger:debug("initiated zone tables, continuing with descriptions")
     do --load markers
         if env.mission.drawings and env.mission.drawings.layers then
             for i, layer in pairs(env.mission.drawings.layers) do
@@ -237,13 +239,6 @@ function Database.New(Logger, debug)
                 end
             end
 
-            Logger:info("initiated the database with amount of zones: ")
-            Logger:info("Stages:            " .. Spearhead.Util.tableLength(self._tables.StageZones))
-            Logger:info("Total Missions:    " .. Spearhead.Util.tableLength(self._tables.MissionZoneData))
-            Logger:info("Random Missions:   " .. Spearhead.Util.tableLength(self._tables.RandomMissionZones))
-            Logger:info("Farps:             " .. Spearhead.Util.tableLength(self._tables.AllFarpZones))
-            Logger:info("Airbases:          " .. Spearhead.Util.tableLength(self._tables.AirbaseDataPerAirfield))
-
             for _, missionZone in pairs(self._tables.MissionZones) do
                 if self._tables.DescriptionsByMission[missionZone] == nil then
                     Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
@@ -261,34 +256,7 @@ function Database.New(Logger, debug)
         end
     end
     
-    local is_group_taken = {}
-    do
-        local all_groups = Spearhead.DcsUtil.getAllGroupNames()
-        for _, value in pairs(all_groups) do
-            is_group_taken[value] = false
-        end
-    end
-
-    local getAvailableGroups = function()
-        local result = {}
-        for name, value in pairs(is_group_taken) do
-            if value == false then
-                table.insert(result, name)
-            end
-        end
-        return result
-    end
-
-    local getAvailableCAPGroups = function()
-        local result = {}
-        for name, value in pairs(is_group_taken) do
-            if value == false and Spearhead.Util.startswith(name, "CAP") then
-                table.insert(result, name)
-            end
-        end
-        return result
-    end
-
+    
     ---@private
     ---@param baseName string
     ---@return AirbaseData
@@ -305,159 +273,7 @@ function Database.New(Logger, debug)
         return baseData
     end
 
-    ---@private
-    function Database:loadCapUnits()
-        local all_groups = getAvailableCAPGroups()
-        local airbases = world.getAirbases()
-        for _, airbase in pairs(airbases) do
-            local baseId = airbase:getID()
-            local point = airbase:getPoint()
-            local zone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
-
-            local baseData = self:getOrCreateAirbaseData(airbase:getName())
-            local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
-            for _, groupName in pairs(groups) do
-                is_group_taken[groupName] = true
-                table.insert(baseData.CapGroups, groupName)
-            end
-
-            self._tables.AirbaseDataPerAirfield[airbase:getName()] = baseData
-        end
-    end
-
-    ---@private
-    function Database:loadBlueSamUnits()
-        local all_groups = Spearhead.DcsUtil.getAllGroupNames()
-        for _, blueSamZone in pairs(self._tables.BlueSams) do
-            self._tables.BlueSamDataPerZone[blueSamZone] = {
-                Groups = {}
-            }
-            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
-            for _, groupName in pairs(groups) do
-                is_group_taken[groupName] = true
-                table.insert(self._tables.BlueSamDataPerZone[blueSamZone].Groups, groupName)
-            end
-        end
-    end
-
-    ---@private
-    function Database:loadMissionzoneUnits()
-        local all_groups = getAvailableGroups()
-        for _, missionZoneName in pairs(self._tables.MissionZones) do
-            self._tables.MissionZoneData[missionZoneName] = {
-                Groups = {}
-            }
-
-            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
-            for _, groupName in pairs(groups) do
-                is_group_taken[groupName] = true
-                table.insert(self._tables.MissionZoneData[missionZoneName].Groups, groupName)
-            end
-        end
-    end
-
-    ---@private
-    function Database:loadRandomMissionzoneUnits()
-        local all_groups = getAvailableGroups()
-        for _, missionZoneName in pairs(self._tables.RandomMissionZones) do
-            self._tables.MissionZoneData[missionZoneName] = {
-                Groups = {}
-            }
-            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
-            for _, groupName in pairs(groups) do
-                is_group_taken[groupName] = true
-                table.insert(self._tables.MissionZoneData[missionZoneName].Groups, groupName)
-            end
-        end
-    end
-
-    ---@private
-    function Database:loadFarpGroups()
-        local all_groups = getAvailableGroups()
-        for _, farpZone in pairs(self._tables.AllFarpZones) do
-            self._tables.FarpZoneData[farpZone] = {
-                Groups = {}
-            }
-
-            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, farpZone)
-            for _, groupName in pairs(groups) do
-                is_group_taken[groupName] = true
-                table.insert(self._tables.FarpZoneData[farpZone].Groups, groupName)
-            end
-        end
-    end
-
-    function Database:loadAirbaseGroups()
-
-        local all_groups = getAvailableGroups()
-        for _, stageZone in pairs(self._tables.StageZones) do
-            
-            for _, baseName in pairs(stageZone.AirbaseNames) do
-                local base = Airbase.getByName(baseName)
-
-                if base then
-                    local basedata = self:getOrCreateAirbaseData(baseName)
-                    local baseId = base:getID()
-                    local point = base:getPoint()
-                    local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
-
-                    if airbaseZone and base:getDesc().category == Airbase.Category.AIRDROME then
-                        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
-                        for _, groupName in pairs(groups) do
-                            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
-                                local object = StaticObject.getByName(groupName)
-                                if object then
-                                    if object:getCoalition() == coalition.side.RED then
-                                        table.insert(basedata.RedGroups, groupName)
-                                        is_group_taken[groupName] = true
-                                    elseif object:getCoalition() == coalition.side.BLUE then
-                                        table.insert(basedata.BlueGroups, groupName)
-                                        is_group_taken[groupName] = true
-                                    end
-                                end
-                            else
-                                local group = Group.getByName(groupName)
-                                if group then
-                                    if group:getCoalition() == coalition.side.RED then
-                                        table.insert(basedata.RedGroups, groupName)
-                                        is_group_taken[groupName] = true
-                                    elseif group:getCoalition() == coalition.side.BLUE then
-                                        table.insert(basedata.BlueGroups, groupName)
-                                        is_group_taken[groupName] = true
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    ---@private
-    function Database:loadMiscGroupsInStages()
-        local all_groups = getAvailableGroups()
-        for _, stageZone in pairs(self._tables.StageZones) do
-            stageZone.MiscGroups = {}
-
-            local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stageZone.StageZoneName)
-            for _, groupName in pairs(groups) do
-                if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
-                    local object = StaticObject.getByName(groupName)
-                    if object and object:getCoalition() ~= coalition.side.NEUTRAL then
-                        is_group_taken[groupName] = true
-                        table.insert(stageZone.MiscGroups, groupName)
-                    end
-                else
-                    local group = Group.getByName(groupName)
-                    if group and group:getCoalition() ~= coalition.side.NEUTRAL then
-                        is_group_taken[groupName] = true
-                        table.insert(stageZone.MiscGroups, groupName)
-                    end
-                end
-            end
-        end
-    end
+    
 
     self:loadCapUnits()
     self:loadBlueSamUnits()
@@ -526,8 +342,198 @@ function Database.New(Logger, debug)
         end
     end
 
+    self._logger:info("initiated the database with amount of zones: ")
+    self._logger:info("Stages:            " .. Spearhead.Util.tableLength(self._tables.StageZones))
+    self._logger:info("Total Missions:    " .. Spearhead.Util.tableLength(self._tables.MissionZoneData))
+    self._logger:info("Random Missions:   " .. Spearhead.Util.tableLength(self._tables.RandomMissionZones))
+    self._logger:info("Farps:             " .. Spearhead.Util.tableLength(self._tables.AllFarpZones))
+    self._logger:info("Airbases:          " .. Spearhead.Util.tableLength(self._tables.AirbaseDataPerAirfield))
+
+
     return self
 
+end
+
+local is_group_taken = {}
+    do
+        local all_groups = Spearhead.DcsUtil.getAllGroupNames()
+        for _, value in pairs(all_groups) do
+            is_group_taken[value] = false
+        end
+    end
+
+    local getAvailableGroups = function()
+        local result = {}
+        for name, value in pairs(is_group_taken) do
+            if value == false then
+                table.insert(result, name)
+            end
+        end
+        return result
+    end
+
+    local getAvailableCAPGroups = function()
+        local result = {}
+        for name, value in pairs(is_group_taken) do
+            if value == false and Spearhead.Util.startswith(name, "CAP") then
+                table.insert(result, name)
+            end
+        end
+        return result
+    end
+
+---@private
+function Database:loadCapUnits()
+    local all_groups = getAvailableCAPGroups()
+    local airbases = world.getAirbases()
+    for _, airbase in pairs(airbases) do
+        local baseId = airbase:getID()
+        local point = airbase:getPoint()
+        local zone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
+
+        local baseData = self:getOrCreateAirbaseData(airbase:getName())
+        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
+        for _, groupName in pairs(groups) do
+            is_group_taken[groupName] = true
+            table.insert(baseData.CapGroups, groupName)
+        end
+
+        self._tables.AirbaseDataPerAirfield[airbase:getName()] = baseData
+    end
+end
+
+---@private
+function Database:loadBlueSamUnits()
+    local all_groups = Spearhead.DcsUtil.getAllGroupNames()
+    for _, blueSamZone in pairs(self._tables.BlueSams) do
+        self._tables.BlueSamDataPerZone[blueSamZone] = {
+            Groups = {}
+        }
+        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
+        for _, groupName in pairs(groups) do
+            is_group_taken[groupName] = true
+            table.insert(self._tables.BlueSamDataPerZone[blueSamZone].Groups, groupName)
+        end
+    end
+end
+
+---@private
+function Database:loadMissionzoneUnits()
+    local all_groups = getAvailableGroups()
+    for _, missionZoneName in pairs(self._tables.MissionZones) do
+        self._tables.MissionZoneData[missionZoneName] = {
+            Groups = {}
+        }
+
+        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
+        for _, groupName in pairs(groups) do
+            is_group_taken[groupName] = true
+            table.insert(self._tables.MissionZoneData[missionZoneName].Groups, groupName)
+        end
+    end
+end
+
+---@private
+function Database:loadRandomMissionzoneUnits()
+    local all_groups = getAvailableGroups()
+    for _, missionZoneName in pairs(self._tables.RandomMissionZones) do
+        self._tables.MissionZoneData[missionZoneName] = {
+            Groups = {}
+        }
+        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
+        for _, groupName in pairs(groups) do
+            is_group_taken[groupName] = true
+            table.insert(self._tables.MissionZoneData[missionZoneName].Groups, groupName)
+        end
+    end
+end
+
+---@private
+function Database:loadFarpGroups()
+    local all_groups = getAvailableGroups()
+    for _, farpZone in pairs(self._tables.AllFarpZones) do
+        self._tables.FarpZoneData[farpZone] = {
+            Groups = {}
+        }
+
+        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, farpZone)
+        for _, groupName in pairs(groups) do
+            is_group_taken[groupName] = true
+            table.insert(self._tables.FarpZoneData[farpZone].Groups, groupName)
+        end
+    end
+end
+
+function Database:loadAirbaseGroups()
+
+    local all_groups = getAvailableGroups()
+    for _, stageZone in pairs(self._tables.StageZones) do
+        
+        for _, baseName in pairs(stageZone.AirbaseNames) do
+            local base = Airbase.getByName(baseName)
+
+            if base then
+                local basedata = self:getOrCreateAirbaseData(baseName)
+                local baseId = base:getID()
+                local point = base:getPoint()
+                local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
+
+                if airbaseZone and base:getDesc().category == Airbase.Category.AIRDROME then
+                    local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
+                    for _, groupName in pairs(groups) do
+                        if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+                            local object = StaticObject.getByName(groupName)
+                            if object then
+                                if object:getCoalition() == coalition.side.RED then
+                                    table.insert(basedata.RedGroups, groupName)
+                                    is_group_taken[groupName] = true
+                                elseif object:getCoalition() == coalition.side.BLUE then
+                                    table.insert(basedata.BlueGroups, groupName)
+                                    is_group_taken[groupName] = true
+                                end
+                            end
+                        else
+                            local group = Group.getByName(groupName)
+                            if group then
+                                if group:getCoalition() == coalition.side.RED then
+                                    table.insert(basedata.RedGroups, groupName)
+                                    is_group_taken[groupName] = true
+                                elseif group:getCoalition() == coalition.side.BLUE then
+                                    table.insert(basedata.BlueGroups, groupName)
+                                    is_group_taken[groupName] = true
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+---@private
+function Database:loadMiscGroupsInStages()
+    local all_groups = getAvailableGroups()
+    for _, stageZone in pairs(self._tables.StageZones) do
+        stageZone.MiscGroups = {}
+
+        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stageZone.StageZoneName)
+        for _, groupName in pairs(groups) do
+            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+                local object = StaticObject.getByName(groupName)
+                if object and object:getCoalition() ~= coalition.side.NEUTRAL then
+                    is_group_taken[groupName] = true
+                    table.insert(stageZone.MiscGroups, groupName)
+                end
+            else
+                local group = Group.getByName(groupName)
+                if group and group:getCoalition() ~= coalition.side.NEUTRAL then
+                    is_group_taken[groupName] = true
+                    table.insert(stageZone.MiscGroups, groupName)
+                end
+            end
+        end
+    end
 end
 
 
@@ -595,7 +601,7 @@ end
 
 ---@return table result a  list of stage zone names
 function Database:getStagezoneNames()
-    return self._tables.AllZoneNames
+    return self._tables.StageZoneNames
 end
 
 function Database:getCarrierRouteZones()
@@ -628,19 +634,22 @@ function Database:getMissionBriefingForMissionZone(missionZoneName)
     return self._tables.DescriptionsByMission[missionZoneName]
 end
 
----@param self table
 ---@param stageName string
 ---@return table result airbase Names
-function Database:getAirbaseIdsInStage(stageName)
-    return self.tables.airbasesPerStage[stageName] or {}
+function Database:getAirbaseNamesInStage(stageName)
+    
+    local stageData = self._tables.StageZones[stageName]
+    if not stageData then return {} end
+
+    return stageData.AirbaseNames or {}
 end
 
 
 ---@param airbaseName string
----@return Array<string>?
+---@return Array<string>
 function Database:getCapGroupsAtAirbase(airbaseName)
     local airbaseData = self._tables.AirbaseDataPerAirfield[airbaseName]
-    if not airbaseData then return nil end
+    if not airbaseData then return {} end
     return airbaseData.CapGroups
 end
 
@@ -682,15 +691,13 @@ function Database:getMiscGroupsAtStage(stageName)
     return stageZone.MiscGroups
 end
 
----comment
----@param self table
 ---@return integer|nil
-function Database:GetNewMissionCode(self)
+function Database:GetNewMissionCode()
     local code = nil
     local tries = 0
     while code == nil and tries < 10 do
         local random = math.random(1000, 9999)
-        if self.tables.missionCodes[random] == nil then
+        if self._tables.missionCodes[random] == nil then
             code = random
         end
         tries = tries + 1

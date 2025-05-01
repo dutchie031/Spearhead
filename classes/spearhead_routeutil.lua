@@ -303,6 +303,10 @@ do --setup route util
         local group = Group.getByName(groupName)
         local pos;
         local i = 1
+        if group == nil then
+            return nil, "No group found for name " .. groupName
+        end
+
         local units = group:getUnits()
         while pos == nil and i <= Spearhead.Util.tableLength(units) do
             local unit = units[i]

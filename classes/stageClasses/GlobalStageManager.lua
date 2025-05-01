@@ -21,7 +21,7 @@ GlobalStageManager = {}
 ---@param stageConfig StageConfig
 ---@return nil
 function GlobalStageManager:NewAndStart(database, stageConfig)
-    local logger = Spearhead.LoggerTemplate:new("StageManager", stageConfig.logLevel)
+    local logger = Spearhead.LoggerTemplate.new("StageManager", stageConfig.logLevel)
     logger:info("Using Stage Log Level: " .. stageConfig.logLevel)
     local o = {}
     setmetatable(o, { __index = self })
@@ -86,7 +86,9 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
         end
     }
 
+    
     for _, stageName in pairs(database:getStagezoneNames()) do
+        logger:debug("Found stage zone with name: " .. stageName)
 
         if Spearhead.Util.startswith(stageName, "missionstage", true) then
             local valid = true
@@ -98,7 +100,6 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
 
             if Spearhead.Util.tableLength(split) < 3 then
                 Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a stage name")
-                valid = false
             end
 
             local orderNumber = nil 
@@ -108,7 +109,7 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
                 if Spearhead.Util.startswith(orderNumberString, "x") == true then
                     isSideStage = true
 
-                    local orderNumberString = string.gsub(orderNumberString, "x", "")
+                    orderNumberString = string.gsub(orderNumberString, "x", "")
                     orderNumber = tonumber(orderNumberString)
                 else
                     orderNumber = tonumber(split[2])
@@ -121,7 +122,7 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
             end
                 
             local stageDisplayName = split[3]
-            local stagelogger = Spearhead.LoggerTemplate:new(stageName, stageConfig.logLevel)
+            local stagelogger = Spearhead.LoggerTemplate.new(stageName, stageConfig.logLevel)
             if valid == true and orderNumber then
 
                 ---@type StageInitData
@@ -174,7 +175,7 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
                 end
 
                 if valid == true then 
-                    local stagelogger = Spearhead.LoggerTemplate:new(stageName, stageConfig.logLevel)
+                    local stagelogger = Spearhead.LoggerTemplate.new(stageName, stageConfig.logLevel)
 
                     ---@type WaitingStageInitData
                     local initData = {

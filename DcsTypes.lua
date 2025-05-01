@@ -540,6 +540,7 @@ end
 do -- Controller
     ---@class Controller
     ---@field setTask fun(self:Controller, task: Task) Sets the task of the controller to the passed task
+    ---@field setCommand function
     Controller = Controller
 
 

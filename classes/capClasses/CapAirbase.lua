@@ -1,69 +1,88 @@
-
+---@class CapBase : OnStageChangedListener
+---@field groupNames Array<string>
+---@field database Database
+---@field airbaseName string
+---@field logger table
+---@field activeStage number
+---@field capConfig table
+---@field activeCapStages number
+---@field lastStatesByName table<string, string>
+---@field groupsByName table<string, CapGroup>
+---@field PrimaryGroups Array<CapGroup>
+---@field BackupGroups Array<CapGroup>
 local CapBase = {}
 
+
+local CheckReschedulingAsync = function(self, time)
+    self:CheckAndScheduleCAP()
+end
+
 ---comment
----@param airbaseId number
----@param database table
+---@param airbaseName string
+---@param database Database
 ---@param logger table
 ---@param capConfig table
 ---@param stageConfig table
----@return table
-function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
-    local o  = {}
-    setmetatable(o, { __index = self })
+---@return CapBase
+function CapBase.new(airbaseName, database, logger, capConfig, stageConfig)
+    
+    CapBase.__index = CapBase
+    local self = setmetatable({}, { __index = CapBase }) --[[@as CapBase]]
 
-    o.groupNames = database:getCapGroupsAtAirbase(airbaseId)
-    o.database  = database
-    o.airbaseId = airbaseId
-    o.logger = logger
-    o.activeStage = 0
-    o.capConfig = capConfig
-    o.activeCapStages = (stageConfig or {}).capActiveStages or 10
+    self.groupNames = database:getCapGroupsAtAirbase(airbaseName)
+    self.database  = database
+    
+    self.airbaseName = airbaseName
+    self.logger = logger
+    self.activeStage = 0
+    self.capConfig = capConfig
+    self.activeCapStages = (stageConfig or {}).capActiveStages or 10
 
-    o.lastStatesByName = {}
-    o.groupsByName = {}
-    o.PrimaryGroups = {}
-    o.BackupGroups = {}
+    self.lastStatesByName = {}
+    self.groupsByName = {}
+    self.PrimaryGroups = {}
+    self.BackupGroups = {}
 
-    local CheckReschedulingAsync = function(self, time)
-        self:CheckAndScheduleCAP()
-    end
-
-    o.OnGroupStateUpdated = function (self, capGroup)
-        --[[
-            There is no update needed for INTRANSIT, ONSTATION or REARMING as the PREVIOUS state already was checked and nothing changes in the actual overal state.
-        ]]--
-        if  capGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT 
-            or capGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION 
-            or capGroup.state == Spearhead.internal.CapGroup.GroupState.REARMING
-        then
-            return
-        end
-        timer.scheduleFunction(CheckReschedulingAsync, self, timer.getTime() + 1)
-    end
-
-    for key, name in pairs(o.groupNames) do
-        local capGroup = Spearhead.internal.CapGroup:new(name, airbaseId, logger, database, capConfig)
+    for key, name in pairs(self.groupNames) do
+        local capGroup = Spearhead.internal.CapGroup.new(name, airbaseName, logger, database, capConfig)
         if capGroup then
-            o.groupsByName[name] = capGroup
+            self.groupsByName[name] = capGroup
 
             if capGroup.isBackup ==true then
-                table.insert(o.BackupGroups, capGroup)
+                table.insert(self.BackupGroups, capGroup)
             else
-                table.insert(o.PrimaryGroups, capGroup)
+                table.insert(self.PrimaryGroups, capGroup)
             end
 
-            capGroup:AddOnStateUpdatedListener(o)
+            capGroup:AddOnStateUpdatedListener(self)
         end
     end
-    logger:info("Airbase with Id '" .. airbaseId .. "' has a total of " .. Spearhead.Util.tableLength(o.groupsByName) .. "cap flights registered")
+    logger:info("Airbase with name '" .. airbaseName .. "' has a total of " .. Spearhead.Util.tableLength(self.groupsByName) .. "cap flights registered")
 
-    o.SpawnIfApplicable = function(self)
-        self.logger:debug("Check spawns for airbase " .. self.airbaseId )
+
+    Spearhead.Events.AddStageNumberChangedListener(self)
+
+   return self
+end
+
+function CapBase:onGroupStateUpdated(capGroup)
+    --[[
+        There is no update needed for INTRANSIT, ONSTATION or REARMING as the PREVIOUS state already was checked and nothing changes in the actual overal state.
+    ]]--
+    if  capGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT 
+        or capGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION 
+        or capGroup.state == Spearhead.internal.CapGroup.GroupState.REARMING
+    then
+        return
+    end
+    timer.scheduleFunction(CheckReschedulingAsync, self, timer.getTime() + 1)
+end
+
+function CapBase:SpawnIfApplicable()
+        self.logger:debug("Check spawns for airbase " .. self.airbaseName )
         for groupName, capGroup in pairs(self.groupsByName) do
             
-            local activeStage = tostring(self.activeStage)
-            local targetStage = capGroup:GetTargetZone(activeStage)
+            local targetStage = capGroup:GetTargetZone(self.activeStage)
 
             if targetStage ~= nil and capGroup.state == Spearhead.internal.CapGroup.GroupState.UNSPAWNED then
                 capGroup:SpawnOnTheRamp()
@@ -71,9 +90,9 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
         end
     end
 
-    o.CheckAndScheduleCAP = function (self)
+function CapBase:CheckAndScheduleCAP()
 
-        self.logger:debug("Check taskings for airbase " .. self.airbaseId )
+        self.logger:debug("Check taskings for airbase " .. self.airbaseName )
         
         local countPerStage = {}
         local requiredPerStage = {}
@@ -156,29 +175,25 @@ function CapBase:new(airbaseId, database, logger, capConfig, stageConfig)
         end
     end
 
-    o.OnStageNumberChanged = function (self, number)
-        self.activeStage = number
-        self:SpawnIfApplicable()
-        timer.scheduleFunction(CheckReschedulingAsync, self, timer.getTime() + 5)
-    end
-
-    ---Check if any CAP is active when a certain stage is active
-    ---@param self table
-    ---@param stageNumber number
-    ---@return boolean
-    o.IsBaseActiveWhenStageIsActive = function (self, stageNumber)
-        for _, group in pairs(self.PrimaryGroups) do
-            local target = group:GetTargetZone(stageNumber)
-            if target ~= nil then
-                return true
-            end
-        end
-        return false
-    end
-
-    Spearhead.Events.AddStageNumberChangedListener(o)
-    return o
+function CapBase:OnStageNumberChanged(number)
+    self.activeStage = number
+    self:SpawnIfApplicable()
+    timer.scheduleFunction(CheckReschedulingAsync, self, timer.getTime() + 5)
 end
+
+
+---@param stageNumber number
+---@return boolean
+function CapBase:IsBaseActiveWhenStageIsActive(stageNumber)
+    for _, group in pairs(self.PrimaryGroups) do
+        local target = group:GetTargetZone(stageNumber)
+        if target ~= nil then
+            return true
+        end
+    end
+    return false
+end
+
 
 if not Spearhead.internal then Spearhead.internal = {} end
 Spearhead.internal.CapAirbase = CapBase

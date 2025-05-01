@@ -4,6 +4,9 @@
 ---@field private _startTime number
 local WaitingStage = {}
 
+WaitingStage.__index = WaitingStage
+local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
+setmetatable(WaitingStage, Stage)
 
 ---@class WaitingStageInitData : StageInitData
 ---@field waitingSeconds integer
@@ -17,14 +20,8 @@ local WaitingStageInitData = {}
 ---@return WaitingStage
 function WaitingStage.New(database, stageConfig, logger, initData)
 
-    -- "Import"
-    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
-    setmetatable(WaitingStage, Stage)
-    WaitingStage.__index = WaitingStage
-    setmetatable(WaitingStage, {__index = Stage}) 
-    
-    local self = Stage.New(database, stageConfig, logger, initData, "primary") --[[@as WaitingStage]]
-    setmetatable(self, WaitingStage)
+    local self = setmetatable({}, { __index = WaitingStage }) --[[@as WaitingStage]]
+    self:superNew(database, stageConfig, logger, initData)
 
     self._waitTimeSeconds = 5
     if initData.waitingSeconds and initData.waitingSeconds > 5 then self._waitTimeSeconds  = initData.waitingSeconds end

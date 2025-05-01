@@ -12,9 +12,9 @@ local startTime = timer.getTime() * 1000
 
 Spearhead.Events.Init("DEBUG")
 
-local dbLogger = Spearhead.LoggerTemplate:new("database", "INFO")
-local standardLogger = Spearhead.LoggerTemplate:new("", "INFO")
-local databaseManager = Spearhead.DB.New(dbLogger, debug)
+local dbLogger = Spearhead.LoggerTemplate.new("database", "INFO")
+local standardLogger = Spearhead.LoggerTemplate.new("", "INFO")
+local databaseManager = Spearhead.DB.New(dbLogger)
 
 local capConfig = Spearhead.internal.configuration.CapConfig:new();
 local stageConfig = Spearhead.internal.configuration.StageConfig:new();
@@ -22,7 +22,7 @@ local stageConfig = Spearhead.internal.configuration.StageConfig:new();
 local startingStage = stageConfig.startingStage or 1
 if SpearheadConfig and SpearheadConfig.Persistence and SpearheadConfig.Persistence.enabled == true then
     standardLogger:info("Persistence enabled")
-    local persistenceLogger = Spearhead.LoggerTemplate:new("Persistence", "INFO")
+    local persistenceLogger = Spearhead.LoggerTemplate.new("Persistence", "INFO")
     Spearhead.classes.persistence.Persistence.Init(persistenceLogger)
 
     local persistanceStage = Spearhead.classes.persistence.Persistence.GetActiveStage()

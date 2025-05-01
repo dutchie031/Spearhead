@@ -2,6 +2,10 @@
 ---@class PrimaryStage : Stage
 local PrimaryStage = {}
 
+PrimaryStage.__index = PrimaryStage
+local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
+setmetatable(PrimaryStage, Stage)
+
 ---comment
 ---@param database Database
 ---@param stageConfig StageConfig
@@ -10,14 +14,10 @@ local PrimaryStage = {}
 ---@return PrimaryStage
 function PrimaryStage.New(database, stageConfig, logger, initData)
 
-    -- "Import"
-    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
-    setmetatable(PrimaryStage, Stage)
-    PrimaryStage.__index = PrimaryStage
-    setmetatable(PrimaryStage, {__index = Stage}) 
+    local self = setmetatable({}, { __index = PrimaryStage }) --[[@as PrimaryStage]]
+    self:superNew(database, stageConfig, logger, initData)
+    return self
     
-    local o = Stage.New(database, stageConfig, logger, initData, "primary") --[[@as PrimaryStage]]
-    return o 
 end
 
 if not Spearhead.classes then Spearhead.classes = {} end

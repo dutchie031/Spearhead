@@ -43,22 +43,15 @@
 --- @field protected OnPostBlueActivated fun(self:Stage)?
 local Stage = {}
 
+Stage.__index = Stage
+
 local stageDrawingId = 100
 
----comment
----@param database Database
----@param stageConfig StageConfig
----@param logger any
----@param initData StageInitData
----@param missionPriority MissionPriority
----@return Stage
-function Stage.New(database, stageConfig, logger, initData, missionPriority)
+function Stage:superNew(database, stageConfig, logger, initData, missionPriority)
+
+    logger:debug("[BaseStage] Initiating stage with name: " .. initData.stageZoneName)
 
     local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
-
-    Stage.__index = Stage
-    local o = {}
-    local self = setmetatable(o, Stage)
 
     self.zoneName = initData.stageZoneName
     self.stageNumber = initData.stageNumber
@@ -148,10 +141,10 @@ function Stage.New(database, stageConfig, logger, initData, missionPriority)
             mission:AddMissionCompleteListener(self)
         end
 
-        local airbaseIds = database:getAirbaseIdsInStage(self.zoneName)
-        if airbaseIds ~= nil and type(airbaseIds) == "table" then
-            for _, airbaseId in pairs(airbaseIds) do
-                local airbase = Spearhead.classes.stageClasses.SpecialZones.StageBase.New(database, logger, airbaseId)
+        local airbaseNames = database:getAirbaseNamesInStage(self.zoneName)
+        if airbaseNames ~= nil and type(airbaseNames) == "table" then
+            for _, airbaseName in pairs(airbaseNames) do
+                local airbase = Spearhead.classes.stageClasses.SpecialZones.StageBase.New(database, logger, airbaseName)
                 table.insert(self._db.airbases, airbase)
             end
         end

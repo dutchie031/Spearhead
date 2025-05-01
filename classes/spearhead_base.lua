@@ -800,14 +800,15 @@ do     -- INIT DCS_UTIL
     end
 
     ---Get the starting coalition of a farp or airbase
+    ---@param airbase Airbase  
     ---@return number? coalition
-    function DCS_UTIL.getStartingCoalition(baseId)
-        if baseId == nil then
+    function DCS_UTIL.getStartingCoalition(airbase)
+        if airbase == nil then
             return nil
         end
 
         --STRING based dictionary otherwise it'll be a string/collapsed array
-        baseId = tostring(baseId) or "nil"
+        local baseId = tostring(airbase:getID())
 
         local result = DCS_UTIL.__airportsStartingCoalition[baseId]
         if result == nil then
@@ -920,86 +921,74 @@ do     -- INIT DCS_UTIL
 end
 Spearhead.DcsUtil = DCS_UTIL
 
+--- @class Logger
+--- @field LoggerName string the name of the logger
+--- @field LogLevel string the log level of the logger
 local LOGGER = {}
 do
-    
-
     local PreFix = "Spearhead"
-
-    --- @class Logger
-    --- @field debug fun(self:Logger, text:string)
-    --- @field info fun(self:Logger, text:string)
-    --- @field warn fun(self:Logger, text:string)
-    --- @field error fun(self:Logger, text:string)
 
     ---comment
     ---@param logger_name any
     ---@param logLevel LogLevel
     ---@return Logger
-    function LOGGER:new(logger_name, logLevel)
-        local o = {}
-        setmetatable(o, { __index = self })
-        o.LoggerName = logger_name or "(loggername not set)"
-        o.LogLevel = logLevel or "INFO"
+    function LOGGER.new(logger_name, logLevel)
+        LOGGER.__index = LOGGER
+        local self = setmetatable({}, LOGGER)
+        self.LoggerName = logger_name or "(loggername not set)"
+        self.LogLevel = logLevel or "INFO"
 
-        ---comment
-        ---@param self table self logger
-        ---@param message any the message
-        o.info = function(self, message)
-            if message == nil then
-                return
-            end
-            message = UTIL.toString(message)
+        return self
+    end
 
-            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" then
-                env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
+    ---@param message any the message
+    function LOGGER:info(message)
+        if message == nil then
+            return
+        end
+        message = UTIL.toString(message)
+
+        if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" then
+            env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
+        end
+    end
+
+    ---comment
+    ---@param message string
+    function LOGGER:warn(message)
+        if message == nil then
+            return
+        end
+        message = UTIL.toString(message)
+
+        if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" or self.LogLevel == "WARN" then
+            env.warning("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
+        end
+    end
+
+    ---@param message any -- the message
+    function LOGGER:error(message)
+        if message == nil then
+            return
         end
 
-        ---comment
-        ---@param message string
-        o.warn = function(self, message)
-            if message == nil then
-                return
-            end
-            message = UTIL.toString(message)
+        message = UTIL.toString(message)
 
-            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" or self.LogLevel == "WARN" then
-                env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
+        if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" or self.LogLevel == "WARN" or self.LogLevel == "ERROR" then
+            env.error("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
+        end
+    end
+
+    ---@param message any the message
+    function LOGGER:debug(message)
+        if message == nil then
+            return
         end
 
-        ---comment
-        ---@param self table -- logger
-        ---@param message any -- the message
-        o.error = function(self, message)
-            if message == nil then
-                return
-            end
-
-            message = UTIL.toString(message)
-
-            if self.LogLevel == "INFO" or self.LogLevel == "DEBUG" or self.LogLevel == "WARN" or self.logLevel == "ERROR" then
-                env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "] " .. message)
-            end
+        message = UTIL.toString(message)
+        if self.LogLevel == "DEBUG" then
+            env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "][DEBUG] " .. message)
         end
-
-        ---write debug
-        ---@param self table
-        ---@param message any the message
-        o.debug = function(self, message)
-            if message == nil then
-                return
-            end
-
-            message = UTIL.toString(message)
-            if self.LogLevel == "DEBUG" then
-                env.info("[" .. PreFix .. "]" .. "[" .. self.LoggerName .. "][DEBUG] " .. message)
-            end
-        end
-
-
-        return o
     end
 end
 Spearhead.LoggerTemplate = LOGGER
@@ -1015,7 +1004,7 @@ Spearhead.LoadingDone = function()
         return
     end
 
-    local warningLogger = Spearhead.LoggerTemplate:new("MISSIONPARSER", "INFO")
+    local warningLogger = Spearhead.LoggerTemplate.new("MISSIONPARSER", "INFO")
     if Spearhead.Util.tableLength(Spearhead.MissionEditingWarnings) > 0 then
         for key, message in pairs(Spearhead.MissionEditingWarnings) do
             warningLogger:warn(message)

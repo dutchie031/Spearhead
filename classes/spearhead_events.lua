@@ -7,7 +7,7 @@ do
 
     ---@param logLevel LogLevel
     SpearheadEvents.Init = function(logLevel)
-        logger = Spearhead.LoggerTemplate:new("Events", logLevel)
+        logger = Spearhead.LoggerTemplate.new("Events", logLevel)
     end
 
 
@@ -68,7 +68,7 @@ do
                     logError(err)
                 end
             end
-
+            Spearhead.LoggerTemplate.new("Events", "INFO"):info("Published stage number changed to: " .. tostring(newStageNumber))
             Spearhead.StageNumber = newStageNumber
         end
     end
