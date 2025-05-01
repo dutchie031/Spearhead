@@ -43,6 +43,7 @@ jobs:
         default_bump: ${{ inputs.change_size }}
         custom_release_rules: ""
         dry_run: true
+        append_to_pre_release_tag: "rc"
 
     - name: Generate Release Notes
       id: generate_release_notes
