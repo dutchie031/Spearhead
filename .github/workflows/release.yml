@@ -73,13 +73,6 @@ jobs:
           exit 1
         fi
 
-    - name: Apply Tag to Current Commit
-      run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git tag ${{ steps.calculate_tag.outputs.new_tag }}
-        git push origin ${{ steps.calculate_tag.outputs.new_tag }}
-
     - name: Generate Release Notes
       id: generate_release_notes
       run: |
@@ -91,6 +84,13 @@ jobs:
         awk -i inplace '!seen[$0]++' release_notes.txt
         cat release_notes.txt
       shell: bash
+
+    - name: Apply Tag to Current Commit
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git tag ${{ steps.calculate_tag.outputs.new_tag }}
+        git push origin ${{ steps.calculate_tag.outputs.new_tag }}
 
     - name: Create GitHub Release
       uses: actions/create-release@v1
