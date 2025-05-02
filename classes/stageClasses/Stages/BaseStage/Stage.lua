@@ -47,6 +47,13 @@ Stage.__index = Stage
 
 local stageDrawingId = 100
 
+---comment
+---@param database Database
+---@param stageConfig StageConfig
+---@param logger Logger
+---@param initData StageInitData
+---@param missionPriority MissionPriority
+---@return Stage
 function Stage:superNew(database, stageConfig, logger, initData, missionPriority)
 
     logger:debug("[BaseStage] Initiating stage with name: " .. initData.stageZoneName)
@@ -116,7 +123,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         local randomMissionNames = database:getRandomMissionsForStage(self.zoneName)
         local randomMissionByName = {}
         for _, missionZoneName in pairs(randomMissionNames) do
-            local mission = Spearhead.classes.stageClasses.Missions.Mission.New(missionZoneName, "primary", database, logger)
+            local mission = Spearhead.classes.stageClasses.Missions.Mission.New(missionZoneName, self._missionPriority, database, logger)
             if mission then
                 if randomMissionByName[mission.name] == nil then
                     randomMissionByName[mission.name] = {}

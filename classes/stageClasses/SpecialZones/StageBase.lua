@@ -31,7 +31,11 @@ function StageBase.New(databaseManager, logger, airbaseName)
     self._initialSide = Spearhead.DcsUtil.getStartingCoalition(self._airbase)
 
     do --init
+    
+        ---@type table<string, Vec3>
         local redUnitsPos = {}
+
+        ---@type table<string, Vec3>
         local blueUnitsPos = {}
 
         do -- fill tables
@@ -72,7 +76,7 @@ function StageBase.New(databaseManager, logger, airbaseName)
 
             for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
                 for redUnitName, redUnitPos in pairs(redUnitsPos) do
-                    local distance = Spearhead.Util.VectorDistance(blueUnitPos, redUnitPos)
+                    local distance = Spearhead.Util.VectorDistance3d(blueUnitPos, redUnitPos)
                     env.info("distance: " .. tostring(distance))
                     if distance <= cleanup_distance then
                         self._cleanup_units[redUnitName] = true

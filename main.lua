@@ -1,20 +1,22 @@
 
 --Single player purpose
 
-
+local defaultLogLevel = "INFO"
 local debug = false
 local id = net.get_my_player_id()
 if id == 0 then
     debug = true
+    defaultLogLevel = "DEBUG"
 end
 
 local startTime = timer.getTime() * 1000
 
-Spearhead.Events.Init("DEBUG")
+Spearhead.Events.Init(defaultLogLevel)
 
-local dbLogger = Spearhead.LoggerTemplate.new("database", "INFO")
-local standardLogger = Spearhead.LoggerTemplate.new("", "INFO")
+local dbLogger = Spearhead.LoggerTemplate.new("database", defaultLogLevel)
+local standardLogger = Spearhead.LoggerTemplate.new("", defaultLogLevel)
 local databaseManager = Spearhead.DB.New(dbLogger)
+Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(defaultLogLevel) -- initiate
 
 local capConfig = Spearhead.internal.configuration.CapConfig:new();
 local stageConfig = Spearhead.internal.configuration.StageConfig:new();
@@ -22,7 +24,7 @@ local stageConfig = Spearhead.internal.configuration.StageConfig:new();
 local startingStage = stageConfig.startingStage or 1
 if SpearheadConfig and SpearheadConfig.Persistence and SpearheadConfig.Persistence.enabled == true then
     standardLogger:info("Persistence enabled")
-    local persistenceLogger = Spearhead.LoggerTemplate.new("Persistence", "INFO")
+    local persistenceLogger = Spearhead.LoggerTemplate.new("Persistence", defaultLogLevel)
     Spearhead.classes.persistence.Persistence.Init(persistenceLogger)
 
     local persistanceStage = Spearhead.classes.persistence.Persistence.GetActiveStage()
