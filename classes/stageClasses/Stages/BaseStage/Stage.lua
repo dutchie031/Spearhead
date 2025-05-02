@@ -121,6 +121,8 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         end
 
         local randomMissionNames = database:getRandomMissionsForStage(self.zoneName)
+
+        ---@type table<string, Array<Mission>>
         local randomMissionByName = {}
         for _, missionZoneName in pairs(randomMissionNames) do
             local mission = Spearhead.classes.stageClasses.Missions.Mission.New(missionZoneName, self._missionPriority, database, logger)
@@ -132,14 +134,32 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
             end
         end
 
-        for _, missions in pairs(randomMissionByName) do
-            local mission = Spearhead.Util.randomFromList(missions)
-            if mission then
-                self._db.missionsByCode[mission.code] = mission
-                if mission.missionType == "SAM" then
-                    table.insert(self._db.sams, mission)
-                else
-                    table.insert(self._db.missions, mission)
+        for missionName, missions in pairs(randomMissionByName) do
+
+            local missionZonePicked = Spearhead.classes.persistence.Persistence.GetPickedRandomMission(missionName)
+            if missionZonePicked == nil then
+                local mission = Spearhead.Util.randomFromList(missions) --[[@as Mission]]
+                if mission then
+                    Spearhead.classes.persistence.Persistence.RegisterPickedRandomMission(mission.name, mission.zoneName)
+
+                    self._db.missionsByCode[mission.code] = mission
+                    if mission.missionType == "SAM" then
+                        table.insert(self._db.sams, mission)
+                    else
+                        table.insert(self._db.missions, mission)
+                    end
+                end
+            else 
+                self._logger:info("Using persisted random mission with name: " .. missionName .. " and zone: " .. missionZonePicked)
+                for _, mission in pairs(missions) do
+                    if string.lower(mission.zoneName) == string.lower(missionZonePicked) then
+                        self._db.missionsByCode[mission.code] = mission
+                        if mission.missionType == "SAM" then
+                            table.insert(self._db.sams, mission)
+                        else
+                            table.insert(self._db.missions, mission)
+                        end
+                    end
                 end
             end
         end

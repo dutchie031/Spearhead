@@ -35,7 +35,8 @@ do -- INIT UTIL
     end
 
     ---Gets a random from the list
-    ---@param list table
+    ---@param list Array
+    ---@return any @random element from the list
     function UTIL.randomFromList(list)
         local max = #list
 

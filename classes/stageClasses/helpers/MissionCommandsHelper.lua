@@ -149,6 +149,7 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
 end
 
 ---@private
+---@param groupID number
 function MissionCommandsHelper:AddPinnedMission(groupID)
 
     local pinndedMission = self.pinnedByGroup[tostring(groupID)]

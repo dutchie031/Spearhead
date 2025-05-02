@@ -77,7 +77,6 @@ function StageBase.New(databaseManager, logger, airbaseName)
             for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
                 for redUnitName, redUnitPos in pairs(redUnitsPos) do
                     local distance = Spearhead.Util.VectorDistance3d(blueUnitPos, redUnitPos)
-                    env.info("distance: " .. tostring(distance))
                     if distance <= cleanup_distance then
                         self._cleanup_units[redUnitName] = true
                     end
