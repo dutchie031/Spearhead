@@ -121,12 +121,28 @@ do -- INIT UTIL
     end
 
     ---comment
-    ---@param a table DCS Point vector {x, z , y} 
-    ---@param b table DCS Point vector {x, z , y} 
+    ---@param a Vec2 DCS Point vector {x, z , y} 
+    ---@param b Vec2 DCS Point vector {x, z , y} 
     ---@return number
-    function UTIL.VectorDistance(a, b)
-        return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
+    function UTIL.VectorDistance2d(a, b)
+        return math.sqrt((b.x - a.x) ^ 2 + (b.y - a.y) ^ 2)
     end
+
+    ---comment
+    ---@param a Vec3
+    ---@param b Vec3
+    ---@return number
+    function UTIL.VectorDistance3d(a, b)
+        return UTIL.vectorMagnitude({ x = a.x - b.x, y = a.y - b.y, z = a.z - b.z })
+    end
+
+    ---comment
+    ---@param vec Vec3
+    ---@return number
+    function UTIL.vectorMagnitude(vec)
+        return (vec.x ^ 2 + vec.y ^ 2 + vec.z ^ 2) ^ 0.5
+    end
+
 
     ---comment
     ---@param polygon table of pairs { x, z }
@@ -770,7 +786,7 @@ do     -- INIT DCS_UTIL
     end
 
     ---comment Get all units that are players
-    ---@return table units
+    ---@return Array<Unit> units
     function DCS_UTIL.getAllPlayerUnits()
         local units = {}
         for i = 0,2 do
@@ -915,6 +931,23 @@ do     -- INIT DCS_UTIL
         end
         
         return false
+    end
+
+    ---comment
+    ---@param groupId number
+    ---@return Group? 
+    function DCS_UTIL.GetPlayerGroupByGroupID(groupId)
+        for i = 0,2 do
+            local players = coalition.getPlayers(i)
+            for key, unit in pairs(players) do
+                if unit and unit:isExist() == true then
+                    local group = unit:getGroup()
+                    if group and group:getID() == groupId then
+                        return group
+                    end
+                end
+            end
+        end
     end
 
     DCS_UTIL.__INIT();

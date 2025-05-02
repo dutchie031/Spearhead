@@ -5,6 +5,7 @@
 ---@field StageZones table<string, StageZoneData> table<StageZoneName, StageZoneData>
 ---@field MissionZones Array<string> All Mission Zone Names
 ---@field RandomMissionZones Array<string> All Random mission names
+---@field MissionZonesLocations table<string, Vec2> All Mission Zone Locations
 ---@field StageZonesByNumber table<string, Array<string>> Stage zones grouped by index number
 ---@field AllFarpZones Array<string>
 ---@field FarpIdsInFarpZones table<string, Array<integer>> farp pad Id's in farp zones.
@@ -74,6 +75,7 @@ function Database.New(Logger)
         DescriptionsByMission = {},
         FarpIdsInFarpZones = {},
         MissionZones = {},
+        MissionZonesLocations = {},
         StageZoneNames = {},
         RandomMissionZones = {},
         StageZones = {},
@@ -97,6 +99,10 @@ function Database.New(Logger)
     do -- INIT ZONE TABLES
         for zone_ind, zone_data in pairs(Spearhead.DcsUtil.__trigger_zones) do
             local zone_name = zone_data.name
+            
+            ---@type Vec2
+            local zoneLocation = { x = zone_data.x, y = zone_data.z }
+
             local split_string = Spearhead.Util.split_string(zone_name, "_")
             table.insert(self._tables.AllZoneNames, zone_name)
 
@@ -130,10 +136,12 @@ function Database.New(Logger)
 
             if string.lower(split_string[1]) == "mission" then
                 table.insert(self._tables.MissionZones, zone_name)
+                self._tables.MissionZonesLocations[zone_name] = zoneLocation
             end
 
             if string.lower(split_string[1]) == "randommission" then
                 table.insert(self._tables.RandomMissionZones, zone_name)
+                self._tables.MissionZonesLocations[zone_name] = zoneLocation
             end
 
             if string.lower(split_string[1]) == "farp" then
@@ -241,15 +249,13 @@ function Database.New(Logger)
 
             for _, missionZone in pairs(self._tables.MissionZones) do
                 if self._tables.DescriptionsByMission[missionZone] == nil then
-                    Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
-                    missionZone .. " does not have a briefing")
+                    Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
                 end
             end
 
             for _, missionZone in pairs(self._tables.RandomMissionZones) do
                 if self._tables.DescriptionsByMission[missionZone] == nil then
-                    Spearhead.AddMissionEditorWarning("Mission with zonename: " ..
-                    missionZone .. " does not have a briefing")
+                    Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
                 end
             end
 
@@ -539,6 +545,13 @@ end
 
 function Database:GetDescriptionForMission(missionZoneName)
     return self._tables.DescriptionsByMission[missionZoneName]
+end
+
+---comment
+---@param missionZoneName any
+---@return Vec2?
+function Database:GetLocationForMissionZone(missionZoneName)
+    return self._tables.MissionZonesLocations[missionZoneName]
 end
 
 function Database:getCapRouteInZone(stageNumber, baseId)

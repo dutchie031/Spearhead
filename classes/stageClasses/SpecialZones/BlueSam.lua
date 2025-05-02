@@ -22,7 +22,10 @@ function BlueSam.New(database, logger, zoneName)
     do
         local groups = database:getBlueSamGroupsInZone(zoneName)
 
+        ---@type table<string, Vec3>
         local blueUnitsPos = {}
+
+        ---@type table<string, Vec3>
         local redUnitsPos = {}
 
         for _, groupName in pairs(groups) do
@@ -53,7 +56,7 @@ function BlueSam.New(database, logger, zoneName)
             local cleanup_distance = 5
             for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
                 for redUnitName, redUnitPos in pairs(redUnitsPos) do
-                    local distance = Spearhead.Util.VectorDistance(blueUnitPos, redUnitPos)
+                    local distance = Spearhead.Util.VectorDistance3d(blueUnitPos, redUnitPos)
                     env.info("distance: " .. tostring(distance))
                     if distance <= cleanup_distance then
                         self._cleanupUnits[redUnitName] = true

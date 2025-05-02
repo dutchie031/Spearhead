@@ -4,6 +4,7 @@
 do -- mission aliases
 
     --- @alias MissionPriority
+    --- | "none"
     --- | "primary"
     --- | "secondary"
 

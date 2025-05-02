@@ -15,7 +15,7 @@ setmetatable(PrimaryStage, Stage)
 function PrimaryStage.New(database, stageConfig, logger, initData)
 
     local self = setmetatable({}, { __index = PrimaryStage }) --[[@as PrimaryStage]]
-    self:superNew(database, stageConfig, logger, initData)
+    self:superNew(database, stageConfig, logger, initData, "primary")
     return self
     
 end

@@ -3,8 +3,10 @@
 ---@class Mission : OnUnitLostListener
 ---@field name string 
 ---@field missionType missionType 
+---@field displayMissionType string
 ---@field code string
 ---@field priority MissionPriority
+---@field location Vec2?
 ---@field private _state MissionState
 ---@field private _zoneName string
 ---@field private _database Database
@@ -12,9 +14,8 @@
 ---@field private _missionBriefing string?
 ---@field private _missionGroups MissionGroups
 ---@field private _completeListeners Array<MissionCompleteListener> 
+---@field private _missionCommandsHelper MissionCommandsHelper
 local Mission = {}
-
-
 
 --- @class MissionCompleteListener 
 --- @field OnMissionComplete fun(self: any, mission:Mission)
@@ -78,12 +79,16 @@ function Mission.New(zoneName, priority,  database, logger)
     self._zoneName = zoneName
     self.name = parsed.missionName
     self.missionType = parsed.type
+    self.displayMissionType = self.missionType or "unknown"
+    if self.missionType == "SAM" then self.displayMissionType = "DEAD" end
+    self.location = database:GetLocationForMissionZone(zoneName)
     self.code = tostring(database:GetNewMissionCode())
     self.priority = priority
     self._state = "NEW"
 
     self._logger = logger
     self._database = database
+    self._missionCommandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(logger.LogLevel)
     self._completeListeners = {}
 
     self._missionBriefing = database:getMissionBriefingForMissionZone(zoneName)
@@ -154,7 +159,7 @@ function Mission:SpawnActive()
         group:Spawn()
     end
 
-    Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.AddMissionToCommands(self)
+    self._missionCommandsHelper:AddMissionToCommands(self)
 
     self:StartCheckingContinuous()
 end
@@ -345,7 +350,8 @@ end
 
 ---private usage advised
 function Mission:NotifyMissionComplete()
-    Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.RemoveMissionToCommands(self)
+
+    self._missionCommandsHelper:RemoveMissionToCommands(self)
     self._logger:info("Mission Completed: " .. self._zoneName)
     trigger.action.outText("Mission " .. self.name .. " [" .. self.code .. "] was completed succesfully" , 20)
 

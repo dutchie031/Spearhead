@@ -21,7 +21,7 @@ local WaitingStageInitData = {}
 function WaitingStage.New(database, stageConfig, logger, initData)
 
     local self = setmetatable({}, { __index = WaitingStage }) --[[@as WaitingStage]]
-    self:superNew(database, stageConfig, logger, initData)
+    self:superNew(database, stageConfig, logger, initData, "none")
 
     self._waitTimeSeconds = 5
     if initData.waitingSeconds and initData.waitingSeconds > 5 then self._waitTimeSeconds  = initData.waitingSeconds end

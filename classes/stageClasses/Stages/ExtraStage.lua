@@ -15,7 +15,7 @@ setmetatable(ExtraStage, Stage)
 function ExtraStage.New(database, stageConfig, logger, initData)
 
     local self = setmetatable({}, { __index = ExtraStage }) --[[@as ExtraStage]]
-    self:superNew(database, stageConfig, logger, initData)
+    self:superNew(database, stageConfig, logger, initData, "secondary")
 
     self.OnPostBlueActivated = function (selfStage)
         selfStage:MarkStage("GRAY")
