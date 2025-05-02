@@ -140,7 +140,7 @@ function Database.New(Logger)
             end
 
             if string.lower(split_string[1]) == "randommission" then
-                table.insert(self._tables.MissionZonesLocations, zone_name)
+                table.insert(self._tables.RandomMissionZones, zone_name)
                 self._tables.MissionZonesLocations[zone_name] = zoneLocation
             end
 
