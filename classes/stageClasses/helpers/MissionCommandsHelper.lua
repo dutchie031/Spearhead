@@ -31,8 +31,8 @@ function MissionCommandsHelper.getOrCreate(logLevel)
         ---@param time number
         ---@return number
         self.updateContinuous = function(selfA, time)
-            if selfA.updateNeeded == false and timer.getTime() - selfA.lastUpdate < 10 then
-                return time + 2
+            if selfA.updateNeeded == false then
+                return time + 10
             end
 
             for _, unit in pairs(Spearhead.DcsUtil.getAllPlayerUnits()) do
@@ -46,7 +46,7 @@ function MissionCommandsHelper.getOrCreate(logLevel)
 
             selfA.lastUpdate = timer.getTime()
             selfA.updateNeeded = false
-            return time + 3
+            return time + 10
         end
 
         timer.scheduleFunction(self.updateContinuous, self, timer.getTime() + 5)
@@ -149,6 +149,7 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
 end
 
 ---@private
+---@param groupID number
 function MissionCommandsHelper:AddPinnedMission(groupID)
 
     local pinndedMission = self.pinnedByGroup[tostring(groupID)]
@@ -215,7 +216,6 @@ function MissionCommandsHelper:addMissionCommands(groupId, mission)
     elseif mission.priority == "secondary" then
         path = { [1] = folderNames.secondary }
     end
-
 
     if path then
         self._logger:debug("Registering command: [" .. mission.code .. "]" .. mission.name)

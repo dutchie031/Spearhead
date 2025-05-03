@@ -7,8 +7,8 @@
 ---@field code string
 ---@field priority MissionPriority
 ---@field location Vec2?
+---@field zoneName string
 ---@field private _state MissionState
----@field private _zoneName string
 ---@field private _database Database
 ---@field private _logger Logger 
 ---@field private _missionBriefing string?
@@ -76,7 +76,7 @@ function Mission.New(zoneName, priority,  database, logger)
     local o = {}
     local self = setmetatable(o, Mission)
     
-    self._zoneName = zoneName
+    self.zoneName = zoneName
     self.name = parsed.missionName
     self.missionType = parsed.type
     self.displayMissionType = self.missionType or "unknown"
@@ -352,7 +352,7 @@ end
 function Mission:NotifyMissionComplete()
 
     self._missionCommandsHelper:RemoveMissionToCommands(self)
-    self._logger:info("Mission Completed: " .. self._zoneName)
+    self._logger:info("Mission Completed: " .. self.zoneName)
     trigger.action.outText("Mission " .. self.name .. " [" .. self.code .. "] was completed succesfully" , 20)
 
     for _, listener in pairs(self._completeListeners) do

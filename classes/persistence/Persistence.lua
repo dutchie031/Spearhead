@@ -3,6 +3,7 @@ local Persistence = {}
 do
     ---@class PersistentData
     ---@field dead_units table<string, DeathState>
+    ---@field random_missions table<string, MissionState>
     ---@field activeStage integer|nil
 
     ---@class DeathState 
@@ -19,6 +20,7 @@ do
     ---@type PersistentData
     local tables = {
         dead_units = {},
+        random_missions = {},
         activeStage = nil
     }
 
@@ -58,7 +60,9 @@ do
         end
 
         local json = f:read("*a")
-        local lua = net.json2lua(json)
+        f:close()
+
+        local lua = net.json2lua(json) --[[@as PersistentData]]
 
         if lua.activeStage then
             logger:info("Found active stage from save: " .. lua.activeStage)
@@ -82,7 +86,7 @@ do
             end
         end
 
-        f:close()
+        
     end
 
     local writeToFile = function()
@@ -133,11 +137,13 @@ do
         logger:info("Initiating Persistence Manager")
 
         if lfs == nil or io == nil then
-            env.error("[Spearhead][Persistence] lfs and io seem to be sanitized. Persistence is skipped and disabled")
+            logger:error("lfs and io seem to be sanitized. Persistence is skipped and disabled")
             return
         end
 
         path = (SpearheadConfig.Persistence.directory or (lfs.writedir() .. "\\Data" )) .. "\\" .. (SpearheadConfig.Persistence.fileName or "Spearhead_Persistence.json")
+
+        logger:info("Persistence file path: " .. path)
 
         createFileIfNotExists()
         loadTablesFromFile()
@@ -150,6 +156,25 @@ do
     Persistence.SetActiveStage = function(stageNumber)
         tables.activeStage = stageNumber
         updateRequired = true
+    end
+
+    ---comment
+    ---@param missionName string
+    ---@param pickedZone string
+    Persistence.RegisterPickedRandomMission = function(missionName, pickedZone)
+        if enabled == false then return end
+
+        if tables.random_missions == nil then tables.random_missions = {} end
+        tables.random_missions[string.lower(missionName)] = pickedZone
+        updateRequired = true
+    end
+
+    ---Get the picked random mission from the persistence file
+    ---@param missionName string
+    ---@return string?
+    Persistence.GetPickedRandomMission = function(missionName)
+        if enabled == false then return nil end
+        return tables.random_missions[string.lower(missionName)]
     end
 
     ---Get the active stage as in the persistance file
