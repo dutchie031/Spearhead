@@ -195,5 +195,7 @@ function CapBase:IsBaseActiveWhenStageIsActive(stageNumber)
 end
 
 
-if not Spearhead.internal then Spearhead.internal = {} end
-Spearhead.internal.CapAirbase = CapBase
+if not Spearhead then Spearhead = {} end
+if not Spearhead.classes then Spearhead.classes = {} end
+if not Spearhead.classes.capClasses then Spearhead.classes.capClasses = {} end
+Spearhead.classes.capClasses.CapAirbase = CapBase

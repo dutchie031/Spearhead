@@ -3,31 +3,12 @@
 
 do -- mission aliases
 
-    --- @alias MissionPriority
-    --- | "none"
-    --- | "primary"
-    --- | "secondary"
-
-    --- @alias missionType
-    --- | "nil"
-    --- | "STRIKE"
-    --- | "BAI"
-    --- | "DEAD"
-    --- | "SAM"
-
-    --- @alias MissionState
-    --- | "NEW"
-    --- | "ACTIVE"
-    --- | "COMPLETED"
-
     --- @alias LogLevel
     --- | "DEBUG"
     --- | "INFO"
     --- | "WARN"
     --- | "ERROR"
     --- | "NONE"
-
-
 
     ---@class Array<T>: { [integer]: T }
 

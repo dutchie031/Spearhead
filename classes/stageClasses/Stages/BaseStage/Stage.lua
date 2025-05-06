@@ -200,14 +200,14 @@ function Stage:IsComplete()
     if self._isComplete == true then return true end
 
     for i, mission in pairs(self._db.sams) do
-        local state = mission:GetState()
+        local state = mission:getState()
         if state == "ACTIVE" or state == "NEW" then
             return false
         end
     end
 
     for i, mission in pairs(self._db.missions) do
-        local state = mission:GetState()
+        local state = mission:getState()
         if state == "ACTIVE" or state == "NEW" then
             return false
         end
@@ -231,7 +231,7 @@ function Stage:CheckAndUpdateSelf()
 
     local availableMissions = {}
     for _, mission in pairs(dbTables.missionsByCode) do
-        local state = mission:GetState()
+        local state = mission:getState()
 
         if state == "ACTIVE" then
             activeCount = activeCount + 1
@@ -318,16 +318,7 @@ function Stage:MarkStage(stageColor)
 
     local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
     if zone and self._stageConfig.isDrawStagesEnabled == true then
-        self._logger:debug("drawing stage: " .. self.zoneName)
-        if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-            trigger.action.circleToAll(-1, self._stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, {0,0,0,0}, {0,0,0,0},4, true)
-        else
-            --trigger.action.circleToAll(-1, self.stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, { 1, 0,0, 1 }, {1,0,0,1},4, true)
-            trigger.action.quadToAll( -1, self._stageDrawingId,  zone.verts[1], zone.verts[2], zone.verts[3],  zone.verts[4], {0,0,0,0}, {0,0,0,0}, 4, true)
-        end
-
-        trigger.action.setMarkupColorFill(self._stageDrawingId, fillColor)
-        trigger.action.setMarkupColor(self._stageDrawingId, line)
+        self._stageDrawingId = Spearhead.DcsUtil.DrawZone(zone, line, fillColor, 4)
     end
 end
 

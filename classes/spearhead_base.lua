@@ -82,7 +82,6 @@ do -- INIT UTIL
     ---@param ignoreCase boolean?
     ---@return boolean
     UTIL.startswith = function(str, findable, ignoreCase)
-
         if ignoreCase == true then
             return string.lower(str):find('^' .. string.lower(findable)) ~= nil
         end
@@ -122,8 +121,8 @@ do -- INIT UTIL
     end
 
     ---comment
-    ---@param a Vec2 DCS Point vector {x, z , y} 
-    ---@param b Vec2 DCS Point vector {x, z , y} 
+    ---@param a Vec2
+    ---@param b Vec2
     ---@return number
     function UTIL.VectorDistance2d(a, b)
         return math.sqrt((b.x - a.x) ^ 2 + (b.y - a.y) ^ 2)
@@ -144,14 +143,13 @@ do -- INIT UTIL
         return (vec.x ^ 2 + vec.y ^ 2 + vec.z ^ 2) ^ 0.5
     end
 
-
     ---comment
-    ---@param polygon table of pairs { x, z }
+    ---@param polygon Array<Vec2> of pairs { x, y }
     ---@param x number X location
-    ---@param z number Y location
+    ---@param y number Y location
     ---@return boolean
-    function UTIL.IsPointInPolygon(polygon, x, z)
-        local function isInComplexPolygon(polygon, x, z)
+    function UTIL.IsPointInPolygon(polygon, x, y)
+        local function isInComplexPolygon(polygon, x, y)
             local function getEdges(poly)
                 local result = {}
                 for i = 1, #poly do
@@ -159,7 +157,7 @@ do -- INIT UTIL
                     local point2Index = i + 1
                     if point2Index > #poly then point2Index = 1 end
                     local point2 = poly[point2Index]
-                    local edge = { x1 = point1.x, z1 = point1.z, x2 = point2.x, z2 = point2.z }
+                    local edge = { x1 = point1.x, z1 = point1.y, x2 = point2.x, z2 = point2.y }
                     table.insert(result, edge)
                 end
                 return result
@@ -168,7 +166,7 @@ do -- INIT UTIL
             local edges = getEdges(polygon)
             local count = 0;
             for _, edge in pairs(edges) do
-                if (x < edge.x1) ~= (x < edge.x2) and z < edge.z1 + ((x - edge.x1) / (edge.x2 - edge.x1)) * (edge.z2 - edge.z1) then
+                if (x < edge.x1) ~= (x < edge.x2) and y < edge.z1 + ((x - edge.x1) / (edge.x2 - edge.x1)) * (edge.z2 - edge.z1) then
                     count = count + 1
                     -- if (yp < y1) != (yp < y2) and xp < x1 + ((yp-y1)/(y2-y1))*(x2-x1) then
                     --     count = count + 1
@@ -176,7 +174,23 @@ do -- INIT UTIL
             end
             return count % 2 == 1
         end
-        return isInComplexPolygon(polygon, x, z)
+        return isInComplexPolygon(polygon, x, y)
+    end
+
+    ---@param point Vec3
+    ---@param zone SpearheadTriggerZone
+    function UTIL.is3dPointInZone(point, zone)
+        if zone.zone_type == "Polygon" and zone.verts then
+            if UTIL.IsPointInPolygon(zone.verts, point.x, point.z) == true then
+                return true
+            end
+        else
+            if (((point.x - zone.location.x) ^ 2 + (point.z - zone.location.y) ^ 2) ^ 0.5 <= zone.radius) then
+                return true
+            end
+        end
+
+        return false
     end
 
     ---comment
@@ -187,52 +201,54 @@ do -- INIT UTIL
             return {}
         end
 
-        local function ccw(a,b,c)
+        local function ccw(a, b, c)
             return (b.z - a.z) * (c.x - a.x) > (b.x - a.x) * (c.z - a.z)
         end
 
-        table.sort(points, function(left,right)
+        table.sort(points, function(left, right)
             return left.z < right.z
         end)
 
         local hull = {}
         -- lower hull
-        for _,point in pairs(points) do
-            while #hull >= 2 and not ccw(hull[#hull-1], hull[#hull], point) do
-                table.remove(hull,#hull)
+        for _, point in pairs(points) do
+            while #hull >= 2 and not ccw(hull[#hull - 1], hull[#hull], point) do
+                table.remove(hull, #hull)
             end
-            table.insert(hull,point)
+            table.insert(hull, point)
         end
 
         -- upper hull
         local t = #hull + 1
-        for i=#points, 1, -1 do
+        for i = #points, 1, -1 do
             local point = points[i]
-            while #hull >= t and not ccw(hull[#hull-1], hull[#hull], point) do
-                table.remove(hull,#hull)
+            while #hull >= t and not ccw(hull[#hull - 1], hull[#hull], point) do
+                table.remove(hull, #hull)
             end
-            table.insert(hull,point)
+            table.insert(hull, point)
         end
-        table.remove(hull,#hull)
+        table.remove(hull, #hull)
         return hull
     end
 
     function UTIL.enlargeConvexHull(points, meters)
+        local allpoints = {}
 
-        local allpoints = {} 
-        
         for _, point in pairs(points) do
             table.insert(allpoints, point)
-            table.insert(allpoints, { x = point.x + meters, z = point.z, y= 0 })
-            table.insert(allpoints, { x = point.x - meters, z = point.z, y= 0 })
-            table.insert(allpoints, { x = point.x, z = point.z + meters, y= 0 })
-            table.insert(allpoints, { x = point.x, z = point.z - meters, y= 0 })
+            table.insert(allpoints, { x = point.x + meters, z = point.z, y = 0 })
+            table.insert(allpoints, { x = point.x - meters, z = point.z, y = 0 })
+            table.insert(allpoints, { x = point.x, z = point.z + meters, y = 0 })
+            table.insert(allpoints, { x = point.x, z = point.z - meters, y = 0 })
 
-            table.insert(allpoints, { x = point.x + math.cos(math.rad(45)) * meters, z = point.z + math.sin(math.rad(45)) * meters, y= 0 })
-            table.insert(allpoints, { x = point.x - math.cos(math.rad(45)) * meters, z = point.z - math.sin(math.rad(45)) * meters, y= 0 })
-            table.insert(allpoints, { x = point.x - math.cos(math.rad(45)) * meters, z = point.z + math.sin(math.rad(45)) * meters, y= 0 })
-            table.insert(allpoints, { x = point.x + math.cos(math.rad(45)) * meters, z = point.z - math.sin(math.rad(45)) * meters, y= 0 })
-
+            table.insert(allpoints,
+                { x = point.x + math.cos(math.rad(45)) * meters, z = point.z + math.sin(math.rad(45)) * meters, y = 0 })
+            table.insert(allpoints,
+                { x = point.x - math.cos(math.rad(45)) * meters, z = point.z - math.sin(math.rad(45)) * meters, y = 0 })
+            table.insert(allpoints,
+                { x = point.x - math.cos(math.rad(45)) * meters, z = point.z + math.sin(math.rad(45)) * meters, y = 0 })
+            table.insert(allpoints,
+                { x = point.x + math.cos(math.rad(45)) * meters, z = point.z - math.sin(math.rad(45)) * meters, y = 0 })
         end
 
         return UTIL.getConvexHull(allpoints)
@@ -262,12 +278,25 @@ do     -- INIT DCS_UTIL
 
                 zone_type,
                 x,
-                z,
+                y,
                 radius
                 verts,
 
             }
         ]] --
+
+        ---@alias SpearheadTriggerZoneType
+        ---| "Cilinder"
+        ---| "Polygon"
+
+        ---@class SpearheadTriggerZone
+        ---@field name string
+        ---@field location Vec2
+        ---@field radius number
+        ---@field verts Array<Vec2>
+        ---@field zone_type SpearheadTriggerZoneType
+
+        ---@type Array<SpearheadTriggerZone>
         DCS_UTIL.__trigger_zones = {}
     end
 
@@ -293,17 +322,8 @@ do     -- INIT DCS_UTIL
     }
 
     DCS_UTIL.__airbaseNamesById = {}
-    --[[
-        zone = {
-            name,
-            zone_type,
-            x,
-            z,
-            radius
-            verts,
 
-        }
-    ]] --
+    ---@type table<string, SpearheadTriggerZone>
     DCS_UTIL.__airbaseZonesById = {}
 
     DCS_UTIL.__airportsStartingCoalition = {}
@@ -362,21 +382,20 @@ do     -- INIT DCS_UTIL
 
             do --init trigger zones
                 for i, trigger_zone in pairs(env.mission.triggers.zones) do
-
                     -- reorder verts as they are not ordered correctly in the ME
-                    verts = {}
-                    if Spearhead.Util.tableLength(trigger_zone.verticies) >=4 then
-                        table.insert(verts, { x = trigger_zone.verticies[4].x , z = trigger_zone.verticies[4].y })
-                        table.insert(verts, { x = trigger_zone.verticies[3].x , z = trigger_zone.verticies[3].y })
-                        table.insert(verts, { x = trigger_zone.verticies[2].x , z = trigger_zone.verticies[2].y })
-                        table.insert(verts, { x = trigger_zone.verticies[1].x , z = trigger_zone.verticies[1].y })
+                    local verts = {}
+                    if Spearhead.Util.tableLength(trigger_zone.verticies) >= 4 then
+                        table.insert(verts, { x = trigger_zone.verticies[4].x, y = trigger_zone.verticies[4].y })
+                        table.insert(verts, { x = trigger_zone.verticies[3].x, y = trigger_zone.verticies[3].y })
+                        table.insert(verts, { x = trigger_zone.verticies[2].x, y = trigger_zone.verticies[2].y })
+                        table.insert(verts, { x = trigger_zone.verticies[1].x, y = trigger_zone.verticies[1].y })
                     end
-                    
+
+                    ---@type SpearheadTriggerZone
                     local zone = {
                         name = trigger_zone.name,
                         zone_type = trigger_zone.type,
-                        x = trigger_zone.x,
-                        z = trigger_zone.y,
+                        location = { x = trigger_zone.x, y = trigger_zone.y },
                         radius = trigger_zone.radius,
                         verts = verts
                     }
@@ -408,7 +427,7 @@ do     -- INIT DCS_UTIL
                 end
             end
 
-            do -- fill airbaseNames and zones 
+            do -- fill airbaseNames and zones
                 local airbases = world.getAirbases()
                 if airbases then
                     for _, airbase in pairs(airbases) do
@@ -421,22 +440,24 @@ do     -- INIT DCS_UTIL
                             local relevantPoints = {}
                             for _, x in pairs(airbase:getRunways()) do
                                 if x.position and x.position.x and x.position.z then
-                                    table.insert(relevantPoints, { x = x.position.x, z = x.position.z, y=0})
+                                    table.insert(relevantPoints, { x = x.position.x, z = x.position.z, y = 0 })
                                 end
                             end
 
                             for _, x in pairs(airbase:getParking()) do
                                 if x.vTerminalPos and x.vTerminalPos.x and x.vTerminalPos.z then
-                                    table.insert(relevantPoints, { x = x.vTerminalPos.x, z = x.vTerminalPos.z,  y=0})
+                                    table.insert(relevantPoints, { x = x.vTerminalPos.x, z = x.vTerminalPos.z, y = 0 })
                                 end
                             end
-                            
+
                             local points = UTIL.getConvexHull(relevantPoints)
                             local enlargedPoints = UTIL.enlargeConvexHull(points, 750)
 
                             DCS_UTIL.__airbaseZonesById[id] = {
                                 name = name,
-                                zone_type = DCS_UTIL.ZoneType.Polygon,
+                                location = { x = airbase:getPoint().x, y = airbase:getPoint().z },
+                                zone_type = "Polygon",
+                                radius = 0,
                                 verts = enlargedPoints
                             }
                         end
@@ -484,7 +505,7 @@ do     -- INIT DCS_UTIL
     end
 
     ---destroy the given group
-    ---@param groupName string 
+    ---@param groupName string
     function DCS_UTIL.DestroyGroup(groupName)
         if DCS_UTIL.IsGroupStatic(groupName) then
             local object = StaticObject.getByName(groupName)
@@ -514,13 +535,14 @@ do     -- INIT DCS_UTIL
         end
     end
 
-
     --- takes a list of units and returns all the units that are in any of the zones
     ---@param unit_names table unit names
     ---@param zone_names table zone names
     ---@return table unit list of objects { unit = UNIT, zone_name = zoneName}
     function DCS_UTIL.getUnitsInZones(unit_names, zone_names)
         local units = {}
+
+        ---@type Array<SpearheadTriggerZone>
         local zones = {}
 
         for k = 1, #unit_names do
@@ -544,14 +566,9 @@ do     -- INIT DCS_UTIL
             local lCat = Object.getCategory(lUnit)
             for zone_name, zone in pairs(zones) do
                 if unit_pos and ((lCat == 1 and lUnit:isActive() == true) or lCat ~= 1) then -- it is a unit and is active or it is not a unit
-                    if zone.zone_type == DCS_UTIL.ZoneType.Polygon and zone.verts then
-                        if UTIL.IsPointInPolygon(zone.verts, unit_pos.x, unit_pos.z) == true then
-                            in_zone_units[#in_zone_units + 1] = { unit = lUnit, zone_name = zone.name }
-                        end
-                    else
-                        if (((unit_pos.x - zone.x) ^ 2 + (unit_pos.z - zone.z) ^ 2) ^ 0.5 <= zone.radius) then
-                            in_zone_units[#in_zone_units + 1] = { unit = lUnit, zone_name = zone.name }
-                        end
+                    local isInZone = UTIL.is3dPointInZone(unit_pos, zone)
+                    if isInZone == true then
+                        in_zone_units[#in_zone_units + 1] = { unit = lUnit, zone_name = zone.name }
                     end
                 end
             end
@@ -583,7 +600,7 @@ do     -- INIT DCS_UTIL
 
     --- takes a x, y poistion and checks if it is inside any of the zones
     ---@param group_names table North South position
-    ---@param zone table { x, z, zonetype,  radius, verts }
+    ---@param zone SpearheadTriggerZone
     ---@return table groupnames list of groups that are in the zone
     function DCS_UTIL.areGroupsInCustomZone(group_names, zone)
         local units = {}
@@ -606,14 +623,9 @@ do     -- INIT DCS_UTIL
         local result_groups = {}
         for _, entry in pairs(units) do
             local pos = entry.unit:getPoint()
-            if zone.zone_type == DCS_UTIL.ZoneType.Polygon and zone.verts then
-                if UTIL.IsPointInPolygon(zone.verts, pos.x, pos.z) == true then
-                    table.insert(result_groups, entry.groupname)
-                end
-            else
-                if (((pos.x - zone.x) ^ 2 + (pos.z - zone.z) ^ 2) ^ 0.5 <= zone.radius) then
-                    table.insert(result_groups, entry.groupname)
-                end
+            local isInZone = UTIL.is3dPointInZone(pos, zone)
+            if isInZone == true then
+                table.insert(result_groups, entry.groupname)
             end
         end
         return result_groups
@@ -625,6 +637,7 @@ do     -- INIT DCS_UTIL
     ---@param zone_names table zone names
     ---@return table zones list of objects { zone_name = zoneName}
     function DCS_UTIL.isPositionInZones(x, z, zone_names)
+        ---@type Array<SpearheadTriggerZone>
         local zones = {}
         for index, zone_name in pairs(zone_names) do
             local zone = DCS_UTIL.__trigger_zones[zone_name]
@@ -635,14 +648,8 @@ do     -- INIT DCS_UTIL
 
         local result_zones = {}
         for zone_name, zone in pairs(zones) do
-            if zone.zone_type == DCS_UTIL.ZoneType.Polygon and zone.verts then
-                if UTIL.IsPointInPolygon(zone.verts, x, z) == true then
-                    result_zones[#result_zones + 1] = zone.name
-                end
-            else
-                if (((x - zone.x) ^ 2 + (z - zone.z) ^ 2) ^ 0.5 <= zone.radius) then
-                    result_zones[#result_zones + 1] = zone.name
-                end
+            if UTIL.is3dPointInZone({ x = x, z = z, y = 0 }, zone) == true then
+                result_zones[#result_zones + 1] = zone.name
             end
         end
         return result_zones
@@ -655,14 +662,8 @@ do     -- INIT DCS_UTIL
     ---@return boolean result
     function DCS_UTIL.isPositionInZone(x, z, zone_name)
         local zone = DCS_UTIL.__trigger_zones[zone_name]
-        if zone.zone_type == DCS_UTIL.ZoneType.Polygon and zone.verts then
-            if UTIL.IsPointInPolygon(zone.verts, x, z) == true then
-                return true
-            end
-        else
-            if (((x - zone.x) ^ 2 + (z - zone.z) ^ 2) ^ 0.5 <= zone.radius) then
-                return true
-            end
+        if UTIL.is3dPointInZone({ x = x, y = 0, z = z }, zone) then
+            return true
         end
         return false
     end
@@ -674,40 +675,12 @@ do     -- INIT DCS_UTIL
     function DCS_UTIL.isZoneInZone(zone_name, parent_zone_name)
         local zoneA = DCS_UTIL.__trigger_zones[zone_name]
         local zoneB = DCS_UTIL.__trigger_zones[parent_zone_name]
-
-        if zoneB.zone_type == DCS_UTIL.ZoneType.Polygon and zoneB.verts then
-            if UTIL.IsPointInPolygon(zoneB.verts, zoneA.x, zoneA.z) == true then
-                return true
-            end
-        else
-            if (((zoneA.x - zoneB.x) ^ 2 + (zoneA.z - zoneB.z) ^ 2) ^ 0.5 <= zoneB.radius) then
-                return true
-            end
-        end
-        return false
-    end
-
-    --- takes a x, y poistion and checks if it is inside any of the zones
-    ---@param x number North South position
-    ---@param z number West East position
-    ---@param zone table { x, z, zonetype,  radius }
-    ---@return boolean result
-    function DCS_UTIL.isPositionInCustomZone(x, z, zone)
-        if zone.zone_type == DCS_UTIL.ZoneType.Polygon and zone.verts then
-            if UTIL.IsPointInPolygon(zone.verts, x, z) == true then
-                return true
-            end
-        else
-            if (((x - zone.x) ^ 2 + (z - zone.z) ^ 2) ^ 0.5 <= zone.radius) then
-                return true
-            end
-        end
-        return false
+        return UTIL.is3dPointInZone({ x = zoneA.x, y = 0, z = zoneA.z }, zoneB)
     end
 
     ---comment
     ---@param zone_name any
-    ---@return table? zone { name,b zone_type, x, z, radius, verts }
+    ---@return SpearheadTriggerZone? zone { name,b zone_type, x, z, radius, verts }
     function DCS_UTIL.getZoneByName(zone_name)
         if zone_name == nil then return nil end
         return DCS_UTIL.__trigger_zones[zone_name]
@@ -715,14 +688,12 @@ do     -- INIT DCS_UTIL
 
     ---comment
     ---@param airbaseId any
-    ---@return table? zone { name,b zone_type, x, z, radius, verts }
+    ---@return SpearheadTriggerZone? zone { name,b zone_type, x, z, radius, verts }
     function DCS_UTIL.getAirbaseZoneById(airbaseId)
         local string = tostring(airbaseId)
         if string == nil then return nil end
         return DCS_UTIL.__airbaseZonesById[string]
     end
-
-
 
     ---maps the category name to the DCS group category
     ---@param input string the name
@@ -790,7 +761,7 @@ do     -- INIT DCS_UTIL
     ---@return Array<Unit> units
     function DCS_UTIL.getAllPlayerUnits()
         local units = {}
-        for i = 0,2 do
+        for i = 0, 2 do
             local players = coalition.getPlayers(i)
             for key, unit in pairs(players) do
                 units[#units + 1] = unit
@@ -817,7 +788,7 @@ do     -- INIT DCS_UTIL
     end
 
     ---Get the starting coalition of a farp or airbase
-    ---@param airbase Airbase  
+    ---@param airbase Airbase
     ---@return number? coalition
     function DCS_UTIL.getStartingCoalition(airbase)
         if airbase == nil then
@@ -862,6 +833,54 @@ do     -- INIT DCS_UTIL
 
         if object then
             object:destroy()
+        end
+    end
+
+    ---@class DrawColor
+    ---@field r number
+    ---@field g number
+    ---@field b number
+    ---@field a number
+
+    local drawID = 400
+    ---@param zone SpearheadTriggerZone
+    ---@param lineColor DrawColor
+    ---@param fillColor DrawColor
+    ---@param lineStyle LineType
+    ---@return number drawID
+    function DCS_UTIL.DrawZone(zone, lineColor, fillColor, lineStyle)
+        if lineStyle == nil then lineStyle = 4 end
+        drawID = drawID + 1
+        if zone.zone_type == "Cilinder" then
+            trigger.action.circleToAll(-1, drawID, { x = zone.location.x, y = 0, z = zone.location.y }, zone.radius,
+                { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, lineStyle, true)
+        else
+            local functionString = "trigger.action.markupToAll(7, -1, " .. drawID .. ","
+            for _, vecpoint in pairs(zone.verts) do
+                functionString = functionString .. " { x=" .. vecpoint.x .. ", y=0,z=" .. vecpoint.y ..
+                    "},"
+            end
+            functionString = functionString .. "{0,1,0,1}, {0,1,0,1}, 1)"
+
+            env.info(functionString)
+            ---@diagnostic disable-next-line: deprecated
+            local f, err = loadstring(functionString)
+            if f then
+                f()
+            else
+                env.error("Something failed when drawing complex drawing" .. err)
+            end
+        end
+
+        trigger.action.setMarkupColorFill(drawID, fillColor)
+        trigger.action.setMarkupColor(drawID, lineColor)
+
+        return drawID
+    end
+
+    function DCS_UTIL.RemoveZoneDraw(drawID)
+        if drawID ~= nil then
+            trigger.action.removeMark(drawID)
         end
     end
 
@@ -930,15 +949,15 @@ do     -- INIT DCS_UTIL
                 end
             end
         end
-        
+
         return false
     end
 
     ---comment
     ---@param groupId number
-    ---@return Group? 
+    ---@return Group?
     function DCS_UTIL.GetPlayerGroupByGroupID(groupId)
-        for i = 0,2 do
+        for i = 0, 2 do
             local players = coalition.getPlayers(i)
             for key, unit in pairs(players) do
                 if unit and unit:isExist() == true then

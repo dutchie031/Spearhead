@@ -101,7 +101,7 @@ function Database.New(Logger)
             local zone_name = zone_data.name
             
             ---@type Vec2
-            local zoneLocation = { x = zone_data.x, y = zone_data.z }
+            local zoneLocation = { x = zone_data.location.x, y = zone_data.location.y }
 
             local split_string = Spearhead.Util.split_string(zone_name, "_")
             table.insert(self._tables.AllZoneNames, zone_name)
@@ -311,7 +311,7 @@ function Database.New(Logger)
                     
 
                     if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                        table.insert(capData.routes, { point1 = { x = zone.x, z = zone.z }, point2 = nil })
+                        table.insert(capData.routes, { point1 = { x = zone.location.x, z = zone.location.y, y = 0 }, point2 = nil })
                     else
                         local function getDist(a, b)
                             return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
@@ -338,8 +338,8 @@ function Database.New(Logger)
                         if biggestA and biggestB then
                             table.insert(capData.routes,
                                 {
-                                    point1 = { x = biggestA.x, z = biggestA.z },
-                                    point2 = { x = biggestB.x, z = biggestB.z }
+                                    point1 = { x = biggestA.x, z = biggestA.y },
+                                    point2 = { x = biggestB.x, z = biggestB.y }
                                 })
                         end
                     end
@@ -584,7 +584,7 @@ function Database:getCapRouteInZone(stageNumber, baseId)
             if base then
                 local closest = nil
                 if stagezone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                    closest = GetClosestPointOnCircle({ x = stagezone.x, z = stagezone.z }, stagezone.radius,
+                    closest = GetClosestPointOnCircle({ x = stagezone.location.x, z = stagezone.location.y }, stagezone.radius,
                         base:getPoint())
                 else
                     local function getDist(a, b)
@@ -602,9 +602,9 @@ function Database:getCapRouteInZone(stageNumber, baseId)
                 end
 
                 if math.random(1, 2) % 2 == 0 then
-                    return { point1 = closest, point2 = { x = stagezone.x, z = stagezone.z } }
+                    return { point1 = closest, point2 = { x = stagezone.location.x, z = stagezone.location.y } }
                 else
-                    return { point1 = { x = stagezone.x, z = stagezone.z }, point2 = closest }
+                    return { point1 = { x = stagezone.location.x, z = stagezone.location.y }, point2 = closest }
                 end
             end
         end
@@ -612,7 +612,7 @@ function Database:getCapRouteInZone(stageNumber, baseId)
 end
 
 
----@return table result a  list of stage zone names
+---@return Array<string> result a  list of stage zone names
 function Database:getStagezoneNames()
     return self._tables.StageZoneNames
 end
