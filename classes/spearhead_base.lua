@@ -143,37 +143,38 @@ do -- INIT UTIL
         return (vec.x ^ 2 + vec.y ^ 2 + vec.z ^ 2) ^ 0.5
     end
 
+    local function isInComplexPolygon(polygon, x, y)
+        local function getEdges(poly)
+            local result = {}
+            for i = 1, #poly do
+                local point1 = poly[i]
+                local point2Index = i + 1
+                if point2Index > #poly then point2Index = 1 end
+                local point2 = poly[point2Index]
+                local edge = { x1 = point1.x, z1 = point1.y, x2 = point2.x, z2 = point2.y }
+                table.insert(result, edge)
+            end
+            return result
+        end
+
+        local edges = getEdges(polygon)
+        local count = 0;
+        for _, edge in pairs(edges) do
+            if (x < edge.x1) ~= (x < edge.x2) and y < edge.z1 + ((x - edge.x1) / (edge.x2 - edge.x1)) * (edge.z2 - edge.z1) then
+                count = count + 1
+                -- if (yp < y1) != (yp < y2) and xp < x1 + ((yp-y1)/(y2-y1))*(x2-x1) then
+                --     count = count + 1
+            end
+        end
+        return count % 2 == 1
+    end
+
     ---comment
     ---@param polygon Array<Vec2> of pairs { x, y }
     ---@param x number X location
     ---@param y number Y location
     ---@return boolean
     function UTIL.IsPointInPolygon(polygon, x, y)
-        local function isInComplexPolygon(polygon, x, y)
-            local function getEdges(poly)
-                local result = {}
-                for i = 1, #poly do
-                    local point1 = poly[i]
-                    local point2Index = i + 1
-                    if point2Index > #poly then point2Index = 1 end
-                    local point2 = poly[point2Index]
-                    local edge = { x1 = point1.x, z1 = point1.y, x2 = point2.x, z2 = point2.y }
-                    table.insert(result, edge)
-                end
-                return result
-            end
-
-            local edges = getEdges(polygon)
-            local count = 0;
-            for _, edge in pairs(edges) do
-                if (x < edge.x1) ~= (x < edge.x2) and y < edge.z1 + ((x - edge.x1) / (edge.x2 - edge.x1)) * (edge.z2 - edge.z1) then
-                    count = count + 1
-                    -- if (yp < y1) != (yp < y2) and xp < x1 + ((yp-y1)/(y2-y1))*(x2-x1) then
-                    --     count = count + 1
-                end
-            end
-            return count % 2 == 1
-        end
         return isInComplexPolygon(polygon, x, y)
     end
 
@@ -194,19 +195,24 @@ do -- INIT UTIL
     end
 
     ---comment
-    ---@param points table points { x, z }
-    ---@return table hullPoints { x, z }
+    ---@param points Array<Vec2> points 
+    ---@return Array<Vec2> hullPoints
     function UTIL.getConvexHull(points)
         if #points == 0 then
             return {}
         end
 
+        ---comment
+        ---@param a Vec2
+        ---@param b Vec2
+        ---@param c Vec2
+        ---@return boolean
         local function ccw(a, b, c)
-            return (b.z - a.z) * (c.x - a.x) > (b.x - a.x) * (c.z - a.z)
+            return (b.y - a.y) * (c.x - a.x) > (b.x - a.x) * (c.y - a.y)
         end
 
         table.sort(points, function(left, right)
-            return left.z < right.z
+            return left.y < right.y
         end)
 
         local hull = {}
@@ -231,24 +237,24 @@ do -- INIT UTIL
         return hull
     end
 
+    ---@param points Array<Vec2>
     function UTIL.enlargeConvexHull(points, meters)
+        ---@type Array<Vec2>
         local allpoints = {}
 
         for _, point in pairs(points) do
             table.insert(allpoints, point)
-            table.insert(allpoints, { x = point.x + meters, z = point.z, y = 0 })
-            table.insert(allpoints, { x = point.x - meters, z = point.z, y = 0 })
-            table.insert(allpoints, { x = point.x, z = point.z + meters, y = 0 })
-            table.insert(allpoints, { x = point.x, z = point.z - meters, y = 0 })
 
-            table.insert(allpoints,
-                { x = point.x + math.cos(math.rad(45)) * meters, z = point.z + math.sin(math.rad(45)) * meters, y = 0 })
-            table.insert(allpoints,
-                { x = point.x - math.cos(math.rad(45)) * meters, z = point.z - math.sin(math.rad(45)) * meters, y = 0 })
-            table.insert(allpoints,
-                { x = point.x - math.cos(math.rad(45)) * meters, z = point.z + math.sin(math.rad(45)) * meters, y = 0 })
-            table.insert(allpoints,
-                { x = point.x + math.cos(math.rad(45)) * meters, z = point.z - math.sin(math.rad(45)) * meters, y = 0 })
+            allpoints[#allpoints + 1] = point
+            allpoints[#allpoints+1] = { x = point.x + meters, y = point.y, }
+            allpoints[#allpoints+1] = { x = point.x - meters, y = point.y, }
+            allpoints[#allpoints+1] = { x = point.x, y = point.y + meters, }
+            allpoints[#allpoints+1] = { x = point.x, y = point.y - meters, }
+
+            allpoints[#allpoints+1] = { x = point.x + math.cos(math.rad(45)) * meters, y = point.y + math.sin(math.rad(45)) * meters, }
+            allpoints[#allpoints+1] = { x = point.x - math.cos(math.rad(45)) * meters, y = point.y - math.sin(math.rad(45)) * meters, }
+            allpoints[#allpoints+1] = { x = point.x - math.cos(math.rad(45)) * meters, y = point.y + math.sin(math.rad(45)) * meters, }
+            allpoints[#allpoints+1] = { x = point.x + math.cos(math.rad(45)) * meters, y = point.y - math.sin(math.rad(45)) * meters, }
         end
 
         return UTIL.getConvexHull(allpoints)
@@ -324,7 +330,7 @@ do     -- INIT DCS_UTIL
     DCS_UTIL.__airbaseNamesById = {}
 
     ---@type table<string, SpearheadTriggerZone>
-    DCS_UTIL.__airbaseZonesById = {}
+    DCS_UTIL.__airbaseZonesByName = {}
 
     DCS_UTIL.__airportsStartingCoalition = {}
     DCS_UTIL.__warehouseStartingCoalition = {}
@@ -391,10 +397,15 @@ do     -- INIT DCS_UTIL
                         table.insert(verts, { x = trigger_zone.verticies[1].x, y = trigger_zone.verticies[1].y })
                     end
 
+                    local zoneType = "Cilinder"
+                    if trigger_zone.type == DCS_UTIL.ZoneType.Polygon then
+                        zoneType = "Polygon"
+                    end
+
                     ---@type SpearheadTriggerZone
                     local zone = {
                         name = trigger_zone.name,
-                        zone_type = trigger_zone.type,
+                        zone_type = zoneType,
                         location = { x = trigger_zone.x, y = trigger_zone.y },
                         radius = trigger_zone.radius,
                         verts = verts
@@ -432,11 +443,10 @@ do     -- INIT DCS_UTIL
                 if airbases then
                     for _, airbase in pairs(airbases) do
                         local name = airbase:getName()
-                        local id = tostring(airbase:getID())
 
-                        if name and id then
-                            DCS_UTIL.__airbaseNamesById[id] = name
+                        DCS_UTIL.__airbaseNamesById[tostring(airbase:getID())] = name
 
+                        if name  then
                             local relevantPoints = {}
                             for _, x in pairs(airbase:getRunways()) do
                                 if x.position and x.position.x and x.position.z then
@@ -453,7 +463,7 @@ do     -- INIT DCS_UTIL
                             local points = UTIL.getConvexHull(relevantPoints)
                             local enlargedPoints = UTIL.enlargeConvexHull(points, 750)
 
-                            DCS_UTIL.__airbaseZonesById[id] = {
+                            DCS_UTIL.__airbaseZonesByName[name] = {
                                 name = name,
                                 location = { x = airbase:getPoint().x, y = airbase:getPoint().z },
                                 zone_type = "Polygon",
@@ -586,22 +596,13 @@ do     -- INIT DCS_UTIL
             return {}
         end
 
-        -- MAP Just for mapping sake
-        local custom_zone = {
-            x = zone.x,
-            z = zone.z,
-            zone_type = zone.zone_type,
-            radius = zone.radius,
-            verts = zone.verts
-        }
-
-        return DCS_UTIL.areGroupsInCustomZone(group_names, custom_zone)
+        return DCS_UTIL.areGroupsInCustomZone(group_names, zone)
     end
 
     --- takes a x, y poistion and checks if it is inside any of the zones
-    ---@param group_names table North South position
+    ---@param group_names Array<string> North South position
     ---@param zone SpearheadTriggerZone
-    ---@return table groupnames list of groups that are in the zone
+    ---@return Array<string> groupnames list of groups that are in the zone
     function DCS_UTIL.areGroupsInCustomZone(group_names, zone)
         local units = {}
         if Spearhead.Util.tableLength(group_names) < 1 then return {} end
@@ -673,9 +674,11 @@ do     -- INIT DCS_UTIL
     ---@param parent_zone_name string
     ---@return boolean result
     function DCS_UTIL.isZoneInZone(zone_name, parent_zone_name)
-        local zoneA = DCS_UTIL.__trigger_zones[zone_name]
-        local zoneB = DCS_UTIL.__trigger_zones[parent_zone_name]
-        return UTIL.is3dPointInZone({ x = zoneA.x, y = 0, z = zoneA.z }, zoneB)
+        local zoneA = DCS_UTIL.__trigger_zones[zone_name] --[[@as SpearheadTriggerZone]]
+        if zoneA == nil then return false end
+        local zoneB = DCS_UTIL.__trigger_zones[parent_zone_name] --[[@as SpearheadTriggerZone]]
+        if zoneB == nil then return false end
+        return UTIL.is3dPointInZone({ x = zoneA.location.x, y = 0, z = zoneA.location.y }, zoneB)
     end
 
     ---comment
@@ -687,12 +690,11 @@ do     -- INIT DCS_UTIL
     end
 
     ---comment
-    ---@param airbaseId any
+    ---@param airbaseName string
     ---@return SpearheadTriggerZone? zone { name,b zone_type, x, z, radius, verts }
-    function DCS_UTIL.getAirbaseZoneById(airbaseId)
-        local string = tostring(airbaseId)
+    function DCS_UTIL.getAirbaseZoneByName(airbaseName)
         if string == nil then return nil end
-        return DCS_UTIL.__airbaseZonesById[string]
+        return DCS_UTIL.__airbaseZonesByName[string]
     end
 
     ---maps the category name to the DCS group category
@@ -780,7 +782,7 @@ do     -- INIT DCS_UTIL
 
     ---get base from id
     ---@param baseId number
-    ---@return table? table
+    ---@return Airbase? table
     function DCS_UTIL.getAirbaseById(baseId)
         local name = DCS_UTIL.getAirbaseName(baseId)
         if name == nil then return nil end
@@ -857,10 +859,9 @@ do     -- INIT DCS_UTIL
         else
             local functionString = "trigger.action.markupToAll(7, -1, " .. drawID .. ","
             for _, vecpoint in pairs(zone.verts) do
-                functionString = functionString .. " { x=" .. vecpoint.x .. ", y=0,z=" .. vecpoint.y ..
-                    "},"
+                functionString = functionString .. " { x=" .. vecpoint.x .. ", y=0,z=" .. vecpoint.y .. "},"
             end
-            functionString = functionString .. "{0,1,0,1}, {0,1,0,1}, 1)"
+            functionString = functionString .. "{0,1,0,1}, {0,1,0,1}, " .. lineStyle .. ")"
 
             env.info(functionString)
             ---@diagnostic disable-next-line: deprecated
@@ -871,11 +872,50 @@ do     -- INIT DCS_UTIL
                 env.error("Something failed when drawing complex drawing" .. err)
             end
         end
+        local fillColorMapped = {
+            fillColor.r or 0,
+            fillColor.g or 0,
+            fillColor.b or 0,
+            fillColor.a or 0.5
+        }
 
-        trigger.action.setMarkupColorFill(drawID, fillColor)
-        trigger.action.setMarkupColor(drawID, lineColor)
+        local lineColorMapped = {
+            lineColor.r or 0,
+            lineColor.g or 0,
+            lineColor.b or 0,
+            lineColor.a or 1
+        }
+
+        trigger.action.setMarkupColorFill(drawID, fillColorMapped)
+        trigger.action.setMarkupColor(drawID, lineColorMapped)
 
         return drawID
+    end
+
+    ---comment
+    ---@param drawID number
+    ---@param lineColor DrawColor
+    function DCS_UTIL.SetLineColor(drawID, lineColor)
+        local lineColorMapped = {
+            lineColor.r or 0,
+            lineColor.g or 0,
+            lineColor.b or 0,
+            lineColor.a or 1
+        }
+        trigger.action.setMarkupColor(drawID, lineColorMapped)
+    end
+
+    ---comment
+    ---@param drawID number
+    ---@param fillColor DrawColor
+    function DCS_UTIL.SetFillColor(drawID, fillColor)
+        local lineColorMapped = {
+            fillColor.r or 0,
+            fillColor.g or 0,
+            fillColor.b or 0,
+            fillColor.a or 1
+        }
+        trigger.action.setMarkupColorFill(drawID, lineColorMapped)
     end
 
     function DCS_UTIL.RemoveZoneDraw(drawID)

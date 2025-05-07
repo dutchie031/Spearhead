@@ -57,7 +57,7 @@ MINIMAL_UNITS_ALIVE_RATIO = 0.21
 ---@param priority MissionPriority
 ---@param database Database
 ---@param logger Logger
----@return boolean, string
+---@return ZoneMission?
 function ZoneMission.new(zoneName, priority, database, logger)
     local Mission = Spearhead.classes.stageClasses.missions.baseMissions.Mission
     ZoneMission.__index = ZoneMission
@@ -67,14 +67,16 @@ function ZoneMission.new(zoneName, priority, database, logger)
 
     local parsed = ParseZoneName(zoneName)
     if not parsed then
-        return false, "failed to parse mission name"
+        logger:error("Failed to create ZoneMission " .. zoneName .. " => invalid name")
+        return nil
     end
 
     local missionBriefing = database:getMissionBriefingForMissionZone(zoneName) or "no briefing provided"
 
     local success, error = Mission.newSuper(self, zoneName, parsed.missionName, parsed.type, missionBriefing, priority, database, logger)
     if not success then
-        return false, error
+        logger:error("Failed to create ZoneMission " .. zoneName .. " => " .. error)
+        return nil
     end
 
     if self.missionType == "SAM" then
@@ -123,7 +125,9 @@ function ZoneMission.new(zoneName, priority, database, logger)
         Spearhead.DcsUtil.DestroyGroup(groupName)
     end
 
-    return true, "success"
+    self._logger:debug("Mission " .. self.name .. " group count: " .. Spearhead.Util.tableLength(groupNames))
+
+    return self
 end
 
 ---@internal
@@ -238,6 +242,10 @@ end
 
 
 function ZoneMission:SpawnActive()
+    if self._state == "ACTIVE" then
+        return
+    end
+
     self._logger:info("Activating " .. self.name)
 
     self._state = "ACTIVE"

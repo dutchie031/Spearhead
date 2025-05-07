@@ -261,6 +261,11 @@ function CapGroup:SendToStage(stageZoneNumber)
         local controller = group:getController()
         local capPoints = self.database:getCapRouteInZone(stageZoneNumber, self.airbaseName)
 
+        if not capPoints then
+            self.logger:error("No CAP route found for group " .. self.groupName .. " in zone " .. stageZoneNumber)
+            return
+        end
+
         local altitude = math.random(self.capConfig:getMinAlt(), self.capConfig:getMaxAlt())
         local speed = math.random(self.capConfig:getMinSpeed(), self.capConfig:getMaxSpeed())
         local attackHelos = false
@@ -418,5 +423,7 @@ function CapGroup:OnUnitLost(initiatorUnit)
 end
 
 
-if not Spearhead.internal then Spearhead.internal = {} end
-Spearhead.internal.CapGroup = CapGroup
+if not Spearhead then Spearhead = {} end
+if not Spearhead.classes then Spearhead.classes = {} end
+if not Spearhead.classes.capClasses then Spearhead.classes.capClasses = {} end
+Spearhead.classes.capClasses.CapGroup = CapGroup

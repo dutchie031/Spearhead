@@ -10,6 +10,8 @@
 ---@field groupsByName table<string, CapGroup>
 ---@field PrimaryGroups Array<CapGroup>
 ---@field BackupGroups Array<CapGroup>
+---@field private runwayBombingTracker RunwayBombingTracker
+---@field private runwayStrikeMissions table<string, RunwayStrikeMission>
 local CapBase = {}
 
 
@@ -23,14 +25,17 @@ end
 ---@param logger table
 ---@param capConfig table
 ---@param stageConfig table
+---@param runwayBombingTracker RunwayBombingTracker
 ---@return CapBase
-function CapBase.new(airbaseName, database, logger, capConfig, stageConfig)
+function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runwayBombingTracker)
     
     CapBase.__index = CapBase
     local self = setmetatable({}, { __index = CapBase }) --[[@as CapBase]]
 
     self.groupNames = database:getCapGroupsAtAirbase(airbaseName)
     self.database  = database
+    self.runwayBombingTracker = runwayBombingTracker
+    self.runwayStrikeMissions = {}
     
     self.airbaseName = airbaseName
     self.logger = logger
@@ -44,7 +49,7 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig)
     self.BackupGroups = {}
 
     for key, name in pairs(self.groupNames) do
-        local capGroup = Spearhead.internal.CapGroup.new(name, airbaseName, logger, database, capConfig)
+        local capGroup = Spearhead.classes.capClasses.CapGroup.new(name, airbaseName, logger, database, capConfig)
         if capGroup then
             self.groupsByName[name] = capGroup
 
@@ -57,21 +62,40 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig)
             capGroup:AddOnStateUpdatedListener(self)
         end
     end
-    logger:info("Airbase with name '" .. airbaseName .. "' has a total of " .. Spearhead.Util.tableLength(self.groupsByName) .. "cap flights registered")
+    logger:info("Airbase with name '" .. airbaseName .. "' has a total of " .. Spearhead.Util.tableLength(self.groupsByName) .. " cap flights registered")
 
+    self:CreateRunwayStrikeMission()
 
     Spearhead.Events.AddStageNumberChangedListener(self)
 
    return self
 end
 
+---@private
+function CapBase:CreateRunwayStrikeMission()
+
+    local airbase = Airbase.getByName(self.airbaseName)
+    if not airbase then 
+        self.logger:debug("Could not find a airbase with name to create runway mission" .. self.airbaseName)
+        return     
+    end
+
+    for _, runway in pairs(airbase:getRunways()) do
+        if runway then
+            self.logger:debug("Runway " .. runway.Name .. " at airbase " .. self.airbaseName .. " with heading " .. runway.course .. " and length " .. runway.length .. " and width " .. runway.width)
+            local mission = Spearhead.classes.stageClasses.missions.RunwayStrikeMission.new(runway, self.airbaseName, self.database, self.logger, self.runwayBombingTracker)
+            self.runwayStrikeMissions[runway.Name] = mission
+        end
+    end
+end
+
 function CapBase:onGroupStateUpdated(capGroup)
     --[[
         There is no update needed for INTRANSIT, ONSTATION or REARMING as the PREVIOUS state already was checked and nothing changes in the actual overal state.
     ]]--
-    if  capGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT 
-        or capGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION 
-        or capGroup.state == Spearhead.internal.CapGroup.GroupState.REARMING
+    if  capGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.INTRANSIT 
+        or capGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.ONSTATION 
+        or capGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.REARMING
     then
         return
     end
@@ -84,7 +108,7 @@ function CapBase:SpawnIfApplicable()
             
             local targetStage = capGroup:GetTargetZone(self.activeStage)
 
-            if targetStage ~= nil and capGroup.state == Spearhead.internal.CapGroup.GroupState.UNSPAWNED then
+            if targetStage ~= nil and capGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.UNSPAWNED then
                 capGroup:SpawnOnTheRamp()
             end
         end
@@ -99,7 +123,7 @@ function CapBase:CheckAndScheduleCAP()
 
         --Count back up groups that are active or reassign to the new zone if that's needed
         for _, backupGroup in pairs(self.BackupGroups) do
-            if backupGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT or backupGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION then
+            if backupGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.INTRANSIT or backupGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.ONSTATION then
                 local supposedTargetStage = backupGroup:GetTargetZone(self.activeStage)
                 if supposedTargetStage then
                     if supposedTargetStage ~= backupGroup.assignedStageNumber then
@@ -113,7 +137,7 @@ function CapBase:CheckAndScheduleCAP()
                 else
                     backupGroup:SendRTBAndDespawn()
                 end
-            elseif backupGroup.state == Spearhead.internal.CapGroup.GroupState.RTBINTEN and backupGroup:GetTargetZone(self.activeStage) ~= backupGroup.assignedStageNumber then
+            elseif backupGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.RTBINTEN and backupGroup:GetTargetZone(self.activeStage) ~= backupGroup.assignedStageNumber then
                 backupGroup:SendRTB()
             end
         end
@@ -133,12 +157,12 @@ function CapBase:CheckAndScheduleCAP()
 
                 requiredPerStage[supposedTargetStage] =  requiredPerStage[supposedTargetStage] + 1
 
-                if primaryGroup.state == Spearhead.internal.CapGroup.GroupState.READYONRAMP then
+                if primaryGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.READYONRAMP then
                     if countPerStage[supposedTargetStage] < requiredPerStage[supposedTargetStage] then
                         primaryGroup:SendToStage(supposedTargetStage)
                         countPerStage[supposedTargetStage] = countPerStage[supposedTargetStage] + 1
                     end
-                elseif primaryGroup.state == Spearhead.internal.CapGroup.GroupState.INTRANSIT or primaryGroup.state == Spearhead.internal.CapGroup.GroupState.ONSTATION then
+                elseif primaryGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.INTRANSIT or primaryGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.ONSTATION then
                     if supposedTargetStage ~= primaryGroup.assignedStageNumber then
                         if countPerStage[supposedTargetStage] < requiredPerStage[supposedTargetStage] then
                             primaryGroup:SendToStage(supposedTargetStage)
@@ -148,7 +172,7 @@ function CapBase:CheckAndScheduleCAP()
                         end
                     end
                     countPerStage[supposedTargetStage] = countPerStage[supposedTargetStage] + 1
-                elseif primaryGroup.state == Spearhead.internal.CapGroup.GroupState.RTBINTEN and primaryGroup:GetTargetZone(self.activeStage) ~= primaryGroup.assignedStageNumber then
+                elseif primaryGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.RTBINTEN and primaryGroup:GetTargetZone(self.activeStage) ~= primaryGroup.assignedStageNumber then
                     primaryGroup:SendRTB()
                 end
             else
@@ -157,7 +181,7 @@ function CapBase:CheckAndScheduleCAP()
         end
 
         for _, backupGroup in pairs(self.BackupGroups) do
-            if backupGroup.state == Spearhead.internal.CapGroup.GroupState.READYONRAMP then
+            if backupGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.READYONRAMP then
                 local supposedTargetStage = backupGroup:GetTargetZone(self.activeStage)
                 if supposedTargetStage then
                     if countPerStage[supposedTargetStage] == nil then
@@ -177,6 +201,13 @@ function CapBase:CheckAndScheduleCAP()
 
 function CapBase:OnStageNumberChanged(number)
     self.activeStage = number
+
+    if self:IsBaseActiveWhenStageIsActive(number) == true then
+        for _, mission in pairs(self.runwayStrikeMissions) do
+            mission:SpawnActive()
+        end
+    end
+
     self:SpawnIfApplicable()
     timer.scheduleFunction(CheckReschedulingAsync, self, timer.getTime() + 5)
 end

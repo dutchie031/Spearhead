@@ -24,7 +24,7 @@
 
 --- @class Stage : MissionCompleteListener, OnStageChangedListener
 --- @field zoneName string
---- @field stageName string
+--- @field stageName string?
 --- @field stageNumber number
 --- @field protected _isActive boolean
 --- @field protected _isComplete boolean
@@ -108,8 +108,9 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
 
     do -- load tables
         local missionZones = database:getMissionsForStage(self.zoneName)
+        self._logger:debug("Found " .. Spearhead.Util.tableLength(missionZones) .. " mission zones for stage: " .. self.zoneName)
         for _, missionZone in pairs(missionZones) do
-            local mission = Spearhead.classes.stageClasses.Missions.Mission.New(missionZone, self._missionPriority, database, logger)
+            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZone, self._missionPriority, database, logger)
             if mission then
                 self._db.missionsByCode[mission.code] = mission
                 if mission.missionType == "SAM" then
@@ -125,7 +126,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         ---@type table<string, Array<Mission>>
         local randomMissionByName = {}
         for _, missionZoneName in pairs(randomMissionNames) do
-            local mission = Spearhead.classes.stageClasses.Missions.Mission.New(missionZoneName, self._missionPriority, database, logger)
+            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZoneName, self._missionPriority, database, logger)
             if mission then
                 if randomMissionByName[mission.name] == nil then
                     randomMissionByName[mission.name] = {}
@@ -266,7 +267,7 @@ end
 ---private use only
 function Stage:NotifyComplete()
 
-    self._logger:info("Stage complete: " .. self.stageName)
+    self._logger:info("Stage complete: " .. (self.stageName or self.stageNumber or "unknown"))
 
     for _, listener in pairs(self._stageCompleteListeners) do
         pcall(function()
@@ -302,18 +303,18 @@ end
 
 ---@param stageColor StageColor
 function Stage:MarkStage(stageColor)
-    local fillColor = {1, 0, 0, 0.1}
-    local line ={ 1, 0,0, 1 }
+    local fillColor = { r=1, g=0, b=0, a=0.1}
+    local line ={ r=1, g=0, b=0, a=1 }
 
     if stageColor == "RED" then
-        fillColor = {1, 0, 0, 0.1}
-        line ={ 1, 0,0, 1 }
+        fillColor = { r=1, g=0, b=0, a=0.1}
+        line ={ r=1, g=0, b=0, 1 }
     elseif stageColor =="BLUE" then
-        fillColor = {0, 0, 1, 0.1}
-        line ={ 0, 0,1, 1 }
+        fillColor = { r=0, g=0, b=1, a=0.1}
+        line ={ r=0, g=0.1, b=1, a=1 }
     elseif stageColor == "GRAY" then
-        fillColor = {80/255, 80/255, 80/255, 0.15}
-        line ={ 80/255, 80/255,80/255, 1 }
+        fillColor = { r=80/255, g=80/255, b=80/255, a=0.15}
+        line ={ r=80/255, g=80/255, b=80/255, a=1 }
     end
 
     local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)

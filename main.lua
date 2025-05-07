@@ -36,7 +36,7 @@ else
     standardLogger:info("Persistence disabled")
 end
 
-Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
+Spearhead.classes.capClasses.GlobalCapManager.start(databaseManager, capConfig, stageConfig, defaultLogLevel)
 Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 

@@ -57,7 +57,6 @@ function BlueSam.New(database, logger, zoneName)
             for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
                 for redUnitName, redUnitPos in pairs(redUnitsPos) do
                     local distance = Spearhead.Util.VectorDistance3d(blueUnitPos, redUnitPos)
-                    env.info("distance: " .. tostring(distance))
                     if distance <= cleanup_distance then
                         self._cleanupUnits[redUnitName] = true
                     end
@@ -91,4 +90,4 @@ if Spearhead == nil then Spearhead = {} end
 if Spearhead.classes == nil then Spearhead.classes = {} end
 if Spearhead.classes.stageClasses == nil then Spearhead.classes.stageClasses = {} end
 if Spearhead.classes.stageClasses.SpecialZones == nil then Spearhead.classes.stageClasses.SpecialZones = {} end
-Spearhead.classes.stageClasses.Missions.SpecialZones = BlueSam
+Spearhead.classes.stageClasses.missions.SpecialZones = BlueSam

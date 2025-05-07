@@ -43,6 +43,8 @@ function Mission.newSuper(self, zoneName, missionName, missionType, missionBrief
     self.missionBriefing = missionBriefing
     self.code = tostring(database:GetNewMissionCode())
 
+    self._completeListeners = {}
+
     self.location = database:GetLocationForMissionZone(zoneName)
     self.missionTypeDisplay = self.missionType
     

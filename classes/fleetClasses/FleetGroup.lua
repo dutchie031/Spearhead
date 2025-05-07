@@ -1,5 +1,10 @@
 local FleetGroup = {}
 
+---comment
+---@param fleetGroupName string
+---@param database Database
+---@param logger Logger
+---@return nil
 function FleetGroup:new(fleetGroupName, database, logger)
     local o = {}
 
@@ -30,10 +35,10 @@ function FleetGroup:new(fleetGroupName, database, logger)
                         Spearhead.AddMissionEditorWarning(
                             "CARRIERROUTE should at least have 3 parts. Check the documentation for: " .. zoneName)
                     else
+
+                        ---@param zone SpearheadTriggerZone
+                        ---@return Vec2, Vec2
                         local function GetTwoFurthestPoints(zone)
-                            local function getDist(a, b)
-                                return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
-                            end
 
                             local biggest = nil
                             local biggestA = zone.verts[1]
@@ -43,7 +48,7 @@ function FleetGroup:new(fleetGroupName, database, logger)
                                 for ii = i + 1, 4 do
                                     local a = zone.verts[i]
                                     local b = zone.verts[ii]
-                                    local dist = getDist(a, b)
+                                    local dist = Spearhead.Util.VectorDistance2d(a, b)
 
                                     if biggest == nil or dist > biggest then
                                         biggestA = a
@@ -52,7 +57,7 @@ function FleetGroup:new(fleetGroupName, database, logger)
                                     end
                                 end
                             end
-                            return { x = biggestA.x, z = biggestA.z }, { x = biggestB.x, z = biggestB.z }
+                            return { x = biggestA.x, y = biggestA.y }, { x = biggestB.x, y = biggestB.y }
                         end
 
                         local function getMinMaxStage(namePart)
@@ -90,7 +95,7 @@ function FleetGroup:new(fleetGroupName, database, logger)
                             for i = first, second do
                                 o.targetZonePerStage[tostring(i)] = zoneName
                             end
-                            o.pointsPerZone[zoneName] = { pointA = pointA, pointB = pointB }
+                            o.pointsPerZone[zoneName] = { pointA = { x = pointA.x, z = pointA.y, y = 0 }, pointB = { x = pointB.x, z = pointB.y, y = 0} }
                         else
                             Spearhead.AddMissionEditorWarning("CARRIERROUTE zone stage numbers not in the format _[<number>-<number>]: " .. zoneName)
                         end

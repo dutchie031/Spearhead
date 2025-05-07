@@ -73,7 +73,35 @@ do
         end
     end
 
-   
+    ---@class OnWeaponFiredListener
+    ---@field OnWeaponFired fun(self:OnWeaponFiredListener, unit:Unit?, weapon:Weapon?, target:Object?)
+
+    ---@type Array<OnWeaponFiredListener>
+    local onWeaponFiredListeners = {}
+
+    ---comment
+    ---@param weaponFiredListener OnWeaponFiredListener
+    SpearheadEvents.AddWeaponFiredListener = function(weaponFiredListener)
+        if type(weaponFiredListener) ~= "table" then
+            warn("Event handler not of type table/object")
+            return
+        end
+
+        table.insert(onWeaponFiredListeners, weaponFiredListener)
+    end
+
+    local triggerWeaponFired = function(unit, weapon, target)
+        for _, callable in pairs(onWeaponFiredListeners) do
+            local succ, err = pcall(function()
+                callable:OnWeaponFired(unit, weapon, target)
+            end)
+
+            if err then
+                logError(err)
+            end
+        end
+    end
+        
 
     local onLandEventListeners = {}
     ---Add an event listener to a specific unit
@@ -309,6 +337,15 @@ do
 
         if event.id == world.event.S_EVENT_EJECTION then
             
+        end
+
+        if event.id == world.event.S_EVENT_SHOT then
+            
+            local shooter = event.initiator
+            local weapon = event.weapon
+            local target = event.target
+            triggerWeaponFired(shooter, weapon, target)
+
         end
 
         if event.id == world.event.S_EVENT_MISSION_END then
