@@ -770,5 +770,5 @@ function Database:GetNewMissionCode()
 end
 
 
-
+if not Spearhead then Spearhead = {} end
 Spearhead.DB = Database
