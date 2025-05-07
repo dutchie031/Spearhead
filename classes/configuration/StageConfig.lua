@@ -2,10 +2,11 @@
 --- @class StageConfig
 --- @field isEnabled boolean
 --- @field isDrawStagesEnabled boolean
+--- @field isDrawPreActivatedEnabled boolean
 --- @field isAutoStages boolean
 --- @field startingStage integer
 --- @field maxMissionsPerStage integer
---- @field logLevel LogLevel
+--- @field AmountPreactivateStage integer
 
 
 local StageConfig = {};
@@ -24,13 +25,10 @@ function StageConfig:new()
         isAutoStages = SpearheadConfig.StageConfig.autoStages or true,
         startingStage = SpearheadConfig.StageConfig.startingStage or 1,
         maxMissionsPerStage = SpearheadConfig.StageConfig.maxMissionStage or 10,
-        logLevel = "INFO"
+        isDrawPreActivatedEnabled = SpearheadConfig.StageConfig.drawPreActivated or true,
+        AmountPreactivateStage = SpearheadConfig.StageConfig.preactivateStage or 1,
     }
-
-    if SpearheadConfig.StageConfig.debugEnabled == true then
-        o.logLevel = "DEBUG"
-    end
-
+    
     setmetatable(o, { __index = self })
 
     return o;

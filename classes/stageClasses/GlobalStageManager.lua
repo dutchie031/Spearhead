@@ -19,10 +19,11 @@ GlobalStageManager = {}
 ---comment
 ---@param database Database
 ---@param stageConfig StageConfig
+---@param logLevel LogLevel
 ---@return nil
-function GlobalStageManager:NewAndStart(database, stageConfig)
-    local logger = Spearhead.LoggerTemplate.new("StageManager", stageConfig.logLevel)
-    logger:info("Using Stage Log Level: " .. stageConfig.logLevel)
+function GlobalStageManager:NewAndStart(database, stageConfig, logLevel)
+    local logger = Spearhead.LoggerTemplate.new("StageManager", logLevel)
+    logger:info("Using Stage Log Level: " .. logLevel)
     local o = {}
     setmetatable(o, { __index = self })
 
@@ -122,7 +123,7 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
             end
                 
             local stageDisplayName = split[3]
-            local stagelogger = Spearhead.LoggerTemplate.new(stageName, stageConfig.logLevel)
+            local stagelogger = Spearhead.LoggerTemplate.new(stageName, logLevel)
             if valid == true and orderNumber then
 
                 ---@type StageInitData
@@ -175,7 +176,7 @@ function GlobalStageManager:NewAndStart(database, stageConfig)
                 end
 
                 if valid == true then 
-                    local stagelogger = Spearhead.LoggerTemplate.new(stageName, stageConfig.logLevel)
+                    local stagelogger = Spearhead.LoggerTemplate.new(stageName, logLevel)
 
                     ---@type WaitingStageInitData
                     local initData = {

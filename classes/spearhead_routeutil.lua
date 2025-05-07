@@ -212,12 +212,11 @@ do --setup route util
     ---@param durationOnStation number
     ---@param attackHelos boolean
     ---@param deviationDistance number
-    ---@return table route
-    ROUTE_UTIL.createCapMission = function(groupName, airdromeId, capPoint, racetrackSecondPoint, altitude, speed,
-                                           durationOnStation, attackHelos, deviationDistance)
+    ---@return table? route
+    ROUTE_UTIL.createCapMission = function(groupName, airdromeId, capPoint, racetrackSecondPoint, altitude, speed, durationOnStation, attackHelos, deviationDistance)
         local baseName = Spearhead.DcsUtil.getAirbaseName(airdromeId)
         if baseName == nil then
-            return {}
+            return nil
         end
 
         durationOnStation = durationOnStation or 1800
@@ -228,7 +227,7 @@ do --setup route util
 
         local base = Airbase.getByName(baseName)
         if base == nil then
-            return {}
+            return nil
         end
 
         local additionalFlyOverTasks = {

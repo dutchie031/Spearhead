@@ -114,7 +114,7 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
                 end
             end
 
-            return string.format("[%s] %-15s %-20s %10s nM\n", mission.code,  mission.displayMissionType, mission.name, distanceText)
+            return string.format("[%s] %-15s %-20s %10s nM\n", mission.code,  mission.missionTypeDisplay, mission.name, distanceText)
         end
 
         ---Primary missions
@@ -218,7 +218,6 @@ function MissionCommandsHelper:addMissionCommands(groupId, mission)
     end
 
     if path then
-        self._logger:debug("Registering command: [" .. mission.code .. "]" .. mission.name)
         local missionFolderName = "[" .. mission.code .. "]" .. mission.name
         missionCommands.addSubMenuForGroup(groupId, missionFolderName, path)
         table.insert(path, missionFolderName)

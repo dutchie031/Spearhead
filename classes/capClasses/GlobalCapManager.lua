@@ -9,12 +9,15 @@ do
 
     ---comment
     ---@param database Database
-    ---@param capConfig any
-    ---@param stageConfig any
-    function GlobalCapManager.start(database, capConfig, stageConfig)
+    ---@param capConfig table
+    ---@param stageConfig StageConfig
+    ---@param logLevel LogLevel
+    function GlobalCapManager.start(database, capConfig, stageConfig, logLevel)
         if initiated == true then return end
 
-        local logger = Spearhead.LoggerTemplate.new("AirbaseManager", capConfig.logLevel)
+        local logger = Spearhead.LoggerTemplate.new("AirbaseManager", logLevel)
+        local bombTrackLogger = Spearhead.LoggerTemplate.new("RunwayBombingTracker", logLevel)
+        local runwayBombingTracker = Spearhead.classes.capClasses.runwayBombing.RunwayBombingTracker.new(bombTrackLogger)
 
         local zones = database:getStagezoneNames()
         if zones then
@@ -27,8 +30,8 @@ do
                 if airbaseNames then
                     for _, airbaseName in pairs(airbaseNames) do
                         if airbaseName then
-                            local airbaseSpecificLogger = Spearhead.LoggerTemplate.new("CAP_" .. airbaseName, capConfig.logLevel)
-                            local airbase = Spearhead.internal.CapAirbase.new(airbaseName, database, airbaseSpecificLogger, capConfig, stageConfig)
+                            local airbaseSpecificLogger = Spearhead.LoggerTemplate.new("CAP_" .. airbaseName, logLevel)
+                            local airbase = Spearhead.classes.capClasses.CapAirbase.new(airbaseName, database, airbaseSpecificLogger, capConfig, stageConfig, runwayBombingTracker)
                             if airbase then
                                 table.insert(airbasesPerStage[stageName], airbase)
                                 allAirbasesByName[airbaseName] = airbase
@@ -61,5 +64,9 @@ do
     end
 end
 
-if not Spearhead.internal then Spearhead.internal = {} end
-Spearhead.internal.GlobalCapManager = GlobalCapManager
+
+
+if not Spearhead then Spearhead = {} end
+if not Spearhead.classes then Spearhead.classes = {} end
+if not Spearhead.classes.capClasses then Spearhead.classes.capClasses = {} end
+Spearhead.classes.capClasses.GlobalCapManager = GlobalCapManager

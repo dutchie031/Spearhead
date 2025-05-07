@@ -52,7 +52,7 @@ SpearheadConfig = {
         maxMissionStage = 10,
 
         --Stage starting number
-        startingStage = 1,
+        startingStage = 0,
 
         ---DEBUG logging. Consider keeping this disabled
         debugEnabled = true
@@ -61,7 +61,7 @@ SpearheadConfig = {
         --- io and lfs cannot be sanitized in the MissionScripting.lua
         
         --- enables or disables the persistence logic in spearhead
-        enabled = true,
+        enabled = false,
 
         --- sets the directory where the persistence file is stored
         --- if nil then lfs.writedir() will be used. 

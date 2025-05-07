@@ -101,7 +101,7 @@ function Database.New(Logger)
             local zone_name = zone_data.name
             
             ---@type Vec2
-            local zoneLocation = { x = zone_data.x, y = zone_data.z }
+            local zoneLocation = { x = zone_data.location.x, y = zone_data.location.y }
 
             local split_string = Spearhead.Util.split_string(zone_name, "_")
             table.insert(self._tables.AllZoneNames, zone_name)
@@ -311,12 +311,9 @@ function Database.New(Logger)
                     
 
                     if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                        table.insert(capData.routes, { point1 = { x = zone.x, z = zone.z }, point2 = nil })
+                        table.insert(capData.routes, { point1 = { x = zone.location.x, z = zone.location.y, y = 0 }, point2 = nil })
                     else
-                        local function getDist(a, b)
-                            return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
-                        end
-
+                        
                         local biggest = nil
                         local biggestA = nil
                         local biggestB = nil
@@ -325,7 +322,7 @@ function Database.New(Logger)
                             for ii = i + 1, 4 do
                                 local a = zone.verts[i]
                                 local b = zone.verts[ii]
-                                local dist = getDist(a, b)
+                                local dist = Spearhead.Util.VectorDistance2d(a, b)
 
                                 if biggest == nil or dist > biggest then
                                     biggestA = a
@@ -338,8 +335,8 @@ function Database.New(Logger)
                         if biggestA and biggestB then
                             table.insert(capData.routes,
                                 {
-                                    point1 = { x = biggestA.x, z = biggestA.z },
-                                    point2 = { x = biggestB.x, z = biggestB.z }
+                                    point1 = { x = biggestA.x, z = biggestA.y },
+                                    point2 = { x = biggestB.x, z = biggestB.y }
                                 })
                         end
                     end
@@ -348,9 +345,24 @@ function Database.New(Logger)
         end
     end
 
+    local totalUnits = 0
+    local missions = 0
+    for _, data in pairs(self._tables.MissionZoneData) do
+        missions = missions + 1
+        for _, groupName in pairs(data.Groups) do
+            local group = Group.getByName(groupName)
+            if group then
+                totalUnits = totalUnits + group:getInitialSize()
+            end
+        end
+    end
+
+    if missions == 0 then missions = 1 end
+
     self._logger:info("initiated the database with amount of zones: ")
     self._logger:info("Stages:            " .. Spearhead.Util.tableLength(self._tables.StageZones))
     self._logger:info("Total Missions:    " .. Spearhead.Util.tableLength(self._tables.MissionZoneData))
+    self._logger:info("Average units per mission: " .. totalUnits / missions)
     self._logger:info("Random Missions:   " .. Spearhead.Util.tableLength(self._tables.RandomMissionZones))
     self._logger:info("Farps:             " .. Spearhead.Util.tableLength(self._tables.AllFarpZones))
     self._logger:info("Airbases:          " .. Spearhead.Util.tableLength(self._tables.AirbaseDataPerAirfield))
@@ -393,9 +405,21 @@ function Database:loadCapUnits()
     local all_groups = getAvailableCAPGroups()
     local airbases = world.getAirbases()
     for _, airbase in pairs(airbases) do
-        local baseId = airbase:getID()
         local point = airbase:getPoint()
-        local zone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
+
+        ---@type SpearheadTriggerZone?
+        local zone = Spearhead.DcsUtil.getAirbaseZoneByName(airbase:getName())
+
+        if zone == nil then
+            zone = { 
+                location = {x = point.x, y = point.z} , 
+                radius = 4000,
+                name = "temp_zone",
+                verts = {},
+                zone_type = "Cilinder"
+             }
+        end
+
 
         local baseData = self:getOrCreateAirbaseData(airbase:getName())
         local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
@@ -480,9 +504,19 @@ function Database:loadAirbaseGroups()
 
             if base then
                 local basedata = self:getOrCreateAirbaseData(baseName)
-                local baseId = base:getID()
                 local point = base:getPoint()
-                local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneById(baseId) or { x = point.x, z = point.z, radius = 4000 }
+                local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneByName(baseName)
+
+                if airbaseZone == nil then
+                    airbaseZone = { 
+                        location = {x = point.x, y = point.z} , 
+                        radius = 4000,
+                        name = "temp_zone",
+                        verts = {},
+                        zone_type = "Cilinder"
+                     }
+                end
+
 
                 if airbaseZone and base:getDesc().category == Airbase.Category.AIRDROME then
                     local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
@@ -554,7 +588,11 @@ function Database:GetLocationForMissionZone(missionZoneName)
     return self._tables.MissionZonesLocations[missionZoneName]
 end
 
-function Database:getCapRouteInZone(stageNumber, baseId)
+---comment
+---@param stageNumber string
+---@param baseName string
+---@return table?
+function Database:getCapRouteInZone(stageNumber, baseName)
     local stageNumber = tostring(stageNumber) or "nothing"
     local routeData = self._tables.CapDataPerStageNumber[stageNumber]
     if routeData then
@@ -576,24 +614,24 @@ function Database:getCapRouteInZone(stageNumber, baseId)
             local aY = pC.z + vY / magV * radius;
             return { x = aX, z = aY }
         end
-        local stageZoneName = Spearhead.Util.randomFromList(self._tables.StageZonesByNumber[stageNumber]) or
-        "none"
+        local stageZoneName = Spearhead.Util.randomFromList(self._tables.StageZonesByNumber[stageNumber]) or "none"
         local stagezone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
         if stagezone then
-            local base = Spearhead.DcsUtil.getAirbaseById(baseId)
+
+            ---@type Airbase?
+            local base = Airbase.getByName(baseName)
             if base then
                 local closest = nil
                 if stagezone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                    closest = GetClosestPointOnCircle({ x = stagezone.x, z = stagezone.z }, stagezone.radius,
+                    closest = GetClosestPointOnCircle({ x = stagezone.location.x, z = stagezone.location.y }, stagezone.radius,
                         base:getPoint())
                 else
-                    local function getDist(a, b)
-                        return math.sqrt((b.x - a.x) ^ 2 + (b.z - a.z) ^ 2)
-                    end
 
                     local closestDistance = -1
                     for _, vert in pairs(stagezone.verts) do
-                        local distance = getDist(vert, base:getPoint())
+                        local pos = base:getPoint()
+                        local vec2 = { x = pos.x, y = pos.z }
+                        local distance = Spearhead.Util.VectorDistance2d(vert, vec2)
                         if closestDistance == -1 or distance < closestDistance then
                             closestDistance = distance
                             closest = vert
@@ -602,17 +640,19 @@ function Database:getCapRouteInZone(stageNumber, baseId)
                 end
 
                 if math.random(1, 2) % 2 == 0 then
-                    return { point1 = closest, point2 = { x = stagezone.x, z = stagezone.z } }
+                    return { point1 = closest, point2 = { x = stagezone.location.x, z = stagezone.location.y } }
                 else
-                    return { point1 = { x = stagezone.x, z = stagezone.z }, point2 = closest }
+                    return { point1 = { x = stagezone.location.x, z = stagezone.location.y }, point2 = closest }
                 end
             end
         end
+
+        return nil
     end
 end
 
 
----@return table result a  list of stage zone names
+---@return Array<string> result a  list of stage zone names
 function Database:getStagezoneNames()
     return self._tables.StageZoneNames
 end

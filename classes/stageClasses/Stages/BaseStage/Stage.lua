@@ -6,8 +6,8 @@
 
 --- @class StageData
 --- @field missionsByCode table<string, Mission>
---- @field missions Array<Mission>
---- @field sams Array<Mission>
+--- @field missions Array<ZoneMission>
+--- @field sams Array<ZoneMission>
 --- @field blueSams Array<BlueSam>
 --- @field airbases Array<StageBase>
 --- @field miscGroups Array<SpearheadGroup>
@@ -24,7 +24,7 @@
 
 --- @class Stage : MissionCompleteListener, OnStageChangedListener
 --- @field zoneName string
---- @field stageName string
+--- @field stageName string?
 --- @field stageNumber number
 --- @field protected _isActive boolean
 --- @field protected _isComplete boolean
@@ -46,6 +46,14 @@ local Stage = {}
 Stage.__index = Stage
 
 local stageDrawingId = 100
+
+Stage.StageColors = {
+    INVISIBLE = { r=0, g=0, b=0, a=0 },
+    RED_ACTIVE = { r=1, g=0, b=0, a=0.15 },
+    RED_PREACTIVE = { r=230/255, g=153/255, b=0, a=0.3},
+    BLUE = { r=0, g=0, b=1, a=0.15},
+    GRAY = { r=80/255, g=80/255, b=80/255, a=0.15 }
+}
 
 ---comment
 ---@param database Database
@@ -83,7 +91,12 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     self._activeStage = -99
     self._preActivated = false
     self._stageConfig = stageConfig or {}
-    self._stageDrawingId = stageDrawingId + 1
+
+    local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
+    if zone then
+        self._stageDrawingId = Spearhead.DcsUtil.DrawZone(zone, Stage.StageColors.INVISIBLE, Stage.StageColors.INVISIBLE, 4)
+    end
+
     self._spawnedGroups = {}
     self._missionPriority = missionPriority
     self._stageCompleteListeners = {}
@@ -108,8 +121,9 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
 
     do -- load tables
         local missionZones = database:getMissionsForStage(self.zoneName)
+        self._logger:debug("Found " .. Spearhead.Util.tableLength(missionZones) .. " mission zones for stage: " .. self.zoneName)
         for _, missionZone in pairs(missionZones) do
-            local mission = Spearhead.classes.stageClasses.Missions.Mission.New(missionZone, self._missionPriority, database, logger)
+            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZone, self._missionPriority, database, logger)
             if mission then
                 self._db.missionsByCode[mission.code] = mission
                 if mission.missionType == "SAM" then
@@ -125,7 +139,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         ---@type table<string, Array<Mission>>
         local randomMissionByName = {}
         for _, missionZoneName in pairs(randomMissionNames) do
-            local mission = Spearhead.classes.stageClasses.Missions.Mission.New(missionZoneName, self._missionPriority, database, logger)
+            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZoneName, self._missionPriority, database, logger)
             if mission then
                 if randomMissionByName[mission.name] == nil then
                     randomMissionByName[mission.name] = {}
@@ -200,14 +214,14 @@ function Stage:IsComplete()
     if self._isComplete == true then return true end
 
     for i, mission in pairs(self._db.sams) do
-        local state = mission:GetState()
+        local state = mission:getState()
         if state == "ACTIVE" or state == "NEW" then
             return false
         end
     end
 
     for i, mission in pairs(self._db.missions) do
-        local state = mission:GetState()
+        local state = mission:getState()
         if state == "ACTIVE" or state == "NEW" then
             return false
         end
@@ -231,7 +245,7 @@ function Stage:CheckAndUpdateSelf()
 
     local availableMissions = {}
     for _, mission in pairs(dbTables.missionsByCode) do
-        local state = mission:GetState()
+        local state = mission:getState()
 
         if state == "ACTIVE" then
             activeCount = activeCount + 1
@@ -266,7 +280,7 @@ end
 ---private use only
 function Stage:NotifyComplete()
 
-    self._logger:info("Stage complete: " .. self.stageName)
+    self._logger:info("Stage complete: " .. (self.stageName or self.stageNumber or "unknown"))
 
     for _, listener in pairs(self._stageCompleteListeners) do
         pcall(function()
@@ -285,12 +299,13 @@ function Stage:AddStageCompleteListener(listener)
 end
 
 ---Activates all SAMS, Airbase units etc all at once.
-function Stage:PreActivate()
+---@param draw boolean
+function Stage:PreActivate(draw)
     if self._preActivated == false then
         self._preActivated = true
         for key, mission in pairs(self._db.sams) do
             if mission then
-                mission:SpawnActive()
+                mission:SpawnInactive()
             end
         end
 
@@ -298,36 +313,25 @@ function Stage:PreActivate()
             airbase:ActivateRedStage()
         end
     end
-end
 
----@param stageColor StageColor
-function Stage:MarkStage(stageColor)
-    local fillColor = {1, 0, 0, 0.1}
-    local line ={ 1, 0,0, 1 }
-
-    if stageColor == "RED" then
-        fillColor = {1, 0, 0, 0.1}
-        line ={ 1, 0,0, 1 }
-    elseif stageColor =="BLUE" then
-        fillColor = {0, 0, 1, 0.1}
-        line ={ 0, 0,1, 1 }
-    elseif stageColor == "GRAY" then
-        fillColor = {80/255, 80/255, 80/255, 0.15}
-        line ={ 80/255, 80/255,80/255, 1 }
+    if draw == true then
+        self:MarkStage(Stage.StageColors.RED_PREACTIVE)
     end
 
-    local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
-    if zone and self._stageConfig.isDrawStagesEnabled == true then
-        self._logger:debug("drawing stage: " .. self.zoneName)
-        if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-            trigger.action.circleToAll(-1, self._stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, {0,0,0,0}, {0,0,0,0},4, true)
-        else
-            --trigger.action.circleToAll(-1, self.stageDrawingId, {x = zone.x, y = 0 , z = zone.z}, zone.radius, { 1, 0,0, 1 }, {1,0,0,1},4, true)
-            trigger.action.quadToAll( -1, self._stageDrawingId,  zone.verts[1], zone.verts[2], zone.verts[3],  zone.verts[4], {0,0,0,0}, {0,0,0,0}, 4, true)
-        end
+end
 
-        trigger.action.setMarkupColorFill(self._stageDrawingId, fillColor)
-        trigger.action.setMarkupColor(self._stageDrawingId, line)
+---@param stageColor DrawColor
+function Stage:MarkStage(stageColor)
+    local lineColor = { r=stageColor.r, g=stageColor.g, b=stageColor.b, a=stageColor.a }
+    local fillColor = { r=stageColor.r, g=stageColor.g, b=stageColor.b, a=stageColor.a }
+
+    if stageColor.a > 0 then
+        lineColor.a = 1
+    end
+
+    if self._stageDrawingId and self._stageConfig.isDrawStagesEnabled == true then
+        Spearhead.DcsUtil.SetLineColor(self._stageDrawingId, lineColor)
+        Spearhead.DcsUtil.SetFillColor(self._stageDrawingId, fillColor)
     end
 end
 
@@ -335,10 +339,10 @@ function Stage:ActivateStage()
     self._isActive = true;
 
     pcall(function()
-        self:MarkStage("RED")
+        self:MarkStage(Stage.StageColors.RED_ACTIVE)
     end)
 
-    self:PreActivate()
+    self:PreActivate(false)
     
     self._logger:debug("Activating Misc groups for zone. Count: " .. Spearhead.Util.tableLength(self._db.miscGroups))
     for _, miscGroup in pairs(self._db.miscGroups) do
@@ -371,8 +375,12 @@ function Stage:OnStageNumberChanged(number)
 
     local previousActive = self._activeStage
     self._activeStage = number
-    if Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
-        self:PreActivate()
+
+    if self.stageNumber - self._activeStage  == self._stageConfig.AmountPreactivateStage then
+        self._logger:debug("Pre-activating stage: " .. self.zoneName .. " with number: " .. number)
+        self:PreActivate(true)
+    elseif Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
+        self:PreActivate(false)
     end
 
     if number == self.stageNumber then
@@ -434,7 +442,7 @@ function Stage:ActivateBlueStage()
     ---@param self Stage
     local ActivateBlueAsync = function(self)
         pcall(function()
-            self:MarkStage("BLUE")
+            self:MarkStage(Stage.StageColors.BLUE)
         end)
 
         self:ActivateBlueGroups()

@@ -36,8 +36,8 @@ else
     standardLogger:info("Persistence disabled")
 end
 
-Spearhead.internal.GlobalCapManager.start(databaseManager, capConfig, stageConfig)
-Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
+Spearhead.classes.capClasses.GlobalCapManager.start(databaseManager, capConfig, stageConfig, defaultLogLevel)
+Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig, defaultLogLevel)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 
 local SetStageDelayed = function(number, time)

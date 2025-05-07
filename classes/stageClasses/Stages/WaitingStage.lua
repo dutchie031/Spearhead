@@ -27,9 +27,10 @@ function WaitingStage.New(database, stageConfig, logger, initData)
     if initData.waitingSeconds and initData.waitingSeconds > 5 then self._waitTimeSeconds  = initData.waitingSeconds end
     self._startTime = nil
 
-    self.CheckContinuousAsync = function (self, time)
-        if self:IsComplete() then
-            self:NotifyComplete()
+    self.CheckContinuousAsync = function (selfA, time)
+       
+        if selfA:IsComplete() == true then
+            selfA:NotifyComplete()
             return nil
         end
 
