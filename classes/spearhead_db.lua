@@ -279,8 +279,7 @@ function Database.New(Logger)
         return baseData
     end
 
-    
-
+    self:initAvailableUnits()
     self:loadCapUnits()
     self:loadBlueSamUnits()
     self:loadMissionzoneUnits()
@@ -372,33 +371,44 @@ function Database.New(Logger)
 
 end
 
+
 local is_group_taken = {}
+
+local getAvailableGroups = function()
+    local result = {}
+    for name, value in pairs(is_group_taken) do
+        if value == false then
+            table.insert(result, name)
+        end
+    end
+    return result
+end
+
+
+local getAvailableCAPGroups = function()
+    local result = {}
+    for name, value in pairs(is_group_taken) do
+        if value == false and Spearhead.Util.startswith(name, "CAP") then
+            table.insert(result, name)
+        end
+    end
+    return result
+end
+
+---@private
+function Database:initAvailableUnits()
     do
         local all_groups = Spearhead.DcsUtil.getAllGroupNames()
         for _, value in pairs(all_groups) do
             is_group_taken[value] = false
         end
     end
+end
 
-    local getAvailableGroups = function()
-        local result = {}
-        for name, value in pairs(is_group_taken) do
-            if value == false then
-                table.insert(result, name)
-            end
-        end
-        return result
-    end
 
-    local getAvailableCAPGroups = function()
-        local result = {}
-        for name, value in pairs(is_group_taken) do
-            if value == false and Spearhead.Util.startswith(name, "CAP") then
-                table.insert(result, name)
-            end
-        end
-        return result
-    end
+    
+
+
 
 ---@private
 function Database:loadCapUnits()
