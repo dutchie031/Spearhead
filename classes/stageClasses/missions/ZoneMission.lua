@@ -240,11 +240,17 @@ function ZoneMission:SpawnPersistedState()
     end
 end
 
+---spawns the mission, but doesn't add 
+function ZoneMission:SpawnInactive()
+    self._logger:info("PreActivating " .. self.name)
+
+    self._state = "ACTIVE"
+    for _, group in pairs(self._missionGroups.groups) do
+        group:Spawn()
+    end
+end
 
 function ZoneMission:SpawnActive()
-    if self._state == "ACTIVE" then
-        return
-    end
 
     self._logger:info("Activating " .. self.name)
 
@@ -257,6 +263,7 @@ function ZoneMission:SpawnActive()
 
     self:StartCheckingContinuous()
 end
+
 
 ---@private
 function ZoneMission:StartCheckingContinuous()

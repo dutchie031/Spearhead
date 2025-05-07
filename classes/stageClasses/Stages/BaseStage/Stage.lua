@@ -6,8 +6,8 @@
 
 --- @class StageData
 --- @field missionsByCode table<string, Mission>
---- @field missions Array<Mission>
---- @field sams Array<Mission>
+--- @field missions Array<ZoneMission>
+--- @field sams Array<ZoneMission>
 --- @field blueSams Array<BlueSam>
 --- @field airbases Array<StageBase>
 --- @field miscGroups Array<SpearheadGroup>
@@ -47,6 +47,14 @@ Stage.__index = Stage
 
 local stageDrawingId = 100
 
+Stage.StageColors = {
+    INVISIBLE = { r=0, g=0, b=0, a=0 },
+    RED_ACTIVE = { r=1, g=0, b=0, a=0.15 },
+    RED_PREACTIVE = { r=230/255, g=153/255, b=0, a=0.3},
+    BLUE = { r=0, g=0, b=1, a=0.15},
+    GRAY = { r=80/255, g=80/255, b=80/255, a=0.15 }
+}
+
 ---comment
 ---@param database Database
 ---@param stageConfig StageConfig
@@ -83,7 +91,12 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     self._activeStage = -99
     self._preActivated = false
     self._stageConfig = stageConfig or {}
-    self._stageDrawingId = stageDrawingId + 1
+
+    local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
+    if zone then
+        self._stageDrawingId = Spearhead.DcsUtil.DrawZone(zone, Stage.StageColors.INVISIBLE, Stage.StageColors.INVISIBLE, 4)
+    end
+
     self._spawnedGroups = {}
     self._missionPriority = missionPriority
     self._stageCompleteListeners = {}
@@ -286,12 +299,13 @@ function Stage:AddStageCompleteListener(listener)
 end
 
 ---Activates all SAMS, Airbase units etc all at once.
-function Stage:PreActivate()
+---@param draw boolean
+function Stage:PreActivate(draw)
     if self._preActivated == false then
         self._preActivated = true
         for key, mission in pairs(self._db.sams) do
             if mission then
-                mission:SpawnActive()
+                mission:SpawnInactive()
             end
         end
 
@@ -299,27 +313,25 @@ function Stage:PreActivate()
             airbase:ActivateRedStage()
         end
     end
-end
 
----@param stageColor StageColor
-function Stage:MarkStage(stageColor)
-    local fillColor = { r=1, g=0, b=0, a=0.1}
-    local line ={ r=1, g=0, b=0, a=1 }
-
-    if stageColor == "RED" then
-        fillColor = { r=1, g=0, b=0, a=0.1}
-        line ={ r=1, g=0, b=0, 1 }
-    elseif stageColor =="BLUE" then
-        fillColor = { r=0, g=0, b=1, a=0.1}
-        line ={ r=0, g=0.1, b=1, a=1 }
-    elseif stageColor == "GRAY" then
-        fillColor = { r=80/255, g=80/255, b=80/255, a=0.15}
-        line ={ r=80/255, g=80/255, b=80/255, a=1 }
+    if draw == true then
+        self:MarkStage(Stage.StageColors.RED_PREACTIVE)
     end
 
-    local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
-    if zone and self._stageConfig.isDrawStagesEnabled == true then
-        self._stageDrawingId = Spearhead.DcsUtil.DrawZone(zone, line, fillColor, 4)
+end
+
+---@param stageColor DrawColor
+function Stage:MarkStage(stageColor)
+    local lineColor = { r=stageColor.r, g=stageColor.g, b=stageColor.b, a=stageColor.a }
+    local fillColor = { r=stageColor.r, g=stageColor.g, b=stageColor.b, a=stageColor.a }
+
+    if stageColor.a > 0 then
+        lineColor.a = 1
+    end
+
+    if self._stageDrawingId and self._stageConfig.isDrawStagesEnabled == true then
+        Spearhead.DcsUtil.SetLineColor(self._stageDrawingId, lineColor)
+        Spearhead.DcsUtil.SetFillColor(self._stageDrawingId, fillColor)
     end
 end
 
@@ -327,10 +339,10 @@ function Stage:ActivateStage()
     self._isActive = true;
 
     pcall(function()
-        self:MarkStage("RED")
+        self:MarkStage(Stage.StageColors.RED_ACTIVE)
     end)
 
-    self:PreActivate()
+    self:PreActivate(false)
     
     self._logger:debug("Activating Misc groups for zone. Count: " .. Spearhead.Util.tableLength(self._db.miscGroups))
     for _, miscGroup in pairs(self._db.miscGroups) do
@@ -363,8 +375,12 @@ function Stage:OnStageNumberChanged(number)
 
     local previousActive = self._activeStage
     self._activeStage = number
-    if Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
-        self:PreActivate()
+
+    if self.stageNumber - self._activeStage  == self._stageConfig.AmountPreactivateStage then
+        self._logger:debug("Pre-activating stage: " .. self.zoneName .. " with number: " .. number)
+        self:PreActivate(true)
+    elseif Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
+        self:PreActivate(false)
     end
 
     if number == self.stageNumber then
@@ -426,7 +442,7 @@ function Stage:ActivateBlueStage()
     ---@param self Stage
     local ActivateBlueAsync = function(self)
         pcall(function()
-            self:MarkStage("BLUE")
+            self:MarkStage(Stage.StageColors.BLUE)
         end)
 
         self:ActivateBlueGroups()

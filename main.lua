@@ -37,7 +37,7 @@ else
 end
 
 Spearhead.classes.capClasses.GlobalCapManager.start(databaseManager, capConfig, stageConfig, defaultLogLevel)
-Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig)
+Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig, defaultLogLevel)
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 
 local SetStageDelayed = function(number, time)

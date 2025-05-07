@@ -1,10 +1,8 @@
 
 ---@class ExtraStage : Stage
 local ExtraStage = {}
-
 ExtraStage.__index = ExtraStage
-local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
-setmetatable(ExtraStage, Stage)
+
 
 ---comment
 ---@param database Database
@@ -14,11 +12,15 @@ setmetatable(ExtraStage, Stage)
 ---@return ExtraStage
 function ExtraStage.New(database, stageConfig, logger, initData)
 
+    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
+    setmetatable(ExtraStage, Stage)
+
     local self = setmetatable({}, { __index = ExtraStage }) --[[@as ExtraStage]]
     self:superNew(database, stageConfig, logger, initData, "secondary")
 
     self.OnPostBlueActivated = function (selfStage)
-        selfStage:MarkStage("GRAY")
+        
+        selfStage:MarkStage(Stage.StageColors.GRAY)
     end
     
     self.OnPostStageComplete = function (selfStage)
@@ -35,7 +37,7 @@ function ExtraStage:OnStageNumberChanged(number)
 
     self._activeStage = number
     if Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
-        self:PreActivate()
+        self:PreActivate(false)
     end
 
     if number == self.stageNumber then

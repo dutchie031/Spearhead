@@ -52,7 +52,7 @@ SpearheadConfig = {
         maxMissionStage = 10,
 
         --Stage starting number
-        startingStage = 1,
+        startingStage = 0,
 
         ---DEBUG logging. Consider keeping this disabled
         debugEnabled = true
