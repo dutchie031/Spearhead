@@ -3,8 +3,6 @@
 local PrimaryStage = {}
 
 PrimaryStage.__index = PrimaryStage
-local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
-setmetatable(PrimaryStage, Stage)
 
 ---comment
 ---@param database Database
@@ -13,6 +11,9 @@ setmetatable(PrimaryStage, Stage)
 ---@param initData StageInitData
 ---@return PrimaryStage
 function PrimaryStage.New(database, stageConfig, logger, initData)
+
+    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
+    setmetatable(PrimaryStage, Stage)
 
     local self = setmetatable({}, { __index = PrimaryStage }) --[[@as PrimaryStage]]
     self:superNew(database, stageConfig, logger, initData, "primary")

@@ -5,8 +5,6 @@
 local WaitingStage = {}
 
 WaitingStage.__index = WaitingStage
-local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
-setmetatable(WaitingStage, Stage)
 
 ---@class WaitingStageInitData : StageInitData
 ---@field waitingSeconds integer
@@ -19,6 +17,9 @@ local WaitingStageInitData = {}
 ---@param initData WaitingStageInitData
 ---@return WaitingStage
 function WaitingStage.New(database, stageConfig, logger, initData)
+
+    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
+    setmetatable(WaitingStage, Stage)
 
     local self = setmetatable({}, { __index = WaitingStage }) --[[@as WaitingStage]]
     self:superNew(database, stageConfig, logger, initData, "none")
