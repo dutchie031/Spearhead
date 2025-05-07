@@ -191,7 +191,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         end
 
         for _, samZoneName in pairs(database:getBlueSamsInStage(self.zoneName)) do
-            local blueSam =  Spearhead.classes.stageClasses.SpecialZones.BlueSam:new(database, logger, samZoneName)
+            local blueSam =  Spearhead.classes.stageClasses.SpecialZones.BlueSam.New(database, logger, samZoneName)
             table.insert(self._db.blueSams, blueSam)
         end
 

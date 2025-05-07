@@ -90,4 +90,4 @@ if Spearhead == nil then Spearhead = {} end
 if Spearhead.classes == nil then Spearhead.classes = {} end
 if Spearhead.classes.stageClasses == nil then Spearhead.classes.stageClasses = {} end
 if Spearhead.classes.stageClasses.SpecialZones == nil then Spearhead.classes.stageClasses.SpecialZones = {} end
-Spearhead.classes.stageClasses.missions.SpecialZones = BlueSam
+Spearhead.classes.stageClasses.SpecialZones.BlueSam = BlueSam
