@@ -406,9 +406,6 @@ function Database:initAvailableUnits()
 end
 
 
-    
-
-
 
 ---@private
 function Database:loadCapUnits()
