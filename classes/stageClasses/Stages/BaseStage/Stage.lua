@@ -240,36 +240,45 @@ end
 function Stage:CheckAndUpdateSelf()
     self._logger:debug("Checking on Stage: " .. self.zoneName)
 
-    local activeCount = 0
     local dbTables = self:GetStageTables()
 
-    local availableMissions = {}
-    for _, mission in pairs(dbTables.missionsByCode) do
-        local state = mission:getState()
-
-        if state == "ACTIVE" then
-            activeCount = activeCount + 1
+    ---@return Array<Mission>
+    local getAvailableMissions = function ()
+        ---@type Array<Mission>
+        local availableMissions = {}
+        for _, mission in pairs(dbTables.missionsByCode) do
+            if mission:getState() == "NEW" then
+                table.insert(availableMissions, mission)
+            end
         end
+        return availableMissions
+    end
 
-        if state == "NEW" then
-            table.insert(availableMissions, mission)
+    ---@return number
+    local getActiveMissionsCount = function ()
+        local result = 0
+        for _, mission in pairs(dbTables.missionsByCode) do
+            if mission:getState() == "ACTIVE" then
+                result = result + 1
+            end
         end
+        return result
     end
 
     local max = dbTables.maxMissions
-    local availableMissionsCount = Spearhead.Util.tableLength(availableMissions)
+    local availableMissionsCount = Spearhead.Util.tableLength(getAvailableMissions())
+    local activeCount = getActiveMissionsCount()
     if activeCount < max and availableMissionsCount > 0  then
         for i = activeCount+1, max do
             if availableMissionsCount == 0 then
                 i = max+1 --exits this loop
             else
-                local index = math.random(1, availableMissionsCount)
-
-                ---@type Mission
-                local mission = table.remove(availableMissions, index)
+                local mission = Spearhead.Util.randomFromList(getAvailableMissions()) --[[@as Mission]]
                 if mission then
                     mission:SpawnActive()
                     activeCount = activeCount + 1;
+                else
+                    return
                 end
                 availableMissionsCount = availableMissionsCount - 1
             end

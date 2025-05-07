@@ -2,6 +2,7 @@
 
 --- ZoneMission is missions that are defined by zones in the ME
 ---@class ZoneMission : Mission, OnUnitLostListener
+---@field private _state MissionState
 ---@field private _missionGroups MissionGroups
 local ZoneMission = {}
 
@@ -137,9 +138,6 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
     if checkHealth == nil then checkHealth = false end
     if messageIfDone == false then messageIfDone = true end
 
-    if self._state == "COMPLETED" then
-        return
-    end
 
     if checkHealth == true then
         local function unitAliveState(unitName)
@@ -253,6 +251,11 @@ end
 function ZoneMission:SpawnActive()
 
     self._logger:info("Activating " .. self.name)
+
+    if self._state == "COMPLETED" or self._state == "ACTIVE" then
+        self._logger:debug("Mission already completed, not spawning")
+        return
+    end
 
     self._state = "ACTIVE"
     for _, group in pairs(self._missionGroups.groups) do

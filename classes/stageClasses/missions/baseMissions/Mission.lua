@@ -6,10 +6,10 @@
 ---@field missionType MissionType
 ---@field missionTypeDisplay string
 ---@field priority MissionPriority
----@field missionBriefing string
 ---@field location Vec2?
 ---@field code string
----@field protected state MissionState 
+---@field protected _state MissionState 
+---@field protected _missionBriefing string
 ---@field getState fun(self: Mission): MissionState @Get the mission state
 ---@field protected _logger Logger
 ---@field protected _database Database
@@ -37,10 +37,10 @@ function Mission.newSuper(self, zoneName, missionName, missionType, missionBrief
     self.name = missionName
     self.missionType = missionType
     self.priority = priority
-    self.state = "NEW"
+    self._state = "NEW"
     self._logger = logger
     self._database = database
-    self.missionBriefing = missionBriefing
+    self._missionBriefing = missionBriefing
     self.code = tostring(database:GetNewMissionCode())
 
     self._completeListeners = {}
@@ -55,7 +55,7 @@ end
 
 ---@return MissionState
 function Mission:getState()
-    return self.state
+    return self._state
 end
 
 --region PUBLIC
