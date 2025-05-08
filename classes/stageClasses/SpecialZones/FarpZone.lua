@@ -19,6 +19,7 @@ function FarpZone.New(database, logger, zoneName)
     self._database = database
     self._logger = logger
     self._zoneName = zoneName
+
     
 
 end
