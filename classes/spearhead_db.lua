@@ -8,7 +8,6 @@
 ---@field MissionZonesLocations table<string, Vec2> All Mission Zone Locations
 ---@field StageZonesByNumber table<string, Array<string>> Stage zones grouped by index number
 ---@field AllFarpZones Array<string>
----@field FarpIdsInFarpZones table<string, Array<integer>> farp pad Id's in farp zones.
 ---@field CapRoutes Array<string> All Cap route zone names
 ---@field CapDataPerStageNumber table<integer, CapData> table<StageNumber, table>
 ---@field CarrierRouteZones Array<string> All Carrier routes zones
@@ -53,7 +52,8 @@
 ---@field Groups Array<string>
 
 ---@class FarpZoneData
----@field Groups Array<string>
+---@field groups Array<string>
+---@field padNames Array<string>
 
 ---@class Database
 ---@field private _tables DatabaseTables
@@ -73,7 +73,6 @@ function Database.New(Logger)
         CapDataPerStageNumber = {},
         CarrierRouteZones = {},
         DescriptionsByMission = {},
-        FarpIdsInFarpZones = {},
         MissionZones = {},
         MissionZonesLocations = {},
         StageZoneNames = {},
@@ -224,6 +223,13 @@ function Database.New(Logger)
                 end
             end
 
+            --- fill farp zones
+            for _, farpZoneName in pairs(self._tables.AllFarpZones) do
+                if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stageZoneName) then
+                    table.insert(stageData.FarpZones, farpZoneName)
+                end
+            end
+
             -- fill airbases
             for _, airbase in pairs(world.getAirbases()) do
                 local point = airbase:getPoint()
@@ -231,19 +237,7 @@ function Database.New(Logger)
                 if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, stageZoneName)  == true then
                     if airbase:getDesc().category == 0 then
                         table.insert(stageData.AirbaseNames, airbase:getName())
-                    elseif airbase:getDesc().category == 1 then
-                        -- farp
-                        --[[
-                            TODO: FARP ZONES FILL
-                        ]]
                     end
-                end
-            end
-
-            --- fill farp zones
-            for _, farpZoneName in pairs(self._tables.AllFarpZones) do
-                if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stageZoneName) then
-                    table.insert(stageData.FarpZones, farpZoneName)
                 end
             end
 
@@ -262,7 +256,27 @@ function Database.New(Logger)
         end
     end
     
-    
+    for _, farpZoneName in pairs(self._tables.AllFarpZones) do
+        
+        for _, airbase in pairs(world.getAirbases()) do
+
+            if airbase:getDesc().category == Airbase.Category.HELIPAD then
+                local name = airbase:getName()
+
+                if self._tables.FarpZoneData[farpZoneName] == nil then
+                    self._tables.FarpZoneData[farpZoneName] = {
+                        groups = {},
+                        padNames = {}
+                    }
+                end
+                local position = airbase:getPoint()
+                if Spearhead.DcsUtil.isPositionInZone(position.x, position.z,  farpZoneName) == true then
+                    table.insert(self._tables.FarpZoneData[farpZoneName].padNames, name)
+                end
+            end
+        end
+    end
+
     ---@private
     ---@param baseName string
     ---@return AirbaseData
@@ -489,14 +503,18 @@ end
 function Database:loadFarpGroups()
     local all_groups = getAvailableGroups()
     for _, farpZone in pairs(self._tables.AllFarpZones) do
-        self._tables.FarpZoneData[farpZone] = {
-            Groups = {}
-        }
+
+        if self._tables.FarpZoneData[farpZone] == nil then
+            self._tables.FarpZoneData[farpZone] = {
+                groups = {},
+                padNames = {}
+            }
+        end
 
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, farpZone)
         for _, groupName in pairs(groups) do
             is_group_taken[groupName] = true
-            table.insert(self._tables.FarpZoneData[farpZone].Groups, groupName)
+            table.insert(self._tables.FarpZoneData[farpZone].groups, groupName)
         end
     end
 end
@@ -703,6 +721,20 @@ function Database:getAirbaseNamesInStage(stageName)
 
     return stageData.AirbaseNames or {}
 end
+
+function Database:getFarpNamesInStage(stageName)
+    local stageData = self._tables.StageZones[stageName]
+    if not stageData then return {} end
+    return stageData.FarpZones or {}
+end
+
+---@return FarpZoneData?
+function Database:getFarpDataForZone(farpZoneName)
+    local farpData = self._tables.FarpZoneData[farpZoneName]
+    if not farpData then return nil end
+    return farpData
+end
+
 
 
 ---@param airbaseName string

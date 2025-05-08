@@ -37,6 +37,7 @@ assert(loadfile(classPath .. "stageClasses\\helpers\\MissionCommandsHelper.lua")
 
 assert(loadfile(classPath .. "stageClasses\\SpecialZones\\StageBase.lua"))()
 assert(loadfile(classPath .. "stageClasses\\SpecialZones\\BlueSam.lua"))()
+assert(loadfile(classPath .. "stageClasses\\SpecialZones\\FarpZone.lua"))()
 
 assert(loadfile(classPath .. "capClasses\\CapGroup.lua"))()
 assert(loadfile(classPath .. "capClasses\\GlobalCapManager.lua"))()

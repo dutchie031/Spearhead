@@ -215,13 +215,20 @@
                     CAP routes define the patrol paths for CAP units. They are tied to specific stages and zones.
                 </p>
 
-                <h3 id="cap-zones">CAP Zones</h3>
+                <h3 id="farp-zones">FARP Zones</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">CAPZONE_[Name]</span></span> <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">CAPZONE_BRAVO</span></span>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">FARP_A|B_[Name]</span></span> <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">FARP_A_HOUSTON</span></span>
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">FARP_B_HOUSTON</span></span>
                 </p>
                 <p>
-                    CAP zones are areas where CAP units operate. They are linked to CAP routes and stages.
+                    FARP zones are spawned and activated based on the "activation parameter". <br/>
+                    A: Activates when the parent stage zone activates. <br/>
+                    B: Activates when the parent stage is "Blue". <br/>
+                    <br/>
+                    Future: FARP zones will be "buildable" once logistics are implemented.
+
+                    
                 </p>
 
                 <h2 id="mission-types">Mission Types</h2>

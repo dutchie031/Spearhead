@@ -12,6 +12,7 @@
 --- @field airbases Array<StageBase>
 --- @field miscGroups Array<SpearheadGroup>
 --- @field maxMissions integer
+--- @field farps Array<FarpZone>
 
 --- @class StageInitData
 --- @field stageZoneName string
@@ -45,7 +46,6 @@ local Stage = {}
 
 Stage.__index = Stage
 
-local stageDrawingId = 100
 
 Stage.StageColors = {
     INVISIBLE = { r=0, g=0, b=0, a=0 },
@@ -86,7 +86,8 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         blueSams = {},
         airbases ={},
         miscGroups = {},
-        maxMissions = stageConfig.maxMissionsPerStage
+        maxMissions = stageConfig.maxMissionsPerStage,
+        farps = {},
     }
     self._activeStage = -99
     self._preActivated = false
@@ -101,7 +102,12 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     self._missionPriority = missionPriority
     self._stageCompleteListeners = {}
 
-    stageDrawingId = stageDrawingId + 1
+    local farpNames = database:getFarpNamesInStage(self.zoneName)
+    for _, farpName in pairs(farpNames) do
+        local farp = Spearhead.classes.stageClasses.SpecialZones.FarpZone.New(database, logger, farpName)
+        table.insert(self._db.farps, farp)
+    end
+
 
     self._logger:info("Initiating new Stage with name: " .. self.zoneName)
 
@@ -364,6 +370,12 @@ function Stage:ActivateStage()
         end
     end
 
+    for _, farp in pairs(self._db.farps) do
+        if farp:IsStartingFarp() == true then
+            farp:Activate()
+        end
+    end
+
     timer.scheduleFunction(self.CheckContinuousAsync, self, timer.getTime() + 3)
 end
 
@@ -429,6 +441,12 @@ function Stage:ActivateBlueGroups()
         pcall(function()
             self:OnPostBlueActivated()
         end)
+    end
+
+    for _, farp in pairs(self._db.farps) do
+        if farp:IsStartingFarp() == true then
+            farp:Activate()
+        end
     end
 end
 
