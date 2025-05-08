@@ -346,8 +346,16 @@ do     -- INIT DCS_UTIL
                                 if category_id ~= nil and type(categorydata) == "table" and categorydata.group ~= nil and type(categorydata.group) == "table" then
                                     for group_index, group in pairs(categorydata.group) do
                                         local name = group.name
+
+                                        local skippable = false
+
                                         if category_id == DCS_UTIL.GroupCategory.STATIC then
                                             local unit = group.units[1]
+
+                                            if unit.category == "Heliports" then
+                                                skippable = true
+                                            end
+
                                             name = unit.name
                                             local staticObj = {
                                                 heading = unit.heading,
@@ -364,19 +372,21 @@ do     -- INIT DCS_UTIL
 
                                             group = staticObj
                                         end
+                                        
+                                        if skippable == false then
+                                            table.insert(DCS_UTIL.__groupNames, name)
+                                            DCS_UTIL.__miz_groups[name] =
+                                            {
+                                                category = category_id,
+                                                country_id = country_data.id,
+                                                group_template = group
+                                            }
 
-                                        table.insert(DCS_UTIL.__groupNames, name)
-                                        DCS_UTIL.__miz_groups[name] =
-                                        {
-                                            category = category_id,
-                                            country_id = country_data.id,
-                                            group_template = group
-                                        }
-
-                                        if coalition_nr == 1 then
-                                            table.insert(DCS_UTIL.__redGroupNames, name)
-                                        elseif coalition_nr == 2 then
-                                            table.insert(DCS_UTIL.__blueGroupNames, name)
+                                            if coalition_nr == 1 then
+                                                table.insert(DCS_UTIL.__redGroupNames, name)
+                                            elseif coalition_nr == 2 then
+                                                table.insert(DCS_UTIL.__blueGroupNames, name)
+                                            end
                                         end
                                     end
                                 end
