@@ -6,6 +6,7 @@
 
 --- @class StageData
 --- @field missionsByCode table<string, Mission>
+--- @field missionsByName table<string, Mission>
 --- @field missions Array<ZoneMission>
 --- @field sams Array<ZoneMission>
 --- @field blueSams Array<BlueSam>
@@ -88,6 +89,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         miscGroups = {},
         maxMissions = stageConfig.maxMissionsPerStage,
         farps = {},
+        missionsByName = {},
     }
     self._activeStage = -99
     self._preActivated = false
@@ -130,9 +132,17 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         local missionZones = database:getMissionsForStage(self.zoneName)
         self._logger:debug("Found " .. Spearhead.Util.tableLength(missionZones) .. " mission zones for stage: " .. self.zoneName)
         for _, missionZone in pairs(missionZones) do
-            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZone, self._missionPriority, database, logger)
+            
+            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZone, self._missionPriority, database, logger, self)
             if mission then
                 self._db.missionsByCode[mission.code] = mission
+
+                if mission.name and self._db.missionsByName[mission.name] == nil then
+                    self._db.missionsByName[mission.name] = mission
+                else
+                    Spearhead.AddMissionEditorWarning("DUPLICATE MISSION NAME ALERT: " .. mission.name .. " in zone: " .. self.zoneName)
+                end
+
                 if mission.missionType == "SAM" then
                     table.insert(self._db.sams, mission)
                 else
@@ -146,7 +156,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         ---@type table<string, Array<Mission>>
         local randomMissionByName = {}
         for _, missionZoneName in pairs(randomMissionNames) do
-            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZoneName, self._missionPriority, database, logger)
+            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZoneName, self._missionPriority, database, logger, self)
             if mission then
                 if randomMissionByName[mission.name] == nil then
                     randomMissionByName[mission.name] = {}
@@ -164,6 +174,13 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
                     Spearhead.classes.persistence.Persistence.RegisterPickedRandomMission(mission.name, mission.zoneName)
 
                     self._db.missionsByCode[mission.code] = mission
+
+                    if mission.name and self._db.missionsByName[mission.name] == nil then
+                        self._db.missionsByName[mission.name] = mission
+                    else
+                        Spearhead.AddMissionEditorWarning("DUPLICATE MISSION NAME ALERT: " .. mission.name .. " in zone: " .. self.zoneName)
+                    end
+
                     if mission.missionType == "SAM" then
                         table.insert(self._db.sams, mission)
                     else
@@ -222,7 +239,7 @@ function Stage:IsComplete()
 
     for i, mission in pairs(self._db.sams) do
         local state = mission:getState()
-        if state == "ACTIVE" or state == "NEW" then
+        if state == "ACTIVE" or state == "NEW" or state =="WAITING" then
             return false
         end
     end
@@ -291,6 +308,16 @@ function Stage:CheckAndUpdateSelf()
             end
         end
     end
+end
+
+---@param missionName string
+---@return boolean
+function Stage:IsMissionComplete(missionName)
+
+    local mission = self._db.missionsByName[missionName]
+    if not mission then return true end
+
+    return mission:getState() == "COMPLETED"
 end
 
 ---private use only

@@ -64,7 +64,7 @@ function RunwayBombingTracker.trackWeaponTask(weaponTrackingArgs, time)
     local weapon = weaponTrackingArgs.weapon
     local self = weaponTrackingArgs.self
     
-    if not weapon then return nil end
+    if not weapon or weapon:isExist() == false then return nil end
 
     local pos = weapon:getPoint()
     local velocity = weapon:getVelocity()

@@ -153,6 +153,7 @@ do --aliases
 
     --- @alias MissionState
     --- | "NEW"
+    --- | "WAITING"
     --- | "ACTIVE"
     --- | "COMPLETED"
 

@@ -11,7 +11,7 @@
 ---@field CapDataPerStageNumber table<integer, CapData> table<StageNumber, table>
 ---@field CarrierRouteZones Array<string> All Carrier routes zones
 ---@field BlueSams Array<string> All blue sam zones
----@field DescriptionsByMission table<string,string> table<ZoneName, Description>
+---@field MissionAnnotations table<string, MissionAnnotations> table<ZoneName, MissionAnnotations>
 ---@field AirbaseDataPerAirfield table<string, AirbaseData>
 ---@field BlueSamDataPerZone table<string, BlueSamData>
 ---@field MissionZoneData table<string, MissionZoneData>
@@ -25,6 +25,10 @@
 ---@class CapRoute
 ---@field point1 Vec3
 ---@field point2 Vec3?
+
+---@class MissionAnnotations
+---@field description string?
+---@field dependsOn Array<string>
 
 ---@class StageZoneData
 ---@field StageZoneName string
@@ -70,7 +74,6 @@ function Database.New(Logger)
         CapRoutes = {},
         CapDataPerStageNumber = {},
         CarrierRouteZones = {},
-        DescriptionsByMission = {},
         MissionZones = {},
         MissionZonesLocations = {},
         StageZoneNames = {},
@@ -82,7 +85,8 @@ function Database.New(Logger)
         BlueSamDataPerZone = {},
         MissionZoneData = {},
         FarpZoneData = {},
-        missionCodes = {}
+        missionCodes = {},
+        MissionAnnotations = {}
     }
 
     Database.__index = Database
@@ -165,26 +169,38 @@ function Database.New(Logger)
             for i, layer in pairs(env.mission.drawings.layers) do
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
-                        if Spearhead.Util.startswith(layer_object.name, "stagebriefing", true) then
+                        if Spearhead.Util.startswith(string.lower(layer_object.name), "dependson", true) == true then
+
+                            for _, zonename in pairs(self._tables.MissionZones) do
+                                if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
+                                    if self._tables.MissionAnnotations[zonename] == nil then
+                                        self._tables.MissionAnnotations[zonename] = {
+                                            description = nil,
+                                            dependsOn = {}
+                                        }
+                                    end
+
+                                    for _, splitDependency in pairs(Spearhead.Util.split_string(layer_object.text, ",")) do
+                                        table.insert(self._tables.MissionAnnotations[zonename].dependsOn, splitDependency)
+                                    end
+                                end
+                            end
+                        elseif Spearhead.Util.startswith(layer_object.name, "stagebriefing", true) == true then
                             --[[
                                 TODO: Stage Briefings
                             ]]
                         else
-                            local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
-                                self._tables.MissionZones)
-                            if Spearhead.Util.tableLength(inZone) >= 1 then
-                                local name = inZone[1]
-                                if name ~= nil then
-                                    self._tables.DescriptionsByMission[name] = layer_object.text
-                                end
-                            end
+                            for _, zonename in pairs(self._tables.MissionZones) do
+                                if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
+                                    if self._tables.MissionAnnotations[zonename] == nil then
+                                        self._tables.MissionAnnotations[zonename] = {
+                                            description = "",
+                                            dependsOn = {}
+                                        }
+                                    end
 
-                            local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
-                                self._tables.RandomMissionZones)
-                            if Spearhead.Util.tableLength(inZone) >= 1 then
-                                local name = inZone[1]
-                                if name ~= nil then
-                                    self._tables.DescriptionsByMission[name] = layer_object.text
+                                    local missionAnnotation = self._tables.MissionAnnotations[zonename]
+                                    missionAnnotation.description = layer_object.text
                                 end
                             end
                         end
@@ -239,13 +255,13 @@ function Database.New(Logger)
     end
 
     for _, missionZone in pairs(self._tables.MissionZones) do
-        if self._tables.DescriptionsByMission[missionZone] == nil then
+        if self._tables.MissionAnnotations[missionZone] == nil or self._tables.MissionAnnotations[missionZone].description then
             Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
         end
     end
 
     for _, missionZone in pairs(self._tables.RandomMissionZones) do
-        if self._tables.DescriptionsByMission[missionZone] == nil then
+        if self._tables.MissionAnnotations[missionZone] == nil or self._tables.MissionAnnotations[missionZone].description then
             Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
         end
     end
@@ -584,8 +600,25 @@ function Database:loadMiscGroupsInStages()
     end
 end
 
-function Database:GetDescriptionForMission(missionZoneName)
-    return self._tables.DescriptionsByMission[missionZoneName]
+
+---@return string?
+function Database:getMissionBriefingForMissionZone(missionZoneName)
+    if not self._tables.MissionAnnotations[missionZoneName] then
+        return nil
+    end
+
+    return self._tables.MissionAnnotations[missionZoneName].description
+end
+
+
+---@param missionZoneName string
+---@return Array<string>
+function Database:getMissionDependencies(missionZoneName)
+    if not self._tables.MissionAnnotations[missionZoneName] then
+        return {}
+    end
+
+    return self._tables.MissionAnnotations[missionZoneName].dependsOn
 end
 
 ---comment
@@ -687,10 +720,6 @@ function Database:getGroupsForMissionZone(missionZoneName)
     return missionZoneData.Groups
 end
 
----@return string?
-function Database:getMissionBriefingForMissionZone(missionZoneName)
-    return self._tables.DescriptionsByMission[missionZoneName]
-end
 
 ---@param stageName string
 ---@return table result airbase Names

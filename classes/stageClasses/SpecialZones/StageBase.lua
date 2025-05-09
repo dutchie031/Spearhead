@@ -110,9 +110,12 @@ function StageBase:CleanRedUnits()
         value:SpawnCorpsesOnly()
     end
 
-    for _, unitName in pairs(self._cleanup_units) do
-        Spearhead.DcsUtil.DestroyUnit(unitName)
-        Spearhead.DcsUtil.CleanCorpse(unitName)
+    for unitName, shouldClean in pairs(self._cleanup_units) do
+        if shouldClean == true then
+            Spearhead.DcsUtil.DestroyUnit(unitName)
+            Spearhead.DcsUtil.CleanCorpse(unitName)
+        end
+        
     end
 
 end
