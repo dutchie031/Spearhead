@@ -50,6 +50,18 @@ do -- INIT UTIL
         return list[random]
     end
 
+    ---@param str string
+    ---@param find string
+    ---@param replace string
+    ---@return string
+    function UTIL.replaceString(str, find, replace)
+        if str == nil then return "" end
+        if find == nil or replace == nil then return str end
+
+        local result = str:gsub(find, replace)
+        return result
+    end
+
     local function table_print(tt, indent, done)
         done = done or {}
         indent = indent or 0
@@ -372,7 +384,7 @@ do     -- INIT DCS_UTIL
 
                                             group = staticObj
                                         end
-                                        
+
                                         if skippable == false then
                                             table.insert(DCS_UTIL.__groupNames, name)
                                             DCS_UTIL.__miz_groups[name] =
@@ -453,6 +465,8 @@ do     -- INIT DCS_UTIL
                 if airbases then
                     for _, airbase in pairs(airbases) do
                         local name = airbase:getName()
+
+                        airbase:autoCapture(false)
 
                         DCS_UTIL.__airbaseNamesById[tostring(airbase:getID())] = name
 
@@ -733,6 +747,63 @@ do     -- INIT DCS_UTIL
         return nil;
     end
 
+    ---@param location Vec2
+    ---@param unitType string
+    function DCS_UTIL.convertVec2ToUnitUsableType(location, unitType)
+
+        local height = land.getHeight(location)
+        local vec3 = { x = location.x, y = height, z = location.y }
+
+        if unitType == "AH-64D_BLK_II" then
+            return DCS_UTIL.convertToDisplayCoord(vec3, "MGRS")
+        end
+
+        return DCS_UTIL.convertToDisplayCoord(vec3, "DDM")
+    end
+
+    ---@alias CoordType
+    ---| "MGRS"
+    ---| "DDM"
+
+    ---@param location Vec3
+    ---@param coordType CoordType
+    function DCS_UTIL.convertToDisplayCoord(location, coordType)
+        local lattitude, longitude, altitude = coord.LOtoLL(location)
+
+        if coordType == "MGRS" then
+            local mgrs = coord.LLtoMGRS(lattitude, longitude)
+            return string.format("%s %s %s %s", mgrs.UTMZone, mgrs.MGRSDigraph, mgrs.Northing, mgrs.Easting)
+        end
+
+        -- Convert DD to DDM (Degrees Decimal Minutes)
+        local function dd_to_ddm(dd)
+            local degrees = math.floor(math.abs(dd))
+            local minutes = (math.abs(dd) - degrees) * 60
+            local sign = dd >= 0 and 1 or -1
+            return degrees * sign, minutes
+        end
+
+        local lat_deg, lat_min = dd_to_ddm(lattitude)
+        local lon_deg, lon_min = dd_to_ddm(longitude)
+
+        local lat_hemisphere = lattitude >= 0 and "N" or "S"
+        local lon_hemisphere = longitude >= 0 and "E" or "W"
+
+        return string.format("%d° %.3f' %s %d° %.3f' %s %d ft",
+            math.abs(lat_deg), lat_min, lat_hemisphere,
+            math.abs(lon_deg), lon_min, lon_hemisphere,
+            altitude * 3,28084)
+    end
+
+    ---@param group Group
+    function DCS_UTIL.getUnitTypeFromGroup(group)
+        for _, unit in pairs(group:getUnits()) do
+            if unit and unit:isExist() then
+                return unit:getTypeName()
+            end
+        end
+    end
+    
     --- get the group config as per start of the mission
     --- group = {
     ---     category,

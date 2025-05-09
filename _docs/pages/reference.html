@@ -54,7 +54,7 @@
                             <li><a href="#waiting-stages" class="side-nav-h3">Waiting Stages</a></li>
                             <li><a href="#mission-zones" class="side-nav-h3">Mission Zones</a></li>
                             <li><a href="#cap-routes" class="side-nav-h3">CAP Routes</a></li>
-                            <li><a href="#cap-zones" class="side-nav-h3">CAP Zones</a></li>
+                            <li><a href="#farp-zones" class="side-nav-h3">FARP Zones</a></li>
                         </ul>
                     </li>
                     <li><a href="#mission-types" class="side-nav-h2">Mission Types</a>
@@ -65,6 +65,11 @@
                             <li><a href="#strike" class="side-nav-h3">STRIKE</a></li>
                         </ul>
                     </li>
+                    <li><a href="#mission-briefings" class="side-nav-h2">Mission Briefings</a>
+                        <ul>
+                            <li><a href="#special-fields" class="side-nav-h3">Special Fields</a></li>
+                        </ul>
+                    </li>
                     <li><a href="#cap-configuration" class="side-nav-h2">CAP Configuration</a>
                         <ul>
                             <li><a href="#cap-group-naming" class="side-nav-h3">CAP Group Naming</a></li>
@@ -73,6 +78,7 @@
                         </ul>
                     </li>
                     <li><a href="#randomization" class="side-nav-h2">Randomization</a></li>
+                    <li><a href="#runway-bombing" class="side-nav-h2">Runway Bombing</a></li>
                 </ul>
             </div>
 
@@ -258,6 +264,21 @@
                 <p>
                     STRIKE missions target strategic objectives, such as supply depots or command centers. <br />
                     <strong>Completion Logic:</strong> Destroy all designated targets in the zone.
+                </p>
+
+                <h2 id="mission-briefings">Mission Briefings</h2>
+                <p>
+                    Mission briefings are text boxes (draw layer) inside of the trigger zone of the mission. <br />
+                </p>
+
+                <h3 id ="special-fields">Special Fields</h3>
+                <p>
+                    Special fields are used to display information in the mission briefings. <br />
+                    They are replaced with the corresponding values at the time a briefing is requested and can therefore show real time data. <br/>
+
+
+                    <strong>Field:</strong> <span class="inline-lua"><span class="lua-variable">{{coords}}</span></span><br/>
+                    Coords are taken from the location of the trigger zone. Then converted to the aircrafts preferred format. <br/>
                 </p>
 
                 <h2 id="cap-configuration">CAP Configuration</h2>

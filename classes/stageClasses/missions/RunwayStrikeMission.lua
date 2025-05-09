@@ -57,6 +57,8 @@ function RunwayStrikeMission.new(runway, airbaseName, database, logger, runwayBo
         return nil
     end
 
+    self.location = { x= runway.position.x, y = runway.position.z }
+
     runwayBombingTracker:RegisterRunway(runway, self)
 
     return self
