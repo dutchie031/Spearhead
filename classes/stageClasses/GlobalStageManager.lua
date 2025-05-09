@@ -208,6 +208,9 @@ GlobalStageManager.printFullOverview = function ()
     
     local logger = Spearhead.LoggerTemplate.new("StageOverview", "INFO")
     logger:info("Stage overview:")
+
+    local max = 0 
+    local lines = {}
     for stageIndex, stages  in pairs(StagesByIndex) do
         
         local totalStrike = 0
@@ -224,9 +227,23 @@ GlobalStageManager.printFullOverview = function ()
             totaldead = totaldead + dead
             totalMissions = totalMissions + strike + dead + bai
         end
-        logger:info("Stage# " .. tostring(stageIndex).. " | " .. totalStrike .. " strikes |  " .. totaldead .. " dead | " .. totalbai .. " BAI | Total:" .. totalMissions)
+
+        local index = tonumber(stageIndex)
+        if index then
+            if index > max then
+                max = index
+            end
+            lines[index] ="Stage# " .. tostring(stageIndex).. " | " .. totalStrike .. " strikes |  " .. totaldead .. " dead | " .. totalbai .. " BAI | Total:" .. totalMissions
+        else
+            logger:warn("Stage index is not a number: " .. stageIndex)
+        end
     end
 
+    for i = 1, max do
+        if lines[i] then
+            logger:info(lines[i])
+        end
+    end
 
 end
 
