@@ -1,6 +1,7 @@
 
 SpearheadConfig = {
 
+    ---DEBUG LOGGING
     debugEnabled = false, -- default false
 
     CapConfig = {
@@ -60,9 +61,6 @@ SpearheadConfig = {
         -- Amount of stages that are pre-activated on top of the current active stage.
         -- In Pre-activated the missions are not listed, but SAMs and Airbase groups are spawned.
         preactivateStage = 1, -- default 1
-
-        ---DEBUG logging. Consider keeping this disabled
-        debugEnabled = false
     },
     Persistence = {
         --- io and lfs cannot be sanitized in the MissionScripting.lua

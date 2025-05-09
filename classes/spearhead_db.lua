@@ -1,4 +1,3 @@
-
 ---@class DatabaseTables
 ---@field AllZoneNames Array<string> All Zone Names
 ---@field StageZoneNames Array<string> All Stage Zone Names
@@ -17,13 +16,13 @@
 ---@field BlueSamDataPerZone table<string, BlueSamData>
 ---@field MissionZoneData table<string, MissionZoneData>
 ---@field FarpZoneData table<string,FarpZoneData>
----@field missionCodes table<string, boolean> 
+---@field missionCodes table<string, boolean>
 
 ---@class CapData
 ---@field routes Array<CapRoute>
 ---@field current integer
 
----@class CapRoute 
+---@class CapRoute
 ---@field point1 Vec3
 ---@field point2 Vec3?
 
@@ -57,14 +56,13 @@
 
 ---@class Database
 ---@field private _tables DatabaseTables
----@field private _logger Logger 
+---@field private _logger Logger
 local Database = {}
 
 ---comment
 ---@param Logger Logger
 ---@return Database
 function Database.New(Logger)
-    
     ---@type DatabaseTables
     local tables = {
         AllZoneNames = {},
@@ -98,7 +96,7 @@ function Database.New(Logger)
     do -- INIT ZONE TABLES
         for zone_ind, zone_data in pairs(Spearhead.DcsUtil.__trigger_zones) do
             local zone_name = zone_data.name
-            
+
             ---@type Vec2
             local zoneLocation = { x = zone_data.location.x, y = zone_data.location.y }
 
@@ -167,13 +165,13 @@ function Database.New(Logger)
             for i, layer in pairs(env.mission.drawings.layers) do
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
-
-                        if Spearhead.Util.startswith(layer_object.name,  "stagebriefing", true) then
+                        if Spearhead.Util.startswith(layer_object.name, "stagebriefing", true) then
                             --[[
                                 TODO: Stage Briefings
                             ]]
                         else
-                            local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY, self._tables.MissionZones)
+                            local inZone = Spearhead.DcsUtil.isPositionInZones(layer_object.mapX, layer_object.mapY,
+                                self._tables.MissionZones)
                             if Spearhead.Util.tableLength(inZone) >= 1 then
                                 local name = inZone[1]
                                 if name ~= nil then
@@ -190,8 +188,6 @@ function Database.New(Logger)
                                 end
                             end
                         end
-
-                        
                     end
                 end
             end
@@ -201,7 +197,6 @@ function Database.New(Logger)
     for _, stageZoneName in pairs(self._tables.StageZoneNames) do
         local stageData = self._tables.StageZones[stageZoneName]
         if stageData then
-
             -- fill blue sams
             for _, blueSamStageName in pairs(self._tables.BlueSams) do
                 if Spearhead.DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
@@ -233,33 +228,30 @@ function Database.New(Logger)
             -- fill airbases
             for _, airbase in pairs(world.getAirbases()) do
                 local point = airbase:getPoint()
-                
-                if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, stageZoneName)  == true then
+
+                if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, stageZoneName) == true then
                     if airbase:getDesc().category == 0 then
                         table.insert(stageData.AirbaseNames, airbase:getName())
                     end
                 end
             end
-
-            for _, missionZone in pairs(self._tables.MissionZones) do
-                if self._tables.DescriptionsByMission[missionZone] == nil then
-                    Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
-                end
-            end
-
-            for _, missionZone in pairs(self._tables.RandomMissionZones) do
-                if self._tables.DescriptionsByMission[missionZone] == nil then
-                    Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
-                end
-            end
-
         end
     end
-    
-    for _, farpZoneName in pairs(self._tables.AllFarpZones) do
-        
-        for _, airbase in pairs(world.getAirbases()) do
 
+    for _, missionZone in pairs(self._tables.MissionZones) do
+        if self._tables.DescriptionsByMission[missionZone] == nil then
+            Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
+        end
+    end
+
+    for _, missionZone in pairs(self._tables.RandomMissionZones) do
+        if self._tables.DescriptionsByMission[missionZone] == nil then
+            Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
+        end
+    end
+
+    for _, farpZoneName in pairs(self._tables.AllFarpZones) do
+        for _, airbase in pairs(world.getAirbases()) do
             if airbase:getDesc().category == Airbase.Category.HELIPAD then
                 local name = airbase:getName()
 
@@ -270,7 +262,7 @@ function Database.New(Logger)
                     }
                 end
                 local position = airbase:getPoint()
-                if Spearhead.DcsUtil.isPositionInZone(position.x, position.z,  farpZoneName) == true then
+                if Spearhead.DcsUtil.isPositionInZone(position.x, position.z, farpZoneName) == true then
                     table.insert(self._tables.FarpZoneData[farpZoneName].padNames, name)
                 end
             end
@@ -302,16 +294,14 @@ function Database.New(Logger)
     self:loadAirbaseGroups()
     self:loadMiscGroupsInStages()
 
-   
-    for _, zoneData in pairs(self._tables.StageZones) do
 
+    for _, zoneData in pairs(self._tables.StageZones) do
         local number = zoneData.StageIndex
 
         for _, cap_route_zone in pairs(self._tables.CapRoutes) do
             if Spearhead.DcsUtil.isZoneInZone(cap_route_zone, zoneData.StageZoneName) == true then
                 local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
                 if zone then
-                    
                     ---@type CapData
                     local capData = self._tables.CapDataPerStageNumber[number]
                     if capData == nil then
@@ -321,12 +311,12 @@ function Database.New(Logger)
                         }
                         self._tables.CapDataPerStageNumber[number] = capData
                     end
-                    
+
 
                     if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                        table.insert(capData.routes, { point1 = { x = zone.location.x, z = zone.location.y, y = 0 }, point2 = nil })
+                        table.insert(capData.routes,
+                            { point1 = { x = zone.location.x, z = zone.location.y, y = 0 }, point2 = nil })
                     else
-                        
                         local biggest = nil
                         local biggestA = nil
                         local biggestB = nil
@@ -382,9 +372,7 @@ function Database.New(Logger)
 
 
     return self
-
 end
-
 
 local is_group_taken = {}
 
@@ -419,8 +407,6 @@ function Database:initAvailableUnits()
     end
 end
 
-
-
 ---@private
 function Database:loadCapUnits()
     local all_groups = getAvailableCAPGroups()
@@ -432,13 +418,13 @@ function Database:loadCapUnits()
         local zone = Spearhead.DcsUtil.getAirbaseZoneByName(airbase:getName())
 
         if zone == nil then
-            zone = { 
-                location = {x = point.x, y = point.z} , 
+            zone = {
+                location = { x = point.x, y = point.z },
                 radius = 4000,
                 name = "temp_zone",
                 verts = {},
                 zone_type = "Cilinder"
-             }
+            }
         end
 
 
@@ -503,7 +489,6 @@ end
 function Database:loadFarpGroups()
     local all_groups = getAvailableGroups()
     for _, farpZone in pairs(self._tables.AllFarpZones) do
-
         if self._tables.FarpZoneData[farpZone] == nil then
             self._tables.FarpZoneData[farpZone] = {
                 groups = {},
@@ -520,10 +505,8 @@ function Database:loadFarpGroups()
 end
 
 function Database:loadAirbaseGroups()
-
     local all_groups = getAvailableGroups()
     for _, stageZone in pairs(self._tables.StageZones) do
-        
         for _, baseName in pairs(stageZone.AirbaseNames) do
             local base = Airbase.getByName(baseName)
 
@@ -533,13 +516,13 @@ function Database:loadAirbaseGroups()
                 local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneByName(baseName)
 
                 if airbaseZone == nil then
-                    airbaseZone = { 
-                        location = {x = point.x, y = point.z} , 
+                    airbaseZone = {
+                        location = { x = point.x, y = point.z },
                         radius = 4000,
                         name = "temp_zone",
                         verts = {},
                         zone_type = "Cilinder"
-                     }
+                    }
                 end
 
 
@@ -601,7 +584,6 @@ function Database:loadMiscGroupsInStages()
     end
 end
 
-
 function Database:GetDescriptionForMission(missionZoneName)
     return self._tables.DescriptionsByMission[missionZoneName]
 end
@@ -642,16 +624,15 @@ function Database:getCapRouteInZone(stageNumber, baseName)
         local stageZoneName = Spearhead.Util.randomFromList(self._tables.StageZonesByNumber[stageNumber]) or "none"
         local stagezone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
         if stagezone then
-
             ---@type Airbase?
             local base = Airbase.getByName(baseName)
             if base then
                 local closest = nil
                 if stagezone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                    closest = GetClosestPointOnCircle({ x = stagezone.location.x, z = stagezone.location.y }, stagezone.radius,
+                    closest = GetClosestPointOnCircle({ x = stagezone.location.x, z = stagezone.location.y },
+                        stagezone.radius,
                         base:getPoint())
                 else
-
                     local closestDistance = -1
                     for _, vert in pairs(stagezone.verts) do
                         local pos = base:getPoint()
@@ -675,7 +656,6 @@ function Database:getCapRouteInZone(stageNumber, baseName)
         return nil
     end
 end
-
 
 ---@return Array<string> result a  list of stage zone names
 function Database:getStagezoneNames()
@@ -715,7 +695,6 @@ end
 ---@param stageName string
 ---@return table result airbase Names
 function Database:getAirbaseNamesInStage(stageName)
-    
     local stageData = self._tables.StageZones[stageName]
     if not stageData then return {} end
 
@@ -734,8 +713,6 @@ function Database:getFarpDataForZone(farpZoneName)
     if not farpData then return nil end
     return farpData
 end
-
-
 
 ---@param airbaseName string
 ---@return Array<string>
@@ -800,7 +777,6 @@ function Database:GetNewMissionCode()
         TODO: What to do when there's no random possible
     ]]
 end
-
 
 if not Spearhead then Spearhead = {} end
 Spearhead.DB = Database
