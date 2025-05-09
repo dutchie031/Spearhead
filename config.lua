@@ -1,6 +1,8 @@
 
 SpearheadConfig = {
 
+    debugEnabled = false, -- default false
+
     CapConfig = {
         --quickly enable of disable the entire CAP Logic 
         --(you can also just rename all units to not be named "CAP_")

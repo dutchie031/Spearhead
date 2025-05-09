@@ -2,10 +2,8 @@
 --Single player purpose
 
 local defaultLogLevel = "INFO"
-local debug = false
-local id = net.get_my_player_id()
-if id == 0 then
-    debug = true
+
+if SpearheadConfig and SpearheadConfig.debugEnabled == true then
     defaultLogLevel = "DEBUG"
 end
 
@@ -52,6 +50,8 @@ local duration = (timer.getTime() * 1000) - startTime
 standardLogger:info("Spearhead Initialisation duration: " .. tostring(duration) .. "ms")
 
 Spearhead.LoadingDone()
+
+Spearhead.internal.GlobalStageManager:printFullOverview()
 
 --Check lines of code in directory per file: 
 -- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }; && GCI . -Include *.lua* -Recurse | foreach{(GC $_).Count} | measure-object -sum |  % Sum  

@@ -198,7 +198,36 @@ function GlobalStageManager:NewAndStart(database, stageConfig, logLevel)
         end
     end
 
+
+
     return o
+end
+
+
+GlobalStageManager.printFullOverview = function ()
+    
+    local logger = Spearhead.LoggerTemplate.new("StageOverview", "INFO")
+    logger:info("Stage overview:")
+    for stageIndex, stages  in pairs(StagesByIndex) do
+        
+        local totalStrike = 0
+        local totalbai = 0
+        local totaldead = 0
+        local totalMissions = 0
+
+        for _, stage in pairs(stages) do
+            
+            local strike, dead, bai = stage:GetStageStats()
+
+            totalStrike = totalStrike + strike
+            totalbai = totalbai + bai
+            totaldead = totaldead + dead
+            totalMissions = totalMissions + strike + dead + bai
+        end
+        logger:info("Stage# " .. tostring(stageIndex).. " | " .. totalStrike .. " strikes |  " .. totaldead .. " dead | " .. totalbai .. " BAI | Total:" .. totalMissions)
+    end
+
+
 end
 
 ---comment

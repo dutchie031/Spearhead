@@ -124,6 +124,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
 
         return time + 20
     end
+    
 
     do -- load tables
         local missionZones = database:getMissionsForStage(self.zoneName)
@@ -448,6 +449,29 @@ function Stage:ActivateBlueGroups()
             farp:Activate()
         end
     end
+end
+
+---@return number strike
+---@return number dead
+---@return number bai
+function Stage:GetStageStats()
+
+    local strike = 0
+    local dead = 0
+    local bai = 0
+
+    for _, mission in pairs(self._db.missions) do
+        if mission.missionType == "STRIKE" then
+            strike = strike + 1
+        elseif mission.missionType == "DEAD" then
+            dead = dead + 1
+        elseif mission.missionType == "BAI" then
+            bai = bai + 1
+        end
+    end
+
+    return strike, dead, bai
+
 end
 
 function Stage:ActivateBlueStage()
