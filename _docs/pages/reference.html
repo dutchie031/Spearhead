@@ -321,6 +321,15 @@
                     Spearhead will pick one random mission from zones with the same name.
                 </p>
 
+                <h2 id="in-stage-dependencies">In stage depencies</h2>
+                <p>
+                    If you want to have missions inside of a stage depends on each other you can. <br/>
+                    Add a text drawing box inside of the mission trigger zone with the name: 
+                    <span class="inline-lua"><span class="lua-variable">dependson_[freeform]</span></span> <br/>
+                    And in the text add the "Name" of the mission zone you want the mission to depend on. <br/>
+                    The mission will be "pre-activated" (spawned) but won't have a f10 mission menu until the mission(s) it depends on is completed. <br/>
+                </p>
+
                 <h2>Runway Bombing</h2>
                 <p>
                     Runway bombing can be a very effective OCA tactic. With Spearhead we've tried adding as much logic and detail to it so it will feel as engaging as possible. <br/>
@@ -332,9 +341,6 @@
                         | Section 1 | Section 2 | Section 3 | Section 4 | Section 5 | <br/>
                         +-----------+-----------+-----------+-----------+-----------+ <br/>
                     </span>
-                    
-
-
                 </p>
             </div>
         </div>
