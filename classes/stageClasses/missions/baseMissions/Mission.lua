@@ -73,10 +73,24 @@ function Mission:StartCheckingContinuous() end
 ---comment
 ---@param groupId number
 function Mission:ShowBriefing(groupId)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupId)
+    if group == nil then return end
+
+    local unitType = Spearhead.DcsUtil.getUnitTypeFromGroup(group)
+    local coords = Spearhead.DcsUtil.convertVec2ToUnitUsableType(self.location, unitType)
+    self._logger:debug("Coords converted: " .. coords)
+
     local stateString = self:ToStateString()
     if self._missionBriefing == nil or self._missionBriefing == "" then self._missionBriefing = "No briefing available" end
+
+    local briefing = self._missionBriefing
+
+    briefing = Spearhead.Util.replaceString(briefing, "{{coords}}", coords)
+    briefing = Spearhead.Util.replaceString(briefing, "{{ coords }}", coords)
+
     local text = "Mission [" ..
-    self.code .. "] " .. self.name .. "\n \n" .. self._missionBriefing .. " \n \n" .. stateString
+    self.code .. "] " .. self.name .. "\n \n" .. briefing .. " \n \n" .. stateString
     trigger.action.outTextForGroup(groupId, text, 30);
 end
 
