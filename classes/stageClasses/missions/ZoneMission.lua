@@ -4,6 +4,8 @@
 ---@class ZoneMission : Mission, OnUnitLostListener
 ---@field private _state MissionState
 ---@field private _missionGroups MissionGroups
+---@field private _dependencies table<string, boolean>
+---@field private _parentStage Stage
 local ZoneMission = {}
 
 --- @class MissionGroups
@@ -58,8 +60,9 @@ MINIMAL_UNITS_ALIVE_RATIO = 0.21
 ---@param priority MissionPriority
 ---@param database Database
 ---@param logger Logger
+---@param parentStage Stage
 ---@return ZoneMission?
-function ZoneMission.new(zoneName, priority, database, logger)
+function ZoneMission.new(zoneName, priority, database, logger, parentStage)
     local Mission = Spearhead.classes.stageClasses.missions.baseMissions.Mission
     ZoneMission.__index = ZoneMission
     setmetatable(ZoneMission, Mission)
@@ -80,6 +83,8 @@ function ZoneMission.new(zoneName, priority, database, logger)
         return nil
     end
 
+    --- parent new done
+
     if self.missionType == "SAM" then
         self.missionTypeDisplay = "DEAD"
     end
@@ -91,6 +96,15 @@ function ZoneMission.new(zoneName, priority, database, logger)
         hasTargets = false,
         groupNamesPerunit = {}
     }
+
+    self._parentStage = parentStage
+    self._dependencies = {}
+
+    local dependencies = database:getMissionDependencies(zoneName)
+    for _, dependency in pairs(dependencies) do
+        self._dependencies[dependency] = false
+    end
+
 
     local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
     local groupNames = database:getGroupsForMissionZone(zoneName)
@@ -129,6 +143,48 @@ function ZoneMission.new(zoneName, priority, database, logger)
     self._logger:debug("Mission " .. self.name .. " group count: " .. Spearhead.Util.tableLength(groupNames))
 
     return self
+end
+
+---@private
+function ZoneMission:StartCheckingDependencies()
+
+
+    self._state = "WAITING"
+
+    ---comment
+    ---@param mission ZoneMission
+    ---@param time any
+    ---@return unknown
+    local function CheckDependencies(mission, time)
+        
+        if mission:AllDependenciesMet() == true then
+            mission:SpawnActive()
+            return nil
+        end
+
+        return time + 15
+    end
+
+    timer.scheduleFunction(CheckDependencies, self, timer.getTime() + 15)
+end
+
+---@return boolean
+function ZoneMission:AllDependenciesMet()
+    local allDependenciesMet = true
+    for missionName, value in pairs(self._dependencies) do
+        if self._parentStage:IsMissionComplete(missionName) == false then
+            allDependenciesMet = false
+            self._dependencies[missionName] = false
+        else
+            self._dependencies[missionName] = true
+        end
+    end
+
+    if allDependenciesMet == true then
+        self._logger:info("All dependencies met for " .. self.name)
+    end
+
+    return allDependenciesMet
 end
 
 ---@internal
@@ -229,7 +285,6 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
             self._state = "COMPLETED"
         end
     end
-
 end
 
 function ZoneMission:SpawnPersistedState()
@@ -242,13 +297,18 @@ end
 function ZoneMission:SpawnInactive()
     self._logger:info("PreActivating " .. self.name)
 
-    self._state = "ACTIVE"
     for _, group in pairs(self._missionGroups.groups) do
         group:Spawn()
     end
 end
 
 function ZoneMission:SpawnActive()
+
+    if self:AllDependenciesMet() == false then
+        self:SpawnInactive()
+        self:StartCheckingDependencies()
+        return
+    end
 
     self._logger:info("Activating " .. self.name)
 
@@ -270,6 +330,7 @@ end
 
 ---@private
 function ZoneMission:StartCheckingContinuous()
+
     ---comment
     ---@param mission Mission
     ---@param time any
@@ -278,6 +339,7 @@ function ZoneMission:StartCheckingContinuous()
         mission:UpdateState(true, true)
 
         if mission:getState() == "COMPLETED" then
+            mission:NotifyMissionComplete()
             return nil
         end
         return time + 30

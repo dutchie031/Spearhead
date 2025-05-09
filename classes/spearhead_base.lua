@@ -529,7 +529,7 @@ do     -- INIT DCS_UTIL
     end
 
     ---checks if the groupname is a static group
-    ---@param groupName any
+    ---@param groupName string
     function DCS_UTIL.IsGroupStatic(groupName)
         if DCS_UTIL.__miz_groups[groupName] then
             return DCS_UTIL.__miz_groups[groupName].category == 5;
@@ -555,6 +555,7 @@ do     -- INIT DCS_UTIL
     end
 
     ---destroy the given unit
+    ---@param unitName string
     function DCS_UTIL.DestroyUnit(unitName)
         if DCS_UTIL.IsGroupStatic(unitName) == true then
             local object = StaticObject.getByName(unitName)
