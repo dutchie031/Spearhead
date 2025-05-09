@@ -470,6 +470,10 @@ function Stage:GetStageStats()
         end
     end
 
+    for _, mission in pairs(self._db.sams) do
+        dead = dead + 1
+    end
+
     return strike, dead, bai
 
 end
