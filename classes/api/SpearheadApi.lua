@@ -2,7 +2,7 @@
 local MissionCompleteListeners = {}
 
 ---@type SpearheadAPI
-local SpearheadAPI = {
+SpearheadAPI = {
     Stages = {
         changeStage = function(stageNumber)
             if type(stageNumber) ~= "number" then
@@ -51,6 +51,3 @@ local SpearheadAPI = {
 
 
 }
-
-if Spearhead == nil then Spearhead = {} end
-Spearhead.API = SpearheadAPI
