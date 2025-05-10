@@ -116,6 +116,14 @@ jobs:
           sed -i '/@@API_CODE@@/d' _docs/pages/spearheadapi.html
           rm _docs/pages/temp_api_code.html
 
+      - name: Highlight API code and update HTML
+        run: |
+          pygmentize -f html -l lua -O noclasses,style=monokai classes/api/SpearheadApiDoc.lua > _docs/pages/temp_config_code.html
+          # Insert the highlighted code into the placeholder in spearheadapi.html
+          sed -i '/@@CONFIG_CODE@@/r _docs/pages/temp_config_code.html' _docs/pages/reference.html
+          sed -i '/@@CONFIG_CODE@@/d' _docs/pages/reference.html
+          rm _docs/pages/temp_config_code.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

@@ -96,80 +96,8 @@
                 </p>
 
                 <pre>
-<span class="lua-variable">SpearheadConfig</span> <span class="lua-operator">=</span> {
-
-    <span class="lua-variable">CapConfig</span> <span class="lua-operator">=</span> {
-        <span class="lua-comment">--quickly enable of disable the entire CAP Logic</span> 
-        <span class="lua-comment">--(you can also just rename all units to not be named "CAP_")</span>
-        <span class="lua-variable">enabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">true</span>, <span class="lua-comment">-- default true</span>
-        
-        <span class="lua-comment">--min ground speed for CAP aircraft during patrol</span>
-        <span class="lua-comment">-- unit: knots</span>
-        <span class="lua-variable">minSpeed</span> <span class="lua-operator">=</span> <span class="lua-variable">400</span>, <span class="lua-comment">-- default 400</span>
-
-        <span class="lua-comment">--max speed for CAP aircraft during patrol</span>
-        <span class="lua-comment">-- unit: knots</span>
-        <span class="lua-variable">maxSpeed</span> <span class="lua-operator">=</span> <span class="lua-variable">500</span>, <span class="lua-comment">-- default 500</span>
-
-        <span class="lua-comment">--minAlt for aircraft on patrol</span>
-        <span class="lua-comment">-- unit: feet</span>
-        <span class="lua-variable">minAlt</span> <span class="lua-operator">=</span> <span class="lua-variable">18000</span>, <span class="lua-comment">-- default 18000</span>
-
-        <span class="lua-comment">--maxAlt for aircraft on patrol</span>
-        <span class="lua-comment">-- unit: feet</span>
-        <span class="lua-variable">maxAlt</span> <span class="lua-operator">=</span> <span class="lua-variable">28000</span>, <span class="lua-comment">-- default 28000</span>
-
-        <span class="lua-comment">--Delay for aircraft from touchdown to off the chocks.</span>
-        <span class="lua-comment">-- unit: seconds</span>
-        <span class="lua-variable">rearmDelay</span> <span class="lua-operator">=</span> <span class="lua-variable">600</span>, <span class="lua-comment">-- default 600</span>
-
-        <span class="lua-comment">--Delay for aircraft from death to takeoff.</span>
-        <span class="lua-comment">--When the seconds remaining is the same at the rearmDelay it will be spawned on the ramp and follow the rearm logic.</span>
-        <span class="lua-comment">-- !! Can not be lower than rearmDelay</span>
-        <span class="lua-comment">-- unit: seconds</span>
-        <span class="lua-variable">deathDelay</span> <span class="lua-operator">=</span> <span class="lua-variable">1800</span>, <span class="lua-comment">-- default 1800</span>
-    },
-    <span class="lua-variable">StageConfig</span> <span class="lua-operator">=</span> {
-        
-        <span class="lua-comment">-- management of stages and its missions.</span> 
-        <span class="lua-comment">-- This is not related to CAP managers which will continue to work even if stage management is disabled</span>
-        <span class="lua-variable">enabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">true</span>, <span class="lua-comment">-- default true</span>
-
-        <span class="lua-comment">--Will draw the active and the next stage</span> 
-        <span class="lua-variable">drawStages</span> <span class="lua-operator">=</span> <span class="lua-keyword">true</span>, <span class="lua-comment">-- default true</span>
-
-        <span class="lua-comment">--AutoStages will continue to the next stage automatically on completion of the missions within the stage.</span> 
-        <span class="lua-comment">-- If you want to make it so the next stage triggers only when you want to disable it here and manually implement the actions needed.</span>
-        <span class="lua-comment">--[
-            TODO: Add manual stage transition documentation
-        ]]</span>
-        <span class="lua-variable">autoStages</span> <span class="lua-operator">=</span> <span class="lua-keyword">true</span>, <span class="lua-comment">--default true</span>
-
-        <span class="lua-comment">--Maximum missions per stage (includes all types of missions)</span>
-        <span class="lua-variable">maxMissionStage</span> <span class="lua-operator">=</span> <span class="lua-variable">10</span>,
-
-        <span class="lua-comment">--Stage starting number</span>
-        <span class="lua-variable">startingStage</span> <span class="lua-operator">=</span> <span class="lua-variable">1</span>,
-
-        <span class="lua-comment">---DEBUG logging. Consider keeping this disabled</span>
-        <span class="lua-variable">debugEnabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">false</span>
-    },
-    <span class="lua-variable">Persistence</span> <span class="lua-operator">=</span> {
-        <span class="lua-comment">--- io and lfs cannot be sanitized in the MissionScripting.lua</span>
-        
-        <span class="lua-comment">--- enables or disables the persistence logic in spearhead</span>
-        <span class="lua-variable">enabled</span> <span class="lua-operator">=</span> <span class="lua-keyword">false</span>,
-
-        <span class="lua-comment">--- sets the directory where the persistence file is stored</span>
-        <span class="lua-comment">--- if nil then lfs.writedir() will be used.</span> 
-        <span class="lua-comment">--- which will</span> 
-        <span class="lua-variable">directory</span> <span class="lua-operator">=</span> <span class="lua-keyword">nil</span>,
-
-        <span class="lua-comment">--- the filename of the persistence file. Should end with .json for convention, but any text extension should do.</span>
-        <span class="lua-variable">fileName</span> <span class="lua-operator">=</span> <span class="lua-string">"Spearhead_Persistence.json"</span>
-
-    }
-}</pre>
+                    @@CONFIG_CODE@@
+                </pre>
 
 
                 <h2 id="general-naming-conventions">Naming Conventions</h2>
