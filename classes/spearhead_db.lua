@@ -275,13 +275,13 @@ function Database.New(Logger)
     end
 
     for _, missionZone in pairs(self._tables.MissionZones) do
-        if not self._tables.MissionAnnotations[missionZone] == nil or not self._tables.MissionAnnotations[missionZone].description then
+        if self._tables.MissionAnnotations[missionZone] == nil or self._tables.MissionAnnotations[missionZone].description == nil then
             Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
         end
     end
 
     for _, missionZone in pairs(self._tables.RandomMissionZones) do
-        if not self._tables.MissionAnnotations[missionZone] == nil or not self._tables.MissionAnnotations[missionZone].description then
+        if self._tables.MissionAnnotations[missionZone] == nil or self._tables.MissionAnnotations[missionZone].description == nil then
             Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
         end
     end
