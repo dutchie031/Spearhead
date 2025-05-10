@@ -166,62 +166,36 @@ function Database.New(Logger)
 
     self._logger:debug("initiated zone tables, continuing with descriptions")
     do --load markers
+    
         if env.mission.drawings and env.mission.drawings.layers then
             for i, layer in pairs(env.mission.drawings.layers) do
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
+
                         if Spearhead.Util.startswith(string.lower(layer_object.name), "completeat", true) == true then
-                            for _, zonename in pairs(self._tables.MissionZones) do
-                                if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
-                                    if self._tables.MissionAnnotations[zonename] == nil then
-                                        self._tables.MissionAnnotations[zonename] = {
-                                            description = nil,
-                                            dependsOn = {}
-                                        }
-                                    end
-
-                                    local missionAnnotation = self._tables.MissionAnnotations[zonename]
-                                    local number = tonumber(layer_object.text)
-
-                                    if number and number > 1 then
-                                        number = number / 100
-                                    end
-                                    missionAnnotation.completeAt = number
+                            
+                            local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)
+                            if annotationData then
+                                local number = tonumber(layer_object.text)
+                                if number and number > 1 then
+                                    number = number / 100
+                                    
                                 end
+                                annotationData.completeAt = number
                             end
                         elseif Spearhead.Util.startswith(string.lower(layer_object.name), "dependson", true) == true then
-
-                            for _, zonename in pairs(self._tables.MissionZones) do
-                                if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
-                                    if self._tables.MissionAnnotations[zonename] == nil then
-                                        self._tables.MissionAnnotations[zonename] = {
-                                            description = nil,
-                                            dependsOn = {}
-                                        }
-                                    end
-
-                                    for _, splitDependency in pairs(Spearhead.Util.split_string(layer_object.text, ",")) do
-                                        table.insert(self._tables.MissionAnnotations[zonename].dependsOn, splitDependency)
-                                    end
-                                end
+                            local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)
+                            if annotationData then
+                                table.insert(annotationData.dependsOn, layer_object.text)
                             end
                         elseif Spearhead.Util.startswith(layer_object.name, "stagebriefing", true) == true then
                             --[[
                                 TODO: Stage Briefings
                             ]]
                         else
-                            for _, zonename in pairs(self._tables.MissionZones) do
-                                if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
-                                    if self._tables.MissionAnnotations[zonename] == nil then
-                                        self._tables.MissionAnnotations[zonename] = {
-                                            description = "",
-                                            dependsOn = {}
-                                        }
-                                    end
-
-                                    local missionAnnotation = self._tables.MissionAnnotations[zonename]
-                                    missionAnnotation.description = layer_object.text
-                                end
+                            local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)
+                            if annotationData then
+                                annotationData.description = layer_object.text
                             end
                         end
                     end
@@ -441,6 +415,40 @@ function Database:initAvailableUnits()
             is_group_taken[value] = false
         end
     end
+end
+
+---@private
+---@param layer_object table
+---@return MissionAnnotations?
+function Database:getMissionMetaDataForDrawLayer(layer_object)
+    for _, zonename in pairs(self._tables.MissionZones) do
+        if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
+            
+            if self._tables.MissionAnnotations[zonename] == nil then
+                self._tables.MissionAnnotations[zonename] = {
+                    description = nil,
+                    dependsOn = {}
+                }
+            end
+
+            return self._tables.MissionAnnotations[zonename]
+        end
+    end
+
+    for _, zonename in pairs(self._tables.RandomMissionZones) do
+        if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
+            
+            if self._tables.MissionAnnotations[zonename] == nil then
+                self._tables.MissionAnnotations[zonename] = {
+                    description = nil,
+                    dependsOn = {}
+                }
+            end
+
+            return self._tables.MissionAnnotations[zonename]
+        end
+    end
+    return nil
 end
 
 ---@private
