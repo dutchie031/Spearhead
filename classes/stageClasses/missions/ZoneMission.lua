@@ -43,7 +43,7 @@ local function ParseZoneName(input)
 
     if parsedType == "nil" then
         Spearhead.AddMissionEditorWarning("Mission with zonename '" ..
-        input .. "' has an unsupported type '" .. (type or "nil"))
+            input .. "' has an unsupported type '" .. (type or "nil"))
         return nil
     end
     local name = split_name[3]
@@ -114,6 +114,8 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
     else
         self._completeAtIndex = completeAtIndex
     end
+
+    self._logger:debug("Complete at index " .. self.zoneName .. ": " .. self._completeAtIndex)
 
     local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
     local groupNames = database:getGroupsForMissionZone(zoneName)
@@ -264,8 +266,9 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
             end
         end
 
-        local deadRatio = (total-alive) / total
+        local deadRatio = (total - alive) / total
         if deadRatio >= self._completeAtIndex then
+            self._logger:debug("Dead ratio " .. self.zoneName .. deadRatio .. " >= " .. self._completeAtIndex)
             self._state = "COMPLETED"
         end
     else
@@ -281,8 +284,10 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
             end
         end
 
-        local deadRatio = (total-alive) / total
+        local deadRatio = (total - alive) / total
         if deadRatio >= self._completeAtIndex then
+            self._logger:debug("Dead ratio " .. self.zoneName .. deadRatio .. " >= " .. self._completeAtIndex)
+
             self._state = "COMPLETED"
         end
     end
