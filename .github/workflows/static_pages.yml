@@ -112,8 +112,13 @@ jobs:
         run: |
           pygmentize -f html -l lua -O noclasses,style=monokai classes/api/SpearheadApiDoc.lua > _docs/pages/temp_api_code.html
           # Insert the highlighted code into the placeholder in spearheadapi.html
+<<<<<<< HEAD
           sed -i '/@@API_CODE@@/r _docs/pages/temp_api_code.html' _docs/pages/spearheadapi.html
           sed -i '/@@API_CODE@@/d' _docs/pages/spearheadapi.html
+=======
+          sed -i "/#\{API_CODE\}#/r _docs/pages/temp_api_code.html" _docs/pages/spearheadapi.html
+          sed -i "/#\{API_CODE\}#/d" _docs/pages/spearheadapi.html
+>>>>>>> b0dd6b62c6d71280e746bb4a895fc1e6ec83c549
           rm _docs/pages/temp_api_code.html
 
       - name: Setup Pages
