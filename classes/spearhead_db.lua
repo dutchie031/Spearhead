@@ -29,6 +29,7 @@
 ---@class MissionAnnotations
 ---@field description string?
 ---@field dependsOn Array<string>
+---@field completeAt number?
 
 ---@class StageZoneData
 ---@field StageZoneName string
@@ -169,7 +170,26 @@ function Database.New(Logger)
             for i, layer in pairs(env.mission.drawings.layers) do
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
-                        if Spearhead.Util.startswith(string.lower(layer_object.name), "dependson", true) == true then
+                        if Spearhead.Util.startswith(string.lower(layer_object.name), "completeat", true) == true then
+                            for _, zonename in pairs(self._tables.MissionZones) do
+                                if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
+                                    if self._tables.MissionAnnotations[zonename] == nil then
+                                        self._tables.MissionAnnotations[zonename] = {
+                                            description = nil,
+                                            dependsOn = {}
+                                        }
+                                    end
+
+                                    local missionAnnotation = self._tables.MissionAnnotations[zonename]
+                                    local number = tonumber(layer_object.text)
+
+                                    if number and number > 1 then
+                                        number = number / 100
+                                    end
+                                    missionAnnotation.completeAt = number
+                                end
+                            end
+                        elseif Spearhead.Util.startswith(string.lower(layer_object.name), "dependson", true) == true then
 
                             for _, zonename in pairs(self._tables.MissionZones) do
                                 if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
@@ -619,6 +639,15 @@ function Database:getMissionDependencies(missionZoneName)
     end
 
     return self._tables.MissionAnnotations[missionZoneName].dependsOn
+end
+
+---@return number?
+function Database:getMissionCompleteAt(missionZoneName)
+    if not self._tables.MissionAnnotations[missionZoneName] then
+        return nil
+    end
+
+    return self._tables.MissionAnnotations[missionZoneName].completeAt
 end
 
 ---comment

@@ -1,10 +1,9 @@
-
-
 --- ZoneMission is missions that are defined by zones in the ME
 ---@class ZoneMission : Mission, OnUnitLostListener
 ---@field private _state MissionState
 ---@field private _missionGroups MissionGroups
 ---@field private _dependencies table<string, boolean>
+---@field private _completeAtIndex number
 ---@field private _parentStage Stage
 local ZoneMission = {}
 
@@ -15,7 +14,7 @@ local ZoneMission = {}
 --- @field targetsAlive table<string, table<string, boolean>>
 --- @field groupNamesPerunit table<string,string>
 
----@class ParsedMissionName 
+---@class ParsedMissionName
 ---@field missionName string
 ---@field type MissionType
 
@@ -43,7 +42,8 @@ local function ParseZoneName(input)
     if inputType == "sam" then parsedType = "SAM" end
 
     if parsedType == "nil" then
-        Spearhead.AddMissionEditorWarning("Mission with zonename '" .. input .. "' has an unsupported type '" .. (type or "nil" ))
+        Spearhead.AddMissionEditorWarning("Mission with zonename '" ..
+        input .. "' has an unsupported type '" .. (type or "nil"))
         return nil
     end
     local name = split_name[3]
@@ -77,7 +77,8 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
 
     local missionBriefing = database:getMissionBriefingForMissionZone(zoneName) or "no briefing provided"
 
-    local success, error = Mission.newSuper(self, zoneName, parsed.missionName, parsed.type, missionBriefing, priority, database, logger)
+    local success, error = Mission.newSuper(self, zoneName, parsed.missionName, parsed.type, missionBriefing, priority,
+        database, logger)
     if not success then
         logger:error("Failed to create ZoneMission " .. zoneName .. " => " .. error)
         return nil
@@ -105,6 +106,14 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
         self._dependencies[dependency] = false
     end
 
+    local completeAtIndex = database:getMissionCompleteAt(zoneName)
+    if completeAtIndex == nil and self.missionType == "BAI" then
+        self._completeAtIndex = 0.8
+    elseif completeAtIndex == nil then
+        self._completeAtIndex = 1
+    else
+        self._completeAtIndex = completeAtIndex
+    end
 
     local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
     local groupNames = database:getGroupsForMissionZone(zoneName)
@@ -147,8 +156,6 @@ end
 
 ---@private
 function ZoneMission:StartCheckingDependencies()
-
-
     self._state = "WAITING"
 
     ---comment
@@ -156,7 +163,6 @@ function ZoneMission:StartCheckingDependencies()
     ---@param time any
     ---@return unknown
     local function CheckDependencies(mission, time)
-        
         if mission:AllDependenciesMet() == true then
             mission:SpawnActive()
             return nil
@@ -226,62 +232,57 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
             end
         end
 
-        for groupName, unitNameDict in pairs(self._missionGroups.unitsAlive) do
-            for unitName, isAlive in pairs(unitNameDict) do
-                if isAlive == true then
-                    self._missionGroups.unitsAlive[groupName][unitName] = unitAliveState(unitName)
+        if self._missionGroups.hasTargets == true then
+            for groupName, unitNameDict in pairs(self._missionGroups.targetsAlive) do
+                for unitName, isAlive in pairs(unitNameDict) do
+                    if isAlive == true then
+                        self._missionGroups.targetsAlive[groupName][unitName] = unitAliveState(unitName)
+                    end
                 end
             end
-        end
-
-        for groupName, unitNameDict in pairs(self._missionGroups.targetsAlive) do
-            for unitName, isAlive in pairs(unitNameDict) do
-                if isAlive == true then
-                    self._missionGroups.targetsAlive[groupName][unitName] = unitAliveState(unitName)
+        else
+            for groupName, unitNameDict in pairs(self._missionGroups.unitsAlive) do
+                for unitName, isAlive in pairs(unitNameDict) do
+                    if isAlive == true then
+                        self._missionGroups.unitsAlive[groupName][unitName] = unitAliveState(unitName)
+                    end
                 end
             end
         end
     end
 
     if self._missionGroups.hasTargets == true then
-        local anyTargetAlive = function()
-            for _, units in pairs(self._missionGroups.targetsAlive) do
-                for _, isAlive in pairs(units) do
-                    if isAlive == true then
-                        return true
-                    end
+        local total = 0
+        local alive = 0
+
+        for _, units in pairs(self._missionGroups.targetsAlive) do
+            for _, isAlive in pairs(units) do
+                total = total + 1
+                if isAlive == true then
+                    alive = alive + 1
                 end
             end
-            return false
         end
 
-        if anyTargetAlive() ~= true then
+        local deadRatio = (total-alive) / total
+        if deadRatio >= self._completeAtIndex then
             self._state = "COMPLETED"
         end
     else
-        local function CountAliveGroups()
-            local aliveGroups = 0
+        local total = 0
+        local alive = 0
 
-            for _, group in pairs(self._missionGroups.unitsAlive) do
-                local groupTotal = 0
-                local groupDeath = 0
-                for _, isAlive in pairs(group) do
-                    if isAlive ~= true then
-                        groupDeath = groupDeath + 1
-                    end
-                    groupTotal = groupTotal + 1
-                end
-
-                local aliveRatio = (groupTotal - groupDeath) / groupTotal
-                if aliveRatio >= MINIMAL_UNITS_ALIVE_RATIO then
-                    aliveGroups = aliveGroups + 1
+        for _, units in pairs(self._missionGroups.unitsAlive) do
+            for _, isAlive in pairs(units) do
+                total = total + 1
+                if isAlive == true then
+                    alive = alive + 1
                 end
             end
-
-            return aliveGroups
         end
 
-        if CountAliveGroups() == 0 then
+        local deadRatio = (total-alive) / total
+        if deadRatio >= self._completeAtIndex then
             self._state = "COMPLETED"
         end
     end
@@ -293,7 +294,7 @@ function ZoneMission:SpawnPersistedState()
     end
 end
 
----spawns the mission, but doesn't add 
+---spawns the mission, but doesn't add
 function ZoneMission:SpawnInactive()
     self._logger:info("PreActivating " .. self.name)
 
@@ -303,7 +304,6 @@ function ZoneMission:SpawnInactive()
 end
 
 function ZoneMission:SpawnActive()
-
     if self:AllDependenciesMet() == false then
         self:SpawnInactive()
         self:StartCheckingDependencies()
@@ -327,10 +327,8 @@ function ZoneMission:SpawnActive()
     self:StartCheckingContinuous()
 end
 
-
 ---@private
 function ZoneMission:StartCheckingContinuous()
-
     ---comment
     ---@param mission Mission
     ---@param time any
@@ -417,8 +415,6 @@ function ZoneMission:OnUnitLost(object)
     end
     self:UpdateState(false, true)
 end
-
-
 
 if not Spearhead.classes then Spearhead.classes = {} end
 if not Spearhead.classes.stageClasses then Spearhead.classes.stageClasses = {} end
