@@ -110,7 +110,7 @@ jobs:
 
       - name: Highlight API code and update HTML
         run: |
-          pygmentize -f html -l lua -O noclasses,style=monokai ./config.lua > _docs/pages/temp_api_code.html
+          pygmentize -f html -l lua -O noclasses,style=monokai classes/api/SpearheadApiDoc.lua > _docs/pages/temp_api_code.html
           # Insert the highlighted code into the placeholder in spearheadapi.html
           sed -i '/@@API_CODE@@/r _docs/pages/temp_api_code.html' _docs/pages/spearheadapi.html
           sed -i '/@@API_CODE@@/d' _docs/pages/spearheadapi.html
@@ -118,7 +118,7 @@ jobs:
 
       - name: Highlight API code and update HTML
         run: |
-          pygmentize -f html -l lua -O noclasses,style=monokai classes/api/SpearheadApiDoc.lua > _docs/pages/temp_config_code.html
+          pygmentize -f html -l lua -O noclasses,style=monokai ./config.lua > _docs/pages/temp_config_code.html
           # Insert the highlighted code into the placeholder in spearheadapi.html
           sed -i '/@@CONFIG_CODE@@/r _docs/pages/temp_config_code.html' _docs/pages/reference.html
           sed -i '/@@CONFIG_CODE@@/d' _docs/pages/reference.html
