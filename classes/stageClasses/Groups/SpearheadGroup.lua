@@ -93,7 +93,12 @@ function SpearheadGroup:Destroy()
     Spearhead.DcsUtil.DestroyGroup(self.groupName)
 end
 
----comment
+---@return boolean
+function SpearheadGroup:IsStatic()
+    return self._isStatic
+end
+
+
 ---@return integer
 function SpearheadGroup:GetCoalition()
     if self._isStatic == true then
