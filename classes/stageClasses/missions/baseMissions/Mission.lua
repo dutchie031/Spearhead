@@ -114,8 +114,8 @@ function Mission:NotifyMissionComplete()
         end)
     end
 
-    pcall(function()
-        Spearhead.API.Internal.notifyMissionComplete(self.zoneName)
+    local succ, err = pcall(function()
+        SpearheadAPI.Internal.notifyMissionComplete(self.zoneName)
     end)
 
 end

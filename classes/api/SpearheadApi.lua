@@ -1,7 +1,14 @@
 ---@type Array<OnMissionCompleteListener>
 local MissionCompleteListeners = {}
 
----@type SpearheadAPI
+---@class FullSpearheadAPI : SpearheadAPI
+---@field Internal SpearheadAPIInternal
+
+---@class SpearheadAPIInternal 
+---@field notifyMissionComplete fun(zone_name: string)
+
+
+---@type FullSpearheadAPI
 SpearheadAPI = {
     Stages = {
         changeStage = function(stageNumber)
