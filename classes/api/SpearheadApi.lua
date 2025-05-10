@@ -1,55 +1,56 @@
+---@type Array<OnMissionCompleteListener>
+local MissionCompleteListeners = {}
 
+---@type SpearheadAPI
+local SpearheadAPI = {
+    Stages = {
+        changeStage = function(stageNumber)
+            if type(stageNumber) ~= "number" then
+                return false, "stageNumber " .. stageNumber .. " is not a valid number"
+            end
 
+            Spearhead.Events.PublishStageNumberChanged(stageNumber)
+            return true, ""
+        end,
+        getCurrentStage = function()
+            return Spearhead.StageNumber or nil
+        end,
+        isStageComplete = function(stageNumber)
+            if type(stageNumber) ~= "number" then
+                return false, "stageNumber " .. stageNumber .. " is not a valid number"
+            end
 
+            local isComplete = Spearhead.internal.GlobalStageManager.isStageComplete(stageNumber)
+            if isComplete == nil then
+                return nil, "no stage found with number " .. stageNumber
+            end
 
-
-local SpearheadAPI = {}
-do
-
-    SpearheadAPI.Stages = {}
-
-    --- Changes the active stage of spearhead.
-    --- All other stages will change based on the normal logic. (CAP, BLUE etc.)
-    --- @param stageNumber number the stage number you want changed
-    --- @return boolean success indicator of success
-    --- @return string message error message
-    SpearheadAPI.Stages.changeStage = function(stageNumber) 
-        if type(stageNumber) ~= "number" then
-            return false, "stageNumber " .. stageNumber .. " is not a valid number"
+            return isComplete, ""
         end
+    },
+    Missions = {
+        addOnMissionCompleteListener = function(listener)
+            if type(listener) ~= "table" or type(listener.onMissionComplete) ~= "function" then
+                error("listener is not a valid OnMissionCompleteListener")
+            end
 
-        Spearhead.Events.PublishStageNumberChanged(stageNumber)
-        return true, ""
-    end
-
-    ---Returns the current stange number
-    ---Returns nil when the stagenumber was not set before ever, which means Spearhead was not started.
-    ---@return number | nil
-    SpearheadAPI.Stages.getCurrentStage = function()
-        return Spearhead.StageNumber or nil
-    end
-
-    ---returns whether a stage (by index) is complete. 
-    ---@param stageNumber number
-    ---@return boolean | nil
-    ---@return string 
-    SpearheadAPI.isStageComplete = function(stageNumber)
-        if type(stageNumber) ~= "number" then
-            return false, "stageNumber " .. stageNumber .. " is not a valid number"
+            table.insert(MissionCompleteListeners, listener)
         end
+    },
 
-        local isComplete = Spearhead.internal.GlobalStageManager.isStageComplete(stageNumber)
-        if isComplete == nil then
-            return nil, "no stage found with number " .. stageNumber
-        end
+    --- Internal Functions for the API that can be called through the rest of the Framework
+    Internal = {
+        notifyMissionComplete = function(zone_name)
+            for _, listener in ipairs(MissionCompleteListeners) do
+                    pcall(function()
+                        listener:onMissionComplete(zone_name)
+                    end)
+            end
+        end,
+    }
 
-        return isComplete, ""
-    end
 
-end
-
+}
 
 if Spearhead == nil then Spearhead = {} end
 Spearhead.API = SpearheadAPI
-
-
