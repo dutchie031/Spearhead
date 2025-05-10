@@ -289,7 +289,7 @@ end
 
 function ZoneMission:SpawnPersistedState()
     for _, group in pairs(self._missionGroups.groups) do
-        group:SpawnCorpsesOnly()
+        group:Spawn()
     end
 end
 

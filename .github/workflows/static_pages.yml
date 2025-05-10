@@ -103,6 +103,19 @@ jobs:
           find _docs -type f -name "*.html" -exec sed -i "s/#{BETA_VERSION}#/${{ steps.latest_beta.outputs.tag }}/g" {} \;
           find _docs -type f -name "*.html" -exec sed -i "s/#{BETA_VERSION_DATE}#/${{ steps.latest_beta.outputs.date }}/g" {} \;
 
+      - name: Install Python and Pygments
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install pygments
+
+      - name: Highlight API code and update HTML
+        run: |
+          pygmentize -f html -l lua -O noclasses,style=monokai classes/api/SpearheadApiDoc.lua > _docs/pages/temp_api_code.html
+          # Insert the highlighted code into the placeholder in spearheadapi.html
+          sed -i "/#\{API_CODE\}#/r _docs/pages/temp_api_code.html" _docs/pages/spearheadapi.html
+          sed -i "/#\{API_CODE\}#/d" _docs/pages/spearheadapi.html
+          rm _docs/pages/temp_api_code.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

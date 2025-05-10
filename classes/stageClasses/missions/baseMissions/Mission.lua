@@ -113,6 +113,11 @@ function Mission:NotifyMissionComplete()
             listener:OnMissionComplete(self)
         end)
     end
+
+    pcall(function()
+        Spearhead.API.Internal.notifyMissionComplete(self.zoneName)
+    end)
+
 end
 
 ---endregion
