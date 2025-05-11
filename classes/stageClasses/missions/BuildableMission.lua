@@ -4,12 +4,12 @@
 ---@field private _requiredCrates number
 ---@field private _targetZoneName string
 ---@field private _database Database
----@field private _onCrateDroppedOfListeners Array<
+---@field private _onCrateDroppedOfListeners Array<OnCrateDropperListener>
 local BuildableMission = {}
 BuildableMission.__index = BuildableMission
 
 ---@class OnCrateDropperListener 
----@field onCrateDroppedOf function
+---@field onCrateDroppedOf fun(self:OnCrateDropperListener, mission:BuildableMission)
 
 ---@param database Database
 ---@param targetZoneName string
@@ -23,6 +23,7 @@ function BuildableMission.new(database, targetZoneName, requiredCrates)
 
     self._onCrateDroppedOfListeners = {}
 
+    
 
     return self
 
@@ -31,6 +32,15 @@ end
 function BuildableMission:AddOnCrateDroppedOfListener(listener)
     table.insert(self._onCrateDroppedOfListeners, listener)
 end
+
+function BuildableMission:NotifyCrateDroppedOf()
+    for _, listener in ipairs(self._onCrateDroppedOfListeners) do
+        if listener.onCrateDroppedOf then
+            listener:onCrateDroppedOf(self)
+        end
+    end
+end
+
 
 
 if not Spearhead.classes then Spearhead.classes = {} end
