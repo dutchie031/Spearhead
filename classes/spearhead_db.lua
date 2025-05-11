@@ -47,7 +47,8 @@
 ---@field BlueGroups Array<string>
 
 ---@class BlueSamData
----@field Groups Array<string>
+---@field groups Array<string>
+---@field buildingCrates number?
 
 ---@class MissionZoneData
 ---@field Groups Array<string>
@@ -172,7 +173,13 @@ function Database.New(Logger)
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
 
-                        if Spearhead.Util.startswith(string.lower(layer_object.name), "completeat", true) == true then
+                        if Spearhead.Util.startswith(string.lower(layer_object.name), "author", true) == true then
+                            local blueSamData = self:getBlueSamDataForDrawLayer(layer_object)
+                            if blueSamData then
+                                local number = tonumber(layer_object.text)
+                                blueSamData.buildingCrates = number
+                            end
+                        elseif Spearhead.Util.startswith(string.lower(layer_object.name), "completeat", true) == true then
                             
                             local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)
                             if annotationData then
@@ -417,6 +424,30 @@ function Database:initAvailableUnits()
     end
 end
 
+---comment
+---@param layer_object table
+---@return BlueSamData?
+function Database:getBlueSamDataForDrawLayer(layer_object)
+    for _, zonename in pairs(self._tables.MissionZones) do
+        if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
+            return self:getOrCreateBlueSamDataForZone(zonename)
+        end
+    end
+    return nil
+end
+
+function Database:getOrCreateBlueSamDataForZone(zoneName)
+    local blueSamData = self._tables.BlueSamDataPerZone[zoneName]
+    if blueSamData == nil then
+        blueSamData = {
+            groups = {},
+            buildingCrates = nil
+        }
+        self._tables.BlueSamDataPerZone[zoneName] = blueSamData
+    end
+    return blueSamData
+end
+
 ---@private
 ---@param layer_object table
 ---@return MissionAnnotations?
@@ -487,13 +518,12 @@ end
 function Database:loadBlueSamUnits()
     local all_groups = Spearhead.DcsUtil.getAllGroupNames()
     for _, blueSamZone in pairs(self._tables.BlueSams) do
-        self._tables.BlueSamDataPerZone[blueSamZone] = {
-            Groups = {}
-        }
+        
+        local samData = self:getOrCreateBlueSamDataForZone(blueSamZone)
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
         for _, groupName in pairs(groups) do
             is_group_taken[groupName] = true
-            table.insert(self._tables.BlueSamDataPerZone[blueSamZone].Groups, groupName)
+            table.insert(samData.groups, groupName)
         end
     end
 end
@@ -797,11 +827,9 @@ function Database:getBlueSamsInStage(stageName)
 end
 
 ---@param samZone string
----@return Array<string>
-function Database:getBlueSamGroupsInZone(samZone)
-    local blueSamData = self._tables.BlueSamDataPerZone[samZone]
-    if not blueSamData then return {} end
-    return blueSamData.Groups
+---@return BlueSamData?
+function Database:getBlueSamDataForZone(samZone)
+    return self._tables.BlueSamDataPerZone[samZone]
 end
 
 ---@param airbaseName string

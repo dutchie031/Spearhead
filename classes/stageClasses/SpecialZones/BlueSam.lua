@@ -6,8 +6,13 @@
 ---@field private _zoneName string
 ---@field private _blueGroups Array<SpearheadGroup>
 ---@field private _cleanupUnits table<string, boolean>
+---@field private _buildableCrates number?
 local BlueSam = {}
 
+---@param database Database
+---@param logger Logger
+---@param zoneName string
+---@return BlueSam?
 function BlueSam.New(database, logger, zoneName)
     BlueSam.__index = BlueSam
     local self = setmetatable({}, BlueSam)
@@ -19,48 +24,50 @@ function BlueSam.New(database, logger, zoneName)
     self._blueGroups = {}
     self._cleanupUnits = {}
 
-    do
-        local groups = database:getBlueSamGroupsInZone(zoneName)
+    local blueSamData = database:getBlueSamDataForZone(zoneName)
 
-        ---@type table<string, Vec3>
-        local blueUnitsPos = {}
+    if blueSamData == nil then
+        logger:error("Blue SAM data not found for zone: " .. zoneName)
+        return nil
+    end
 
-        ---@type table<string, Vec3>
-        local redUnitsPos = {}
+    self._buildableCrates = blueSamData.buildingCrates
 
-        for _, groupName in pairs(groups) do
-            local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
-            if SpearheadGroup then
-                
-                if SpearheadGroup:GetCoalition() == 2 then
-                    table.insert(self._blueGroups, SpearheadGroup)
-                end
+    ---@type table<string, Vec3>
+    local blueUnitsPos = {}
 
+    ---@type table<string, Vec3>
+    local redUnitsPos = {}
 
-                for _, unit in pairs(SpearheadGroup:GetUnits()) do
-                    if SpearheadGroup:GetCoalition() == 1 then
-                        table.insert(blueUnitsPos, unit:getPoint())
-                    elseif SpearheadGroup:GetCoalition() == 2 then
-                        table.insert(redUnitsPos, unit:getPoint())
-                    end
-                end
-
+    for _, groupName in pairs(blueSamData.groups) do
+        local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
+        if SpearheadGroup then
+            
+            if SpearheadGroup:GetCoalition() == 2 then
+                table.insert(self._blueGroups, SpearheadGroup)
             end
-            SpearheadGroup:Destroy()
-        end
 
-        do -- check cleanup requirements
-            -- Checks is any of the units are withing range (5m) of another unit. 
-            -- If so, make sure to add them to the cleanup list.
-        
-            local cleanup_distance = 5
-            for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
-                for redUnitName, redUnitPos in pairs(redUnitsPos) do
-                    local distance = Spearhead.Util.VectorDistance3d(blueUnitPos, redUnitPos)
-                    if distance <= cleanup_distance then
-                        self._cleanupUnits[redUnitName] = true
-                    end
+
+            for _, unit in pairs(SpearheadGroup:GetUnits()) do
+                if SpearheadGroup:GetCoalition() == 1 then
+                    table.insert(blueUnitsPos, unit:getPoint())
+                elseif SpearheadGroup:GetCoalition() == 2 then
+                    table.insert(redUnitsPos, unit:getPoint())
                 end
+            end
+
+        end
+        SpearheadGroup:Destroy()
+    end
+
+        
+    --Cleanup units
+    local cleanup_distance = 5
+    for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
+        for redUnitName, redUnitPos in pairs(redUnitsPos) do
+            local distance = Spearhead.Util.VectorDistance3d(blueUnitPos, redUnitPos)
+            if distance <= cleanup_distance then
+                self._cleanupUnits[redUnitName] = true
             end
         end
     end
@@ -69,6 +76,15 @@ function BlueSam.New(database, logger, zoneName)
 end
 
 function BlueSam:Activate()
+
+    if self._buildableCrates == nil or self._buildableCrates == 0 then
+        self:SpawnGroups()
+    else
+        --- Create buildable mission and listen to events
+    end
+end
+
+function BlueSam:SpawnGroups()
     for unitName, needsCleanup in pairs(self._cleanupUnits) do
         if needsCleanup == true then
             Spearhead.DcsUtil.DestroyUnit(unitName)
