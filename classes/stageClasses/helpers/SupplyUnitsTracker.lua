@@ -1,11 +1,11 @@
----@class SupplyUnitsLocationTracker
----@field private _unitPositions table<string, Vec3>
+---@class SupplyUnitsTracker
+---@field private _supplyUnits Array<Unit>
 local SupplyUnitsLocationTracker = {}
 
 -- A single class tracking all units is more than enough.
 local singleton = nil
 
-function SupplyUnitsLocationTracker.new()
+function SupplyUnitsLocationTracker.getOrCreate()
 
     if singleton == nil then
         singleton = setmetatable({}, SupplyUnitsLocationTracker)
@@ -24,8 +24,7 @@ function SupplyUnitsLocationTracker:OnPlayerEntersUnit(unit)
     if unit == nil then return end
 
     if self:IsSupplyUnit(unit) == false then return end
-
-    self._unitPositions[unit:getName()] = unit:getPoint()
+    table.insert(self._supplyUnits, unit)
 end
 
 ---@private
@@ -39,25 +38,9 @@ function SupplyUnitsLocationTracker:IsSupplyUnit(unit)
     return false
 end
 
-function SupplyUnitsLocationTracker:StartTracking()
-    
-    local function trackUnits(selfA, time)
-        selfA:UpdateUnits()
-        return time + 5
-    end
-
-    timer.scheduleFunction(trackUnits, self, timer.getTime() + 5)
-end
-
-function SupplyUnitsLocationTracker:UpdateUnits()
-    for unitName, _ in pairs(self._unitPositions) do
-        local unit = Unit.getByName(unitName)
-        if unit and unit:isExist() then
-            self._unitPositions[unitName] = unit:getPoint()
-        else
-            self._unitPositions[unitName] = nil
-        end
-    end
+---@return Array<Unit>
+function SupplyUnitsLocationTracker:GetUnits()
+    return self._supplyUnits
 end
 
 if Spearhead == nil then Spearhead = {} end

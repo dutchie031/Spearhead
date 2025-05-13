@@ -5,6 +5,7 @@
 ---@field lastUpdate number @last update time
 ---@field updateContinuous fun(self: MissionCommandsHelper, time: number): number @function to update commands continuously
 ---@field pinnedByGroup table<string, Mission> @table of pinned missions by group ID
+---@field supplyHubGroups table<string, SupplyHub> @table of supply hub groups by their ID
 ---@field private _logger Logger @logger instance for logging
 local MissionCommandsHelper = {}
 MissionCommandsHelper.__index = MissionCommandsHelper
@@ -161,8 +162,6 @@ function MissionCommandsHelper:AddPinnedMission(groupID)
 
 end
 
-
----comment
 ---@param groupID number
 function MissionCommandsHelper:updateCommandsForGroup(groupID)
 
@@ -192,7 +191,8 @@ end
 
 local folderNames = {
     primary = "Primary Missions",
-    secondary = "Secondary Missions"
+    secondary = "Secondary Missions",
+    supplyHub = "Supply Hub"
 }
 
 
@@ -226,12 +226,37 @@ function MissionCommandsHelper:addMissionCommands(groupId, mission)
     end
 end
 
+---@private
+---@param groupID integer
+function MissionCommandsHelper:AddSupplyHubCommands(groupID)
+
+    local hub = self.supplyHubGroups[tostring(groupID)]
+    if not hub then return end
+    
+    
+
+
+end
+
 ---@param mission Mission
 function MissionCommandsHelper:AddMissionToCommands(mission)
     self._logger:debug("Adding mission to commands: [" .. mission.code .. "]" .. mission.name)
     self.missionsByCode[tostring(mission.code)] = mission
     self.enabledByCode[tostring(mission.code)] = true
     self.updateNeeded = true
+end
+
+---@param groupID integer
+---@param supplyHub SupplyHub
+function MissionCommandsHelper:AddSupplyHubCommandsForGroup(groupID, supplyHub)
+    self.supplyHubGroups[tostring(groupID)] = supplyHub
+    self:updateCommandsForGroup(groupID)
+end
+
+---@param groupID integer
+function MissionCommandsHelper:RemoveSupplyHubCommandsForGroup(groupID)
+    self.supplyHubGroups[tostring(groupID)] = nil
+    self:updateCommandsForGroup(groupID)
 end
 
 ---Removes a mission from the F10 commands menu
@@ -244,8 +269,14 @@ end
 ---@private
 ---@param groupId integer
 function MissionCommandsHelper:addMissionFolders(groupId)
+
     missionCommands.addSubMenuForGroup(groupId, folderNames.primary)
     missionCommands.addSubMenuForGroup(groupId, folderNames.secondary)
+
+    if self.supplyHubGroups[tostring(groupId)] ~= nil then
+        missionCommands.addSubMenuForGroup(groupId, folderNames.supplyHub)
+    end
+
 end
 
 ---@private
@@ -253,6 +284,7 @@ end
 function MissionCommandsHelper:removeMissionFolders(groupId)
     missionCommands.removeItemForGroup(groupId, { folderNames.primary })
     missionCommands.removeItemForGroup(groupId, { folderNames.secondary })
+    missionCommands.removeItemForGroup(groupId, { folderNames.supplyHub })
 end
 
 ---@private
@@ -264,7 +296,6 @@ function MissionCommandsHelper:ResetFolders(groupID)
     self:addMissionFolders(groupID)
 end
 
----comment
 ---@param unit Unit
 function MissionCommandsHelper:OnPlayerEntersUnit(unit)
     if unit then
