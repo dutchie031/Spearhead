@@ -13,10 +13,12 @@ local SupplyConfig = {
     ["FARP_CRATE"] = {
         weight = 1000,
         displayName = "FARP Crate",
+        staticType = "container_cargo",
     },
     ["SAM_CRATE"] = {
         weight = 1000,
         displayName = "SAM Crate",
+        staticType = "container_cargo",
     },
 }
 
