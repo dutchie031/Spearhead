@@ -7,6 +7,7 @@
 ---@field private _missionCommandsHelper MissionCommandsHelper
 ---@field private _inZone table<string, boolean>
 ---@field private _drawID number
+---@field private _cargoInUnits table<table<string, number>
 local SupplyHub = {}
 
 ---@param database Database
@@ -46,6 +47,65 @@ function SupplyHub:Activate()
     self:StartMonitoringUnitsForCommands()
 end
 
+---Loads a crate directly into the unit
+---@param groupID number
+---@param crateType SupplyType  
+function SupplyHub:UnitRequestCrateLoading(groupID, crateType)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group ~= nil then
+
+        local crateConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
+        if crateConfig == nil then
+            self._logger:error("Invalid crate type: " .. crateType)
+            return
+        end
+
+        local unit = group:getUnit(1)
+        if unit == nil then return end
+        if unit:isExist() == false then return end
+
+        trigger.action.setUnitInternalCargo(unit:getName(), crateConfig.weight)
+        self._missionCommandsHelper:AddSupplyCargoToGroup(groupID, crateType)
+        trigger.action.outTextForUnit(unit:getID(), "Loaded crate of type " .. crateType, 10)
+
+    end
+end
+
+
+---Spawns a crate for sling loading
+---@param groupID number
+---@param crateType SupplyType
+function SupplyHub:UnitRequestCrateSpawn(groupID, crateType)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group == nil then
+
+        local crateConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
+        if crateConfig == nil then
+            self._logger:error("Invalid crate type: " .. crateType)
+            return
+        end
+
+        
+
+    end
+end
+
+function SupplyHub.UnloadRequested(groupID, crateType)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group == nil then
+        return
+    end
+
+    local unit = group:getUnit(1)
+    if not unit or unit:isExist() ~= true then return end
+
+    
+
+end
+
 function SupplyHub:StartMonitoringUnitsForCommands()
     self._logger:debug("Starting to monitor units for commands in Supply Hub zone: " .. self._zoneName)
 
@@ -60,7 +120,6 @@ function SupplyHub:StartMonitoringUnitsForCommands()
 end
 
 function SupplyHub:CheckUnitsInZone()
-
     local units = self._supplyUnitsTracker:GetUnits()
     for _, unit in ipairs(units) do
         if unit and unit:isExist() then
@@ -78,19 +137,7 @@ function SupplyHub:CheckUnitsInZone()
             end
         end
     end
-
 end
-
----@param supplyType SupplyType
-function SupplyHub:SpawnSupplyCrate(supplyType)
-
-    
-
-end
-
-
----@alias SupplyType
----| "BLUE_SAM"
 
 
 if not Spearhead then Spearhead = {} end
