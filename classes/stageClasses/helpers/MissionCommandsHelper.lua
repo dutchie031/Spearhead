@@ -271,10 +271,25 @@ function MissionCommandsHelper:AddSupplyHubCommands(groupID)
     local hub = self._supplyHubGroups[tostring(groupID)]
     if hub then end
     
-    --[[
-        TODO: ADD
-    ]]
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group == nil then return end
 
+    local unit = group:getUnit(1)
+    if unit == nil then return end
+
+    local loadCargoCommand = function(params)
+        local unitID = params.unitID
+        local crateType = params.crateType
+        local hubA = params.hub
+        
+        if hubA then
+            hubA:UnitRequestCrateLoading(unitID, crateType)
+        end
+
+    end
+
+    local path = { [1] = folderNames.supplyHub }
+    missionCommands.addCommandForGroup(groupID, "Load FARP Crate", path, loadCargoCommand, { unitID = unit:getID(), crateType = "FARP_CRATE", hub = hub })
 
 end
 
@@ -286,11 +301,21 @@ function MissionCommandsHelper:AddCargoCommands(groupID)
     local unit = group:getUnit(1)
     if unit == nil then return end
 
+    local unloadCargoCommand = function(params)
+        local unitID = params.unitID
+        local crateType = params.crateType
+        Spearhead.classes.stageClasses.SpecialZones.SupplyHub.UnloadRequested(unitID, crateType)
+    end
+
     local cargo = self._supplyUnitsTracker:GetCargoInUnit(unit:getID())
     if cargo then
         for cargoType, amount in pairs(cargo) do
-            for i = 1, amount do
-                
+            local cargoConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[cargoType]
+            if cargoConfig then
+                for i = 1, amount do
+                    local path = { [1] = folderNames.cargo, [2] = cargoConfig.displayName }
+                    missionCommands.addCommandForGroup(groupID, "Unload", path, unloadCargoCommand, { unitID = unit:getID(), crateType = cargoType })
+                end
             end
         end
     end

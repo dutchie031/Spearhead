@@ -66,7 +66,7 @@ function SupplyHub:UnitRequestCrateLoading(groupID, crateType)
         if unit:isExist() == false then return end
 
         trigger.action.setUnitInternalCargo(unit:getName(), crateConfig.weight)
-        self._missionCommandsHelper:AddSupplyCargoToGroup(groupID, crateType)
+        self._supplyUnitsTracker:AddCargoToUnit(unit:getID(), crateType)
         trigger.action.outTextForUnit(unit:getID(), "Loaded crate of type " .. crateType, 10)
 
     end
