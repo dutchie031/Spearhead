@@ -7,7 +7,7 @@
 ---@field private _missionCommandsHelper MissionCommandsHelper
 ---@field private _inZone table<string, boolean>
 ---@field private _drawID number
----@field private _cargoInUnits table<table<string, number>
+---@field private _cargoInUnits table<table<string, number>>
 local SupplyHub = {}
 
 ---@param database Database

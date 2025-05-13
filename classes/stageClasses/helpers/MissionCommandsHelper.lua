@@ -279,8 +279,21 @@ function MissionCommandsHelper:AddSupplyHubCommands(groupID)
 end
 
 function MissionCommandsHelper:AddCargoCommands(groupID)
-    local cargo = self._supplyUnitsTracker:GetCargoInUnit(groupID)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group == nil then return end
+
+    local unit = group:getUnit(1)
+    if unit == nil then return end
+
+    local cargo = self._supplyUnitsTracker:GetCargoInUnit(unit:getID())
     if cargo then
+        for cargoType, amount in pairs(cargo) do
+            for i = 1, amount do
+                
+            end
+        end
+    end
 end
 
 

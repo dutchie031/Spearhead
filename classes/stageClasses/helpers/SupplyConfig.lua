@@ -6,14 +6,17 @@
 ---@class SupplyConfig
 ---@field weight number
 ---@field staticType string
+---@field displayName string
 
 ---@type table<SupplyType, SupplyConfig>
 local SupplyConfig = {
     ["FARP_CRATE"] = {
         weight = 1000,
+        displayName = "FARP Crate",
     },
     ["SAM_CRATE"] = {
         weight = 1000,
+        displayName = "SAM Crate",
     },
 }
 
