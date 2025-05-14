@@ -65,8 +65,14 @@ function SupplyHub:UnitRequestCrateLoading(groupID, crateType)
         if unit == nil then return end
         if unit:isExist() == false then return end
 
+        if unit:inAir() == true then
+            trigger.action.outTextForUnit(unit:getID(), "Land first before crates can be loaded", 10)
+            return
+        end
+
         trigger.action.setUnitInternalCargo(unit:getName(), crateConfig.weight)
         self._supplyUnitsTracker:AddCargoToUnit(unit:getID(), crateType)
+        self._missionCommandsHelper:updateCommandsForGroup(groupID)
         trigger.action.outTextForUnit(unit:getID(), "Loaded crate of type " .. crateType, 10)
 
     end
