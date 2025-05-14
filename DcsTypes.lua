@@ -25,9 +25,12 @@
 ---@field x number directed to the north
 ---@field y number directed to the east
 ---@field z number directed up (away from ground)
-
----@class Position : Vec3
+ 
+---@class Position
 ---@field p Vec3 Point on map
+---@field x Vec3 Direction vector
+---@field y Vec3 Direction vector
+---@field z Vec3 Direction vector
 
 ---@class Array<T>: { [number]: T }
 
@@ -223,7 +226,7 @@ do -- world
         ---@field point Vec3
         ---@field radius number
 
-        ---@class VolumePyramid
+        ---@class VolumePyramid : Volume
         ---@field params VolumePyramidParams
 
         ---@class VolumePyramidParams

@@ -8,6 +8,8 @@
 ---@field private _inZone table<string, boolean>
 ---@field private _drawID number
 ---@field private _cargoInUnits table<table<string, number>>
+---@field private _activeAtStart boolean
+---@field private _active boolean
 local SupplyHub = {}
 
 ---@param database Database
@@ -23,7 +25,14 @@ function SupplyHub.new(database, logger, zoneName)
     self._logger = logger
     self._zoneName = zoneName
 
-    self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsLocationTracker.getOrCreate()
+    local split = Spearhead.Util.split_string(zoneName, "_")
+    if string.lower(split[2]) == "a" then
+        self._activeAtStart = true
+    else
+        self._activeAtStart = false
+    end
+
+    self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate()
     self._inZone = {}
     self._missionCommandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(logger.LogLevel)
 
@@ -32,16 +41,31 @@ function SupplyHub.new(database, logger, zoneName)
     return self
 end
 
+function SupplyHub:IsActiveFromStart()
+    return self._activeAtStart
+end
+
+function SupplyHub:GetZoneName()
+    return self._zoneName
+end
+
 function SupplyHub:Activate()
+    if self._active == true then
+        return
+    end
+
+    self._active = true
+
     self._logger:debug("Activating Supply Hub zone: " .. self._zoneName)
 
     local zone = Spearhead.DcsUtil.getZoneByName(self._zoneName)
-
     if zone and self._drawID == nil then
-        local fillColor = {0, 1, 0, 0.5}
-        local lineColor = {0, 1, 0, 1}
+        ---@type DrawColor
+        local fillColor = { r=0, g=1, b=0, a=0.2 }
+        ---@type DrawColor
+        local lineColor = { r=0, g=1, b=0, a=1}
         local lineStyle = 1
-        self._drawID = Spearhead.DcsUtil.DrawZone(zone, fillColor, lineColor, lineStyle)
+        self._drawID = Spearhead.DcsUtil.DrawZone(zone, lineColor, fillColor, lineStyle)
     end
 
     self:StartMonitoringUnitsForCommands()
@@ -51,6 +75,8 @@ end
 ---@param groupID number
 ---@param crateType SupplyType  
 function SupplyHub:UnitRequestCrateLoading(groupID, crateType)
+
+    self._logger:debug("UnitRequestCrateLoading called with groupID: " .. groupID .. " and crateType: " .. crateType)
 
     local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
     if group ~= nil then
@@ -62,18 +88,23 @@ function SupplyHub:UnitRequestCrateLoading(groupID, crateType)
         end
 
         local unit = group:getUnit(1)
+        
         if unit == nil then return end
         if unit:isExist() == false then return end
 
+        
         if unit:inAir() == true then
             trigger.action.outTextForUnit(unit:getID(), "Land first before crates can be loaded", 10)
             return
         end
 
+        trigger.action.outTextForUnit(unit:getID(), "Loading crate of type " .. crateType, 3)
+
         trigger.action.setUnitInternalCargo(unit:getName(), crateConfig.weight)
         self._supplyUnitsTracker:AddCargoToUnit(unit:getID(), crateType)
         self._missionCommandsHelper:updateCommandsForGroup(groupID)
         trigger.action.outTextForUnit(unit:getID(), "Loaded crate of type " .. crateType, 10)
+        self._logger:debug("Loaded crate of type " .. crateType .. " into unit " .. unit:getName())
 
     end
 end
@@ -98,20 +129,6 @@ function SupplyHub:UnitRequestCrateSpawn(groupID, crateType)
     end
 end
 
-function SupplyHub.UnloadRequested(groupID, crateType)
-
-    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
-    if group == nil then
-        return
-    end
-
-    local unit = group:getUnit(1)
-    if not unit or unit:isExist() ~= true then return end
-
-    
-
-end
-
 function SupplyHub:StartMonitoringUnitsForCommands()
     self._logger:debug("Starting to monitor units for commands in Supply Hub zone: " .. self._zoneName)
 
@@ -134,6 +151,10 @@ function SupplyHub:CheckUnitsInZone()
                 local group = unit:getGroup()
                 if group then
                     self._missionCommandsHelper:AddSupplyHubCommandsForGroup(group:getID(), self)
+                    if self._inZone[unit:getName()] == nil then
+                        self._inZone[unit:getName()] = true
+                        self._logger:debug("Unit " .. unit:getName() .. " entered the zone " .. self._zoneName)
+                    end
                 end
             else
                 if self._inZone[unit:getName()] == true then

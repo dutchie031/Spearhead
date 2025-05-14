@@ -14,6 +14,7 @@
 --- @field miscGroups Array<SpearheadGroup>
 --- @field maxMissions integer
 --- @field farps Array<FarpZone>
+--- @field supplyHubs Array<SupplyHub>
 
 --- @class StageInitData
 --- @field stageZoneName string
@@ -90,7 +91,9 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         maxMissions = stageConfig.maxMissionsPerStage,
         farps = {},
         missionsByName = {},
+        supplyHubs = {}
     }
+
     self._activeStage = -99
     self._preActivated = false
     self._stageConfig = stageConfig or {}
@@ -110,6 +113,11 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         table.insert(self._db.farps, farp)
     end
 
+    local supplyHubNames = database:getSupplyHubsInStage(self.zoneName)
+    for _, supplyHubName in pairs(supplyHubNames) do
+        local supplyHub = Spearhead.classes.stageClasses.SpecialZones.SupplyHub.new(database, logger, supplyHubName)
+        table.insert(self._db.supplyHubs, supplyHub)
+    end
 
     self._logger:info("Initiating new Stage with name: " .. self.zoneName)
 
@@ -404,6 +412,12 @@ function Stage:ActivateStage()
         end
     end
 
+    for _, supplyHub in pairs(self._db.supplyHubs) do
+        if supplyHub:IsActiveFromStart() == true then
+            supplyHub:Activate()
+        end
+    end
+
     timer.scheduleFunction(self.CheckContinuousAsync, self, timer.getTime() + 3)
 end
 
@@ -475,6 +489,10 @@ function Stage:ActivateBlueGroups()
         if farp:IsStartingFarp() == true then
             farp:Activate()
         end
+    end
+
+    for _, supplyHub in pairs(self._db.supplyHubs) do
+        supplyHub:Activate()
     end
 end
 

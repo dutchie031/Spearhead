@@ -1,7 +1,11 @@
 ---@class SupplyUnitsTracker
 ---@field private _supplyUnits Array<Unit>
 ---@field private _cargoInUnits table<string, table<SupplyType, number>>
+---@field private _logger Logger
+---@field private _unitPositions table<string, Vec3>
+---@field private _commandsHelper MissionCommandsHelper
 local SupplyUnitsTracker = {}
+SupplyUnitsTracker.__index = SupplyUnitsTracker
 
 -- A single class tracking all units is more than enough.
 local singleton = nil
@@ -12,10 +16,21 @@ function SupplyUnitsTracker.getOrCreate()
 
     if singleton == nil then
         singleton = setmetatable({}, SupplyUnitsTracker)
-        singleton._logger = Spearhead.LoggerTemplate.new("SupplyUnitsLocationTracker", "INFO")
+        singleton._logger = Spearhead.LoggerTemplate.new("SupplyUnitsTracker", "INFO")
         singleton._unitPositions = {}
+        singleton._cargoInUnits = {}
+        singleton._supplyUnits = {}
 
+        singleton._commandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(singleton._logger.LogLevel)
+        
         Spearhead.Events.AddOnPlayerEnterUnitListener(singleton)
+
+        local function updateTask(selfA, time)
+
+            selfA:Update()
+            return time + 15
+        end
+        timer.scheduleFunction(updateTask, singleton, timer.getTime() + 15)
     end
 
     return singleton
@@ -28,6 +43,17 @@ function SupplyUnitsTracker:OnPlayerEntersUnit(unit)
 
     if self:IsSupplyUnit(unit) == false then return end
     table.insert(self._supplyUnits, unit)
+end
+
+function SupplyUnitsTracker:Update()
+
+    self._supplyUnits = {}
+    local players = Spearhead.DcsUtil.getAllPlayerUnits()
+    for _, player in pairs(players) do
+        if player ~= nil then
+            table.insert(self._supplyUnits, player)
+        end
+    end
 end
 
 ---@private
@@ -48,7 +74,7 @@ function SupplyUnitsTracker:AddCargoToUnit(unitID, crateType)
 
     if unitID == nil or crateType == nil then return end
 
-    local unit = Spearhead.DcsUtil.GetUnitByID(unitID)
+    local unit = Spearhead.DcsUtil.GetPLayerUnitByID(unitID)
     if unit == nil then return end
 
     if self._cargoInUnits[unitID] == nil then
@@ -103,6 +129,85 @@ end
 ---@return Array<Unit>
 function SupplyUnitsTracker:GetUnits()
     return self._supplyUnits
+end
+
+local cargoCount = 0
+function SupplyUnitsTracker:UnloadRequested(unitID, crateType)
+    
+    self._logger:debug("Unload requested for unit: " .. unitID .. " crateType: " .. crateType)
+
+    local unit = Spearhead.DcsUtil.GetPLayerUnitByID(unitID)
+    if unit == nil or unit:isExist() == false then return end
+    local group = unit:getGroup()
+    if group == nil then
+        return
+    end
+
+    self:RemoveCargoFromUnit(unitID, crateType)
+    
+    local cargoConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
+
+    local cargoPos = self:GetCargoPlacePosition(unit)
+
+    cargoCount = cargoCount + 1
+    local cargoSpawnObject = {
+        name = crateType .. "_" .. cargoCount,
+        type = cargoConfig.staticType,
+        x = cargoPos.x,
+        y = cargoPos.z,
+    }
+
+    coalition.addStaticObject(unit:getCoalition(), cargoSpawnObject)
+
+    self._commandsHelper:updateCommandsForGroup(group:getID())
+end
+
+---@private
+---@param unit Unit
+---@return Vec3
+function SupplyUnitsTracker:GetCargoPlacePosition(unit)
+
+    local pos = unit:getPosition()
+    local preferedPos = {
+        x = pos.p.x - 10 * pos.x.x,
+        y = pos.p.y - 10 * pos.x.y,
+        z = pos.p.z - 10 * pos.x.z
+    }
+
+    return preferedPos
+
+
+    -- local volume = {
+    --     id = world.VolumeType.SPHERE,
+    --     params = {
+    --         point = preferedPos,
+    --         radius = 10
+    --     }
+    -- }
+
+    -- local occupiedPosX = {}
+    -- local occupiedPosZ = {}
+
+    -- ---@param foundItem Object
+    -- local found = function(foundItem, val)
+
+    --     local foundPos = foundItem:getPoint()
+
+    --     local z = math.floor(foundPos.z)
+    --     for i = z - 3 , z + 3 do
+    --         occupiedPosZ[i] = true
+    --     end
+
+    --     local x = math.floor(foundPos.x)
+    --     for i = x - 3 , x + 3 do
+    --         occupiedPosX[i] = true
+    --     end
+    -- end
+
+    -- world.searchObjects(volume.id, volume.params, found)
+
+    
+    
 end
 
 

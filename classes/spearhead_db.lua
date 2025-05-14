@@ -11,6 +11,7 @@
 ---@field CapDataPerStageNumber table<integer, CapData> table<StageNumber, table>
 ---@field CarrierRouteZones Array<string> All Carrier routes zones
 ---@field BlueSams Array<string> All blue sam zones
+---@field SupplyHubZones Array<string> All supply hub zones
 ---@field MissionAnnotations table<string, MissionAnnotations> table<ZoneName, MissionAnnotations>
 ---@field AirbaseDataPerAirfield table<string, AirbaseData>
 ---@field BlueSamDataPerZone table<string, BlueSamData>
@@ -39,6 +40,8 @@
 ---@field RandomMissionZones Array<string>
 ---@field StageIndex string
 ---@field BlueSamZones Array<string>
+---@field SupplyHubZones Array<string> 
+---@field SupplyHubZonesInFarp table<string, string>
 ---@field MiscGroups Array<string>
 
 ---@class AirbaseData
@@ -88,7 +91,8 @@ function Database.New(Logger)
         MissionZoneData = {},
         FarpZoneData = {},
         missionCodes = {},
-        MissionAnnotations = {}
+        MissionAnnotations = {},
+        SupplyHubZones = {}
     }
 
     Database.__index = Database
@@ -127,7 +131,9 @@ function Database.New(Logger)
                         FarpZones = {},
                         MissionZones = {},
                         RandomMissionZones = {},
-                        MiscGroups = {}
+                        MiscGroups = {},
+                        SupplyHubZones = {},
+                        SupplyHubZonesInFarp = {}
                     }
                     self._tables.StageZones[zone_name] = stageData
                 end
@@ -161,6 +167,10 @@ function Database.New(Logger)
 
             if string.lower(split_string[1]) == "bluesam" then
                 table.insert(self._tables.BlueSams, zone_name)
+            end
+
+            if string.lower(split_string[1]) == "supplyhub" then
+                table.insert(self._tables.SupplyHubZones, zone_name)
             end
         end
     end
@@ -221,6 +231,30 @@ function Database.New(Logger)
                 end
             end
 
+            --- fill farp zones
+            for _, farpZoneName in pairs(self._tables.AllFarpZones) do
+                if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stageZoneName) then
+                    table.insert(stageData.FarpZones, farpZoneName)
+                end
+            end
+
+            -- fill supply hubs
+            for _, supplyHubZone in pairs(self._tables.SupplyHubZones) do
+                if Spearhead.DcsUtil.isZoneInZone(supplyHubZone, stageZoneName) == true then
+                    table.insert(stageData.SupplyHubZones, supplyHubZone)
+                end
+            end
+
+            for _, farpZoneName in pairs(stageData.FarpZones) do
+                for _, supplyHubZone in pairs(self._tables.SupplyHubZones) do
+                    if Spearhead.DcsUtil.isZoneInZone(supplyHubZone, farpZoneName) == true then
+                        stageData.SupplyHubZonesInFarp[supplyHubZone] = farpZoneName
+                    end
+                end
+                
+
+            end
+
             -- fill missions
             for key, missionZone in pairs(self._tables.MissionZones) do
                 if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZoneName) == true then
@@ -235,12 +269,6 @@ function Database.New(Logger)
                 end
             end
 
-            --- fill farp zones
-            for _, farpZoneName in pairs(self._tables.AllFarpZones) do
-                if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stageZoneName) then
-                    table.insert(stageData.FarpZones, farpZoneName)
-                end
-            end
 
             -- fill airbases
             for _, airbase in pairs(world.getAirbases()) do
@@ -824,6 +852,24 @@ function Database:getBlueSamsInStage(stageName)
     local stageData = self._tables.StageZones[stageName]
     if not stageData then return {} end
     return stageData.BlueSamZones
+end
+
+---@param stageName string
+---@return Array<string>
+function Database:getSupplyHubsInStage(stageName)
+    local stageData = self._tables.StageZones[stageName]
+    if not stageData then return {} end
+    return stageData.SupplyHubZones
+end
+
+---comment
+---@param stageName any
+---@param supplyZoneName any
+---@return nil
+function Database:getFarpDependencyForSupplyHub(stageName, supplyZoneName)
+    local stageData = self._tables.StageZones[stageName]
+    if not stageData then return nil end
+    return stageData.SupplyHubZonesInFarp[supplyZoneName]
 end
 
 ---@param samZone string

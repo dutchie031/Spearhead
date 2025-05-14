@@ -26,6 +26,7 @@ function MissionCommandsHelper.getOrCreate(logLevel)
         self.updateNeeded = false
         self.pinnedByGroup = {}
         self.lastUpdate = 0
+        self._supplyHubGroups = {}
         self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate()
 
         ---comment
@@ -77,12 +78,19 @@ end
 ---@param groupID integer
 ---@param supplyHub SupplyHub
 function MissionCommandsHelper:AddSupplyHubCommandsForGroup(groupID, supplyHub)
+    if self._supplyHubGroups[tostring(groupID)] ~= nil and supplyHub:GetZoneName() == self._supplyHubGroups[tostring(groupID)]:GetZoneName() then
+        return
+    end
+
+    self._logger:debug("Adding supply hub commands for group: " .. tostring(groupID))
+
     self._supplyHubGroups[tostring(groupID)] = supplyHub
     self:updateCommandsForGroup(groupID)
 end
 
 ---@param groupID integer
 function MissionCommandsHelper:RemoveSupplyHubCommandsForGroup(groupID)
+    self._logger:debug("Removing supply hub commands for group: " .. tostring(groupID))
     self._supplyHubGroups[tostring(groupID)] = nil
     self:updateCommandsForGroup(groupID)
 end
@@ -202,6 +210,8 @@ end
 ---@param groupID number
 function MissionCommandsHelper:updateCommandsForGroup(groupID)
 
+    self._logger:debug("Updating commands for group: " .. tostring(groupID))
+
     self:AddPinnedMission(groupID)
     self:AddOverviewCommand(groupID)
 
@@ -215,6 +225,9 @@ function MissionCommandsHelper:updateCommandsForGroup(groupID)
             end
         end
     end
+
+    self:AddSupplyHubCommandsIfApplicable(groupID)
+    self:AddCargoCommands(groupID)
 
     ---@param id number
     local clearView = function(id)
@@ -266,10 +279,10 @@ end
 
 ---@private
 ---@param groupID integer
-function MissionCommandsHelper:AddSupplyHubCommands(groupID)
+function MissionCommandsHelper:AddSupplyHubCommandsIfApplicable(groupID)
 
     local hub = self._supplyHubGroups[tostring(groupID)]
-    if hub then end
+    if hub == nil then return end
     
     local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
     if group == nil then return end
@@ -277,19 +290,29 @@ function MissionCommandsHelper:AddSupplyHubCommands(groupID)
     local unit = group:getUnit(1)
     if unit == nil then return end
 
+    ---@class LoadCargoCommandParams
+    ---@field unitID number
+    ---@field groupID number
+    ---@field crateType string
+    ---@field hub SupplyHub
+
+    ---comment
+    ---@param params LoadCargoCommandParams
     local loadCargoCommand = function(params)
         local unitID = params.unitID
+        local groupID = params.groupID
         local crateType = params.crateType
         local hubA = params.hub
-        
         if hubA then
-            hubA:UnitRequestCrateLoading(unitID, crateType)
+            hubA:UnitRequestCrateLoading(groupID, crateType)
         end
 
     end
 
     local path = { [1] = folderNames.supplyHub }
-    missionCommands.addCommandForGroup(groupID, "Load FARP Crate", path, loadCargoCommand, { unitID = unit:getID(), crateType = "FARP_CRATE", hub = hub })
+    ---@type LoadCargoCommandParams
+    local params = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE", hub = hub }
+    missionCommands.addCommandForGroup(groupID, "Load FARP Crate", path, loadCargoCommand, params)
 
 end
 
@@ -301,10 +324,17 @@ function MissionCommandsHelper:AddCargoCommands(groupID)
     local unit = group:getUnit(1)
     if unit == nil then return end
 
+    ---@class UnloadCargoCommandParams
+    ---@field unitID number
+    ---@field crateType string
+    ---@field supplyUnitsTracker SupplyUnitsTracker
+
+    ---comment
+    ---@param params UnloadCargoCommandParams
     local unloadCargoCommand = function(params)
         local unitID = params.unitID
         local crateType = params.crateType
-        Spearhead.classes.stageClasses.SpecialZones.SupplyHub.UnloadRequested(unitID, crateType)
+        params.supplyUnitsTracker:UnloadRequested(unitID, crateType)
     end
 
     local cargo = self._supplyUnitsTracker:GetCargoInUnit(unit:getID())
@@ -313,8 +343,10 @@ function MissionCommandsHelper:AddCargoCommands(groupID)
             local cargoConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[cargoType]
             if cargoConfig then
                 for i = 1, amount do
-                    local path = { [1] = folderNames.cargo, [2] = cargoConfig.displayName }
-                    missionCommands.addCommandForGroup(groupID, "Unload", path, unloadCargoCommand, { unitID = unit:getID(), crateType = cargoType })
+                    local path = { [1] = folderNames.cargo }
+                    ---@type UnloadCargoCommandParams
+                    local params = { unitID = unit:getID(), crateType = cargoType, supplyUnitsTracker = self._supplyUnitsTracker }
+                    missionCommands.addCommandForGroup(groupID, "Unload " .. cargoConfig.displayName, path, unloadCargoCommand, params)
                 end
             end
         end

@@ -1092,6 +1092,19 @@ do     -- INIT DCS_UTIL
         end
     end
 
+    ---@param unitID number
+    ---@return Unit?
+    function DCS_UTIL.GetPLayerUnitByID(unitID)
+        for i = 0, 2 do
+            local players = coalition.getPlayers(i)
+            for key, unit in pairs(players) do
+                if unit and unit:getID() == unitID then
+                    return unit
+                end
+            end
+        end
+    end
+
     DCS_UTIL.__INIT();
 end
 Spearhead.DcsUtil = DCS_UTIL

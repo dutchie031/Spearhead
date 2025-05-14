@@ -8,7 +8,7 @@ do
 
     ---@class DeathState 
     ---@field isDead boolean
-    ---@field pos Position
+    ---@field pos Vec3
     ---@field heading number
     ---@field type string
     ---@field country_id integer
@@ -204,7 +204,7 @@ do
 
     ---Pass the unit to be saved as "dead"
     ---@param name string
-    ---@param position Position { x, y ,z } 
+    ---@param position Vec3 { x, y ,z } 
     ---@param heading number
     ---@param type string 
     ---@param country_id number
