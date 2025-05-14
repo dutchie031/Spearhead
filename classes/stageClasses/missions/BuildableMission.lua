@@ -90,7 +90,8 @@ function BuildableMission:CheckCratesInZone()
     
     for _, foundCrate in pairs(foundCrates) do 
 
-        
+        foundCrate:destroy()
+        self:NotifyCrateDroppedOf()
 
     end
 
