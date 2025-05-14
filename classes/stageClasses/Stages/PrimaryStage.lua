@@ -18,7 +18,7 @@ function PrimaryStage.New(database, stageConfig, logger, initData)
     local self = setmetatable({}, { __index = PrimaryStage }) --[[@as PrimaryStage]]
     self:superNew(database, stageConfig, logger, initData, "primary")
     return self
-    
+
 end
 
 if not Spearhead.classes then Spearhead.classes = {} end
