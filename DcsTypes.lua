@@ -219,7 +219,7 @@ do -- world
         ---@field min Vec3
         ---@field max Vec3
 
-        ---@class Sphere
+        ---@class Sphere : Volume
         ---@field params SphereParams
 
         ---@class SphereParams

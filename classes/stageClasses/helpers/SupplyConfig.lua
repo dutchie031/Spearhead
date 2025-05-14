@@ -22,9 +22,26 @@ local SupplyConfig = {
     },
 }
 
+---@class SupplyConfigHelper
+local SupplyConfigHelper = {}
+
+---comment
+---@param name string
+---@return SupplyType?
+function SupplyConfigHelper.fromObjectName(name)
+
+    if Spearhead.Util.startsWith(name, "FARP_CRATE", true) then
+        return "FARP_CRATE"
+    elseif Spearhead.Util.startsWith(name, "SAM_CRATE", true) then
+        return "SAM_CRATE"
+    end
+    return nil
+end
+
 if Spearhead == nil then Spearhead = {} end
 if Spearhead.classes == nil then Spearhead.classes = {} end
 if Spearhead.classes.stageClasses == nil then Spearhead.classes.stageClasses = {} end
 if Spearhead.classes.stageClasses.helpers == nil then Spearhead.classes.stageClasses.helpers = {} end
 Spearhead.classes.stageClasses.helpers.SupplyConfig = SupplyConfig
+Spearhead.classes.stageClasses.helpers.SupplyConfigHelper = SupplyConfigHelper
 
