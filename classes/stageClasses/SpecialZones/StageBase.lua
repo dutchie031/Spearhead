@@ -8,13 +8,14 @@
 ---@field private _cleanup_units table<string, boolean>
 ---@field private _airbase Airbase?
 ---@field private _initialSide number?
+---@field private _supplyHubs Array<SupplyHub>
 local StageBase = {}
 
 ---comment
 ---@param databaseManager Database
 ---@param logger table
 ---@param airbaseName string
----@return StageBase
+---@return StageBase?
 function StageBase.New(databaseManager, logger, airbaseName)
 
     StageBase.__index = StageBase
@@ -26,11 +27,18 @@ function StageBase.New(databaseManager, logger, airbaseName)
     self._red_groups = {}
     self._blue_groups = {}
     self._cleanup_units = {}
+    self._supplyHubs = {}
 
     self._airbase = Airbase.getByName(airbaseName)
     self._initialSide = Spearhead.DcsUtil.getStartingCoalition(self._airbase)
 
     do --init
+    
+        local airbaseData = databaseManager:getAirbaseDataForZone(airbaseName)
+        if airbaseData == nil then
+            logger:error("Airbase data not found for airbase: " .. airbaseName)
+            return nil
+        end
     
         ---@type table<string, Vec3>
         local redUnitsPos = {}
@@ -38,33 +46,32 @@ function StageBase.New(databaseManager, logger, airbaseName)
         ---@type table<string, Vec3>
         local blueUnitsPos = {}
 
-        do -- fill tables
-            local redGroups = databaseManager:getRedGroupsAtAirbase(airbaseName)
-            if redGroups then
-                for _, groupName in pairs(redGroups) do
-                    local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
-                    table.insert(self._red_groups, shGroup)
+        for _, groupName in pairs(airbaseData.RedGroups) do
+            local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
+            table.insert(self._red_groups, shGroup)
 
-                    for _, unit in pairs(shGroup:GetUnits()) do
-                        redUnitsPos[unit:getName()] = unit:getPoint()
-                    end
-
-                    shGroup:Destroy()
-                end
+            for _, unit in pairs(shGroup:GetUnits()) do
+                redUnitsPos[unit:getName()] = unit:getPoint()
             end
 
-            local blueGroups = databaseManager:getBlueGroupsAtAirbase(airbaseName)
-            if blueGroups then
-            for _, groupName in pairs(blueGroups) do
-                local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
-                table.insert(self._blue_groups, shGroup)
+            shGroup:Destroy()
+        end
 
-                for _, unit in pairs(shGroup:GetUnits()) do
-                    blueUnitsPos[unit:getName()] = unit:getPoint()
-                end
+        for _, groupName in pairs(airbaseData.BlueGroups) do
+            local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
+            table.insert(self._blue_groups, shGroup)
 
-                shGroup:Destroy()
+            for _, unit in pairs(shGroup:GetUnits()) do
+                blueUnitsPos[unit:getName()] = unit:getPoint()
             end
+
+            shGroup:Destroy()
+        end
+
+        for _, supplyHubName in pairs(airbaseData.supplyHubNames) do
+            local supplyHub = Spearhead.classes.stageClasses.SpecialZones.SupplyHub.new(databaseManager, logger, supplyHubName)
+            if supplyHub then
+                table.insert(self._supplyHubs, supplyHub)
             end
         end
 
@@ -151,6 +158,10 @@ function StageBase:ActivateBlueStage()
 
     self:CleanRedUnits()
     self:SpawnBlueUnits()
+    
+    for _, hub in pairs(self._supplyHubs) do
+        hub:Activate()
+    end
 
 end
 

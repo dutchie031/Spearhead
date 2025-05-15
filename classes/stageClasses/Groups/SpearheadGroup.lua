@@ -21,6 +21,10 @@ function SpearheadGroup.New(groupName)
     return self
 end
 
+function SpearheadGroup:IsSpawned()
+    return self._isSpawned
+end
+
 function SpearheadGroup:SpawnCorpsesOnly()
 
     if self._isSpawned == true then return end

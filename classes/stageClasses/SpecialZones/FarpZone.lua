@@ -9,7 +9,9 @@
 ---@field private _zoneName string
 ---@field private _requiredCrates number
 ---@field private _receivedCrates number
+---@field private _groupsPerCrate number
 ---@field private _buildableMission BuildableMission?
+---@field private _supplyHubs Array<SupplyHub>
 local FarpZone = {}
 FarpZone.__index = FarpZone
 
@@ -39,9 +41,18 @@ function FarpZone.New(database, logger, zoneName)
     local farpData = database:getFarpDataForZone(zoneName)
     self._groups = {}
     self._padNames = {}
+    self._supplyHubs = {}
+    
 
     if farpData then
         self._padNames = farpData.padNames
+        
+        for _, supplyHubName in pairs(farpData.supplyHubNames) do
+            local supplyHub = Spearhead.classes.stageClasses.SpecialZones.SupplyHub.new(database, logger, supplyHubName)
+            if supplyHub then
+                table.insert(self._supplyHubs, supplyHub)
+            end
+        end
 
         for _, groupName in pairs(farpData.groups) do 
             local group = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
@@ -61,9 +72,12 @@ function FarpZone.New(database, logger, zoneName)
                 self._buildableMission:AddMissionCompleteListener(self)
             end
 
+            local totalGroups = Spearhead.Util.tableLength(self._groups)
+            self._groupsPerCrate = math.floor(totalGroups / self._requiredCrates)
         end
-
     end
+
+    
 
     self:Deactivate()
 
@@ -82,6 +96,7 @@ function FarpZone:Activate()
     if self._buildableMission == nil then
         self:BuildUp()
         self:SetPadsBlue()
+        self:ActivateSupplyHubs()
     else
         self._buildableMission:SpawnActive()
     end
@@ -91,12 +106,83 @@ function FarpZone:Deactivate()
     self:NeutralisePads()
 end
 
+local timeToUnpack = 30
+
+---@param params UnpackCrateParam
+---@param time number
+local startUnpackingCrate = function(params, time)
+
+    local perCrate = params.groupsPerCrate
+    local self = params.self
+
+    local perIteration = math.ceil(perCrate / timeToUnpack) * 2
+    local spawned = self:SpawnAmount(perIteration)
+
+    params.unpackedItems = params.unpackedItems + perIteration
+    if params.unpackedItems >= perCrate or spawned == false then
+        self:FinaliseCrate()
+        return
+    end
+
+    return time + 2
+end
+
+---comment
+---@param amount number
+---@return boolean
+function FarpZone:SpawnAmount(amount)
+
+    local function spawnOne()
+        for _, group in pairs(self._groups) do
+            if group:IsSpawned() == false then
+                group:Spawn()
+                return true
+            end
+        end
+        return nil
+    end
+
+    for i = 1, amount do
+        local spawned = spawnOne()
+        if spawned == nil then
+            self._logger:debug("No more groups to spawn in zone: " .. self._zoneName)
+            return false
+        end
+    end
+
+    return true
+end
+
 ---@param buildableMission BuildableMission
 function FarpZone:OnCrateDroppedOff(buildableMission)
 
     self._logger:debug("Crate dropped off in zone: " .. self._zoneName)
 
+    ---@class UnpackCrateParam
+    ---@field self FarpZone
+    ---@field groupsPerCrate number
+    ---@field unpackedItems number
+
+    ---@type UnpackCrateParam
+    local params = {
+        self = self,
+        groupsPerCrate = self._groupsPerCrate,
+        unpackedItems = 0
+    }
+
+    timer.scheduleFunction(startUnpackingCrate, params, timer.getTime() + 2)
+
+end
+
+function FarpZone:FinaliseCrate()
+
     self._receivedCrates = self._receivedCrates+ 1
+    
+    if self._receivedCrates >= self._requiredCrates then
+        self:BuildUp()
+        self:SetPadsBlue()
+        self:ActivateSupplyHubs()
+    end
 
 end
 
@@ -104,14 +190,22 @@ end
 function FarpZone:OnMissionComplete(buildableMission)
     self._logger:debug("Buildable mission complete for zone: " .. self._zoneName)
 
-    self:BuildUp()
-    self:SetPadsBlue()
+    -- self:BuildUp()
+    -- self:SetPadsBlue()
+    -- self:ActivateSupplyHubs()
 
 end
 
 function FarpZone:BuildUp()
     for _, group in pairs(self._groups) do
         group:Spawn()
+    end
+end
+
+
+function FarpZone:ActivateSupplyHubs()
+    for _, supplyHub in pairs(self._supplyHubs) do
+        supplyHub:Activate()
     end
 end
 

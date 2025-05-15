@@ -197,13 +197,32 @@ function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
             return
         end
 
-        trigger.action.outTextForUnit(unit:getID(), "Loading crate of type " .. crateType, 3)
+        trigger.action.outTextForUnit(unit:getID(), "Loading crate of type " .. crateType, 13)
 
-        trigger.action.setUnitInternalCargo(unit:getName(), crateConfig.weight)
-        self:AddCargoToUnit(unit:getID(), crateType)
-        self._commandsHelper:updateCommandsForGroup(groupID)
-        trigger.action.outTextForUnit(unit:getID(), "Loaded crate of type " .. crateType, 10)
-        self._logger:debug("Loaded crate of type " .. crateType .. " into unit " .. unit:getName())
+        ---@class LoadCargoParams
+        ---@field self SupplyUnitsTracker
+        ---@field unit Unit
+        ---@field groupID number
+        ---@field crateType SupplyType
+
+        ---@param params LoadCargoParams
+        local  LoadCrateTask = function(params)
+            local crateConfigA = Spearhead.classes.stageClasses.helpers.SupplyConfig[params.crateType]
+            trigger.action.setUnitInternalCargo(params.unit:getName(), crateConfigA.weight)
+            self:AddCargoToUnit(params.unit:getID(), params.crateType)
+            self._commandsHelper:updateCommandsForGroup(params.groupID)
+            trigger.action.outTextForUnit(unit:getID(), "Loaded crate :" .. crateConfigA.displayName, 10)
+        end
+
+        ---@type LoadCargoParams
+        local params = {
+            self = self,
+            unit = unit,
+            crateType = crateType,
+            groupID = groupID
+        }
+
+        timer.scheduleFunction(LoadCrateTask, params, timer.getTime() + 15)
 
     end
 end
