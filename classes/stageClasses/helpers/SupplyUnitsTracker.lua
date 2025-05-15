@@ -4,6 +4,7 @@
 ---@field private _logger Logger
 ---@field private _unitPositions table<string, Vec3>
 ---@field private _commandsHelper MissionCommandsHelper
+---@field private _droppedCrates table<string, StaticObject>
 local SupplyUnitsTracker = {}
 SupplyUnitsTracker.__index = SupplyUnitsTracker
 
@@ -20,6 +21,7 @@ function SupplyUnitsTracker.getOrCreate()
         singleton._unitPositions = {}
         singleton._cargoInUnits = {}
         singleton._supplyUnits = {}
+        singleton._droppedCrates = {}
 
         singleton._commandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(singleton._logger.LogLevel)
         
@@ -157,10 +159,74 @@ function SupplyUnitsTracker:UnloadRequested(unitID, crateType)
         y = cargoPos.z,
     }
 
-    coalition.addStaticObject(unit:getCoalition(), cargoSpawnObject)
+    local spawned = coalition.addStaticObject(unit:getCoalition(), cargoSpawnObject)
 
+    self._droppedCrates[cargoSpawnObject.name] = spawned
     self._commandsHelper:updateCommandsForGroup(group:getID())
 end
+
+---@return table<string,StaticObject>
+function SupplyUnitsTracker:GetCargoCratesDropped()
+    return self._droppedCrates
+end
+
+---Loads a crate directly into the unit
+---@param groupID number
+---@param crateType SupplyType  
+function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
+
+    self._logger:debug("UnitRequestCrateLoading called with groupID: " .. groupID .. " and crateType: " .. crateType)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group ~= nil then
+
+        local crateConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
+        if crateConfig == nil then
+            self._logger:error("Invalid crate type: " .. crateType)
+            return
+        end
+
+        local unit = group:getUnit(1)
+        
+        if unit == nil then return end
+        if unit:isExist() == false then return end
+
+        
+        if unit:inAir() == true then
+            trigger.action.outTextForUnit(unit:getID(), "Land first before crates can be loaded", 10)
+            return
+        end
+
+        trigger.action.outTextForUnit(unit:getID(), "Loading crate of type " .. crateType, 3)
+
+        trigger.action.setUnitInternalCargo(unit:getName(), crateConfig.weight)
+        self:AddCargoToUnit(unit:getID(), crateType)
+        self._commandsHelper:updateCommandsForGroup(groupID)
+        trigger.action.outTextForUnit(unit:getID(), "Loaded crate of type " .. crateType, 10)
+        self._logger:debug("Loaded crate of type " .. crateType .. " into unit " .. unit:getName())
+
+    end
+end
+
+---Spawns a crate for sling loading
+---@param groupID number
+---@param crateType SupplyType
+function SupplyUnitsTracker:UnitRequestCrateSpawn(groupID, crateType)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group == nil then
+
+        local crateConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
+        if crateConfig == nil then
+            self._logger:error("Invalid crate type: " .. crateType)
+            return
+        end
+
+        
+
+    end
+end
+
 
 ---@private
 ---@param unit Unit

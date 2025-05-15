@@ -206,6 +206,22 @@ do -- INIT UTIL
         return false
     end
 
+    ---@param point Vec2
+    ---@param zone SpearheadTriggerZone
+    function UTIL.is2dPointInZone(point, zone)
+        if zone.zone_type == "Polygon" and zone.verts then
+            if UTIL.IsPointInPolygon(zone.verts, point.x, point.y) == true then
+                return true
+            end
+        else
+            if (((point.x - zone.location.x) ^ 2 + (point.y - zone.location.y) ^ 2) ^ 0.5 <= zone.radius) then
+                return true
+            end
+        end
+
+        return false
+    end
+
     ---comment
     ---@param points Array<Vec2> points 
     ---@return Array<Vec2> hullPoints
@@ -972,6 +988,27 @@ do     -- INIT DCS_UTIL
         trigger.action.setMarkupColor(drawID, lineColorMapped)
 
         return drawID
+    end
+
+    
+    local _markID = 200
+
+    ---@param groupID number
+    ---@param text string
+    ---@param location Vec3
+    ---@return number markID
+    function DCS_UTIL.AddMarkToGroup(groupID, text, location)
+
+        _markID = _markID + 1
+        trigger.action.markToGroup(_markID, text, location, groupID, true, nil)
+        return _markID
+    end
+
+    ---@param markId number
+    function DCS_UTIL.RemoveMark(markId)
+        if markId ~= nil then
+            trigger.action.removeMark(markId)
+        end
     end
 
     ---comment

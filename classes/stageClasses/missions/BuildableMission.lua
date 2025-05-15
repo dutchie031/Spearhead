@@ -2,50 +2,180 @@
 
 ---@class BuildableMission : Mission
 ---@field private _requiredCrates number
+---@field private _droppedCrates number
 ---@field private _crateType SupplyType
 ---@field private _targetZoneName string
 ---@field private _database Database
----@field private _onCrateDroppedOfListeners Array<OnCrateDropperListener>
+---@field private _onCrateDroppedOfListeners Array<OnCrateDroppedListener>
+---@field private _markIDsPerGroup table<string, number>
+---@field private _supplyUnitsTracker SupplyUnitsTracker 
+---@field private _noLandingZone SpearheadTriggerZone?
+---@field private _dropOffZone SpearheadTriggerZone?
+---@field private _noLandingZoneId number
+---@field private _dropOffZoneId number
 local BuildableMission = {}
 BuildableMission.__index = BuildableMission
 
----@class OnCrateDropperListener 
----@field onCrateDroppedOf fun(self:OnCrateDropperListener, mission:BuildableMission)
+---@class OnCrateDroppedListener 
+---@field OnCrateDroppedOff fun(self:OnCrateDroppedListener, mission:BuildableMission)
 
 ---@param database Database
 ---@param targetZoneName string
 ---@param requiredCrates number
 ---@param requiredCrateType SupplyType
-function BuildableMission.new(database, targetZoneName, requiredCrates, requiredCrateType)
+---@param noLandingZone SpearheadTriggerZone?
+---@param logger Logger
+function BuildableMission.new(database, logger, targetZoneName, noLandingZone, requiredCrates, requiredCrateType)
+
+    local Mission = Spearhead.classes.stageClasses.missions.baseMissions.Mission
+    setmetatable(BuildableMission, Mission)
 
     local self = setmetatable({}, { __index = BuildableMission })
+    
     self._targetZoneName = targetZoneName
     self._database = database
     self._requiredCrates = requiredCrates
+    self._droppedCrates = 0
 
+    self._noLandingZone = noLandingZone
+
+    if noLandingZone then
+
+        local verts = noLandingZone.verts
+        local enlarged = Spearhead.Util.enlargeConvexHull(verts, 300)
+
+        ---@type SpearheadTriggerZone
+        local dropOfZone = {
+            name = targetZoneName .. "_dropZone",
+            zone_type = "Polygon",
+            radius = 0,
+            verts = enlarged,
+            location = noLandingZone.location,
+        }
+
+        self._dropOffZone = dropOfZone
+    end
+
+    self.code = tostring(database:GetNewMissionCode())
+    self.name = "Resupply"
+
+    local type = "site"
+    if requiredCrateType == "SAM_CRATE" then
+        type = "SAM site"
+    elseif requiredCrateType == "FARP_CRATE" then
+        type = "FARP"
+    end
+
+    self.zoneName = targetZoneName .. "_supply"
+    self._logger = logger
     self._onCrateDroppedOfListeners = {}
+    self._completeListeners = {}
+    self._markIDsPerGroup = {}
+    self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate()
+    self._state = "NEW"
+
+    local spearheadZone = Spearhead.DcsUtil.getZoneByName(targetZoneName)
+    if spearheadZone == nil then
+        logger:error("Zone not found: " .. targetZoneName)
+        return nil
+    end
+
+    self.location = spearheadZone.location
+
+    self.missionType = "LOGISTICS"
+    self.missionTypeDisplay = "LOGISTICS"
+
+    self.priority = "secondary"
+
+    self._missionCommandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(self._logger.LogLevel)
 
     self._crateType = requiredCrateType
 
     return self
-
 end
 
+---@param listener OnCrateDroppedListener
 function BuildableMission:AddOnCrateDroppedOfListener(listener)
     table.insert(self._onCrateDroppedOfListeners, listener)
+end
+
+function BuildableMission:ShowBriefing(groupID)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group == nil then return end
+
+    local unitType = Spearhead.DcsUtil.getUnitTypeFromGroup(group)
+    local coords = Spearhead.DcsUtil.convertVec2ToUnitUsableType(self.location, unitType)
+
+    local briefing = "Mission [" .. self.code .. "] " .. self.name .. 
+        "\n \n" ..
+        "We've dispatched forward units to find a proper spot for a new FARP." ..
+        "\nYou will need to drop off supplies so they can start building." ..
+        "\nThe coords are: " .. coords ..
+        "\n\n" ..
+        "\nCrates still required: " .. self._requiredCrates - self._droppedCrates ..
+        "\n\n" ..
+        "NOTE: Do not land in the orange construction zone!"
+
+    trigger.action.outTextForGroup(groupID, briefing, 30)
+end
+
+function BuildableMission:MarkMissionAreaToGroup(groupID)
+
+    local text = "[" .. self.code .. "] " .. self.name
+    local location = { x= self.location.x, y=land.getHeight(self.location), z=self.location.y }
+    local markID = Spearhead.DcsUtil.AddMarkToGroup(groupID, text, location)
+
+    self._markIDsPerGroup[groupID] = markID
 end
 
 ---@private
 function BuildableMission:NotifyCrateDroppedOf()
     for _, listener in ipairs(self._onCrateDroppedOfListeners) do
-        if listener.onCrateDroppedOf then
-            listener:onCrateDroppedOf(self)
+        if listener.OnCrateDroppedOff then
+            listener:OnCrateDroppedOff(self)
         end
     end
 end
 
 function BuildableMission:SpawnActive()
+
+    self._logger:debug("Spawning buildable mission: " .. self.code)
+
+    if self._noLandingZone == nil then
+        self._logger:error("No no landing zone found for mission: " .. self.code)
+        return
+    end
+
+    ---@type DrawColor
+    local lineColor = { r=230/255, g=93/255, b=49/255, a=1}
+    ---@type DrawColor
+    local fillColor = { r=230/255, g=93/255, b=49/255, a=0.2}
+    self._noLandingZoneId = Spearhead.DcsUtil.DrawZone(self._noLandingZone, lineColor, fillColor, 6)
+
+    if self._dropOffZone == nil then
+        self._logger:error("No drop off zone found for mission: " .. self.code)
+        return
+    end
+
+    local lineColor2 = { r=0, g=0, b=1, a=1}
+    local fillColor2 = { r=0, g=0, b=1, a=0}
+    self._dropOffZoneId = Spearhead.DcsUtil.DrawZone(self._dropOffZone, lineColor2, fillColor2, 6)
     
+    ---@param selfA BuildableMission
+    ---@param time number
+    local checkForCrateTasks = function (selfA, time)
+        selfA:CheckCratesInZone()
+        return time + 10
+    end
+
+    timer.scheduleFunction(checkForCrateTasks, self, timer.getTime() + 10)
+
+    self:SpawnForwardUnits()
+    self._state = "ACTIVE"
+
+    self._missionCommandsHelper:AddMissionToCommands(self)
+
 end
 
 function BuildableMission:SpawnForwardUnits()
@@ -57,42 +187,28 @@ function BuildableMission:CheckCratesInZone()
     ---@type Array<Object>
     local foundCrates = {}
 
-    do 
-        ---comment
-        ---@param object Object
-        ---@param requiredType SupplyType
-        local foundFunction = function(object, requiredType)
-            local type = Spearhead.classes.stageClasses.helpers.SupplyConfigHelper.fromObjectName(object:getName())
-            if type == requiredType then 
-                table.insert(foundCrates, object)
+    local crates = self._supplyUnitsTracker:GetCargoCratesDropped()
+    for _, staticObject in pairs(crates) do
+        if staticObject and staticObject:isExist() and Spearhead.Util.startswith(staticObject:getName(), self._crateType, true) then
+            local pos = staticObject:getPoint()
+
+            if Spearhead.Util.is3dPointInZone(pos, self._dropOffZone) then
+                table.insert(foundCrates, staticObject)
             end
         end
-
-        local zone = Spearhead.DcsUtil.getZoneByName(self._targetZoneName)
-
-        if zone == nil then
-            Spearhead.LoggerTemplate.new("BuildableMission", "ERROR"):error("Zone not found: " .. self._targetZoneName)
-            return
-        end
-
-        local y = land.getHeight(zone.location)
-
-        ---@type Sphere
-        local searchVolume = {
-            id = world.VolumeType.SPHERE,
-            params = {
-                point = { x = zone.location.x, y = y, z = zone.location.y },
-                radius = 1000,
-            }
-        }
-        world.searchObjects(Object.Category.STATIC, searchVolume, foundFunction, self._crateType)
     end
     
     for _, foundCrate in pairs(foundCrates) do 
-
+        self._droppedCrates = self._droppedCrates + 1
         foundCrate:destroy()
         self:NotifyCrateDroppedOf()
+    end
 
+    if self._droppedCrates >= self._requiredCrates then
+        Spearhead.DcsUtil.RemoveMark(self._noLandingZoneId)
+        Spearhead.DcsUtil.RemoveMark(self._dropOffZoneId)
+        self:NotifyMissionComplete()
+        self._state = "COMPLETED"
     end
 
 end

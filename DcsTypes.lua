@@ -351,7 +351,7 @@ do -- trigger
     ---@class MarkCommands
     ---@field markToAll fun(id: number, text:string, point:Vec3, readOnly: boolean?, message: string?) Adds a mark point to all on the F10 map with attached text.
     ---@field markToCoalition fun(id: number, text: string, point: Vec3, coalitionID: CoalitionSide, readOnly: boolean?, message: string) Adds a mark point to a coalition on the F10 map with attached text.
-    ---@field markToGroup fun(id: number, text: string, point: Vec3, groupID: number, readOnly: boolean?, message: string) Adds a mark point to a group on the F10 map with attached text.
+    ---@field markToGroup fun(id: number, text: string, point: Vec3, groupID: number, readOnly: boolean?, message: string?) Adds a mark point to a group on the F10 map with attached text.
     ---@field removeMark fun(id: number) Removes a mark panel from the f10 map
     ---@field markupToAll fun(shapeID: ShapeId, coalition: DrawCoalition, id: number, ... : any) Complex parameters.  <br/> See: https://wiki.hoggitworld.com/view/DCS_func_markupToAll
     ---@field lineToAll fun(coalition: DrawCoalition, id: number, startPoint:Vec3, endPoint: Vec3, color:table, lineType: LineType, readonly: boolean?, message: string?) Creates a line on the F10 map from one point to another.

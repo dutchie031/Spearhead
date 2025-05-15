@@ -118,6 +118,23 @@ local missionBriefingRequested = function(args)
     mission:ShowBriefing(groupID)
 end
 
+---@class MarkRequestedArgs
+---@field mission Mission @the mission object
+---@field groupId integer @the group ID of the player requesting the briefing
+
+---@param args MarkRequestedArgs
+local markRequested = function(args)
+
+    local mission = args.mission
+    if not mission then return end
+
+    if mission.missionType == "LOGISTICS" then
+        mission:MarkMissionAreaToGroup(args.groupId)
+    end
+
+end
+
+
 
 ---@class PinMissionCommandArgs
 ---@field self MissionCommandsHelper @the MissionCommandsHelper instance
@@ -160,7 +177,7 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
                 end
             end
 
-            return string.format("[%s] %-15s %-20s %10s nM\n", mission.code,  mission.missionTypeDisplay, mission.name, distanceText)
+            return string.format("[%s]\t%s \t%s \t%s nM\n", mission.code,  mission.missionTypeDisplay, mission.name, distanceText)
         end
 
         ---Primary missions
@@ -272,8 +289,21 @@ function MissionCommandsHelper:addMissionCommands(groupId, mission)
         local missionFolderName = "[" .. mission.code .. "]" .. mission.name
         missionCommands.addSubMenuForGroup(groupId, missionFolderName, path)
         table.insert(path, missionFolderName)
-        missionCommands.addCommandForGroup(groupId, "Briefing", path, missionBriefingRequested,{ groupId = groupId, mission = mission })
-        missionCommands.addCommandForGroup(groupId, "Pin", path, pinMissionCommand, { self = self, groupId = groupId, mission = mission })
+
+        ---@type MissionBriefingRequestedArgs
+        local missionBriefingRequestedArgs = { groupId = groupId, mission = mission }
+        missionCommands.addCommandForGroup(groupId, "Briefing", path, missionBriefingRequested,missionBriefingRequestedArgs)
+
+        ---@type PinMissionCommandArgs
+        local pinMissionCommandArgs = { self = self, groupId = groupId, mission = mission }
+        missionCommands.addCommandForGroup(groupId, "Pin", path, pinMissionCommand, pinMissionCommandArgs)
+
+        if mission.missionType == "LOGISTICS" then
+            ---@type MarkRequestedArgs
+            local markRequestArgs = { groupId = groupId, mission = mission }
+            missionCommands.addCommandForGroup(groupId, "Mark", path, markRequested, markRequestArgs)
+        end
+
     end
 end
 
@@ -293,8 +323,8 @@ function MissionCommandsHelper:AddSupplyHubCommandsIfApplicable(groupID)
     ---@class LoadCargoCommandParams
     ---@field unitID number
     ---@field groupID number
-    ---@field crateType string
-    ---@field hub SupplyHub
+    ---@field crateType SupplyType
+    ---@field supplyUnitsTracker SupplyUnitsTracker
 
     ---comment
     ---@param params LoadCargoCommandParams
@@ -302,18 +332,20 @@ function MissionCommandsHelper:AddSupplyHubCommandsIfApplicable(groupID)
         local unitID = params.unitID
         local groupID = params.groupID
         local crateType = params.crateType
-        local hubA = params.hub
-        if hubA then
-            hubA:UnitRequestCrateLoading(groupID, crateType)
+        local supplyUnitsTracker = params.supplyUnitsTracker
+        if supplyUnitsTracker then
+            supplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
         end
-
     end
 
     local path = { [1] = folderNames.supplyHub }
     ---@type LoadCargoCommandParams
-    local params = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE", hub = hub }
-    missionCommands.addCommandForGroup(groupID, "Load FARP Crate", path, loadCargoCommand, params)
+    local farpParams = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE", supplyUnitsTracker = self._supplyUnitsTracker }
+    missionCommands.addCommandForGroup(groupID, "Load FARP Crate", path, loadCargoCommand, farpParams)
 
+    ---@type LoadCargoCommandParams
+    local samParms = { unitID = unit:getID(), groupID = group:getID(), crateType = "SAM_CRATE",  supplyUnitsTracker = self._supplyUnitsTracker }
+    missionCommands.addCommandForGroup(groupID, "Load SAM Crate", path, loadCargoCommand, samParms)
 end
 
 function MissionCommandsHelper:AddCargoCommands(groupID)

@@ -146,6 +146,26 @@ function SpearheadGroup:GetUnits()
     return result
 end
 
+---@return Array<Vec3>
+function SpearheadGroup:GetAllUnitPositions()
+
+     local result = {}
+    if self._isStatic == true then
+        local staticObject = StaticObject.getByName(self.groupName)
+        if staticObject then 
+            table.insert(result, staticObject:getPoint())
+        end
+    else
+        local group = Group.getByName(self.groupName)
+        if not group then return {} end
+        for _, unit in pairs(group:getUnits()) do
+            table.insert(result, unit:getPoint())
+        end 
+    end
+    return result
+
+end
+
 if not Spearhead.classes then Spearhead.classes = {} end
 if not Spearhead.classes.stageClasses then Spearhead.classes.stageClasses = {} end
 if not Spearhead.classes.stageClasses.Groups then Spearhead.classes.stageClasses.Groups = {} end

@@ -1,5 +1,5 @@
 
----@class BlueSam
+---@class BlueSam : OnCrateDroppedListener, MissionCompleteListener
 ---@field Activate fun(self: BlueSam)
 ---@field private _database Database
 ---@field private _logger Logger
@@ -7,6 +7,9 @@
 ---@field private _blueGroups Array<SpearheadGroup>
 ---@field private _cleanupUnits table<string, boolean>
 ---@field private _buildableCrates number?
+---@field private _receivedCrates number?
+---@field private _unitsPerCrate number?
+---@field private _buildableMission BuildableMission?
 local BlueSam = {}
 
 ---@param database Database
@@ -32,6 +35,7 @@ function BlueSam.New(database, logger, zoneName)
     end
 
     self._buildableCrates = blueSamData.buildingCrates
+    self._receivedCrates = 0
 
     ---@type table<string, Vec3>
     local blueUnitsPos = {}
@@ -39,6 +43,7 @@ function BlueSam.New(database, logger, zoneName)
     ---@type table<string, Vec3>
     local redUnitsPos = {}
 
+    
     for _, groupName in pairs(blueSamData.groups) do
         local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
         if SpearheadGroup then
@@ -60,7 +65,6 @@ function BlueSam.New(database, logger, zoneName)
         SpearheadGroup:Destroy()
     end
 
-        
     --Cleanup units
     local cleanup_distance = 5
     for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
@@ -72,16 +76,62 @@ function BlueSam.New(database, logger, zoneName)
         end
     end
 
+    if self._buildableCrates ~= nil and self._buildableCrates ~= 0 then
+        self._logger:debug("Buildable mission creating for zone: " .. zoneName .. " with crates: " .. self._buildableCrates)
+
+        local noLandingZone = self:GetNoLandingZone()
+
+        self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zoneName, noLandingZone, self._buildableCrates, "SAM_CRATE")
+        self._buildableMission:AddOnCrateDroppedOfListener(self)
+        self._buildableMission:AddMissionCompleteListener(self)
+    end
+
+
+
     return self
+end
+
+---@private
+---@return SpearheadTriggerZone?
+function BlueSam:GetNoLandingZone()
+
+    ---@type Array<Vec2>
+    local points = {}
+
+    for _, group in pairs(self._blueGroups) do
+        for _, unitPos in pairs(group:GetAllUnitPositions()) do
+            table.insert(points, { x = unitPos.x, y = unitPos.z })
+        end
+    end
+
+    local vecs = Spearhead.Util.getConvexHull(points)
+
+    local zone = Spearhead.DcsUtil.getZoneByName(self._zoneName)
+    if zone == nil then
+        self._logger:error("Zone not found: " .. self._zoneName)
+        return nil
+    end
+
+    ---@type SpearheadTriggerZone
+    local spearheadZone = {
+        name = self._zoneName .. "_noland",
+        location = zone.location,
+        verts = vecs,
+        radius = 0,
+        zone_type = "Polygon"
+    }
+
+    return spearheadZone
 end
 
 function BlueSam:Activate()
 
-    if self._buildableCrates == nil or self._buildableCrates == 0 then
+    if self._buildableMission == nil then
         self:SpawnGroups()
     else
-        --- Create buildable mission and listen to events
+        self._buildableMission:SpawnActive()
     end
+
 end
 
 function BlueSam:SpawnGroups()
@@ -99,6 +149,24 @@ function BlueSam:SpawnGroups()
     for _, group in pairs(self._blueGroups) do
         group:Spawn()
     end
+end
+
+
+---@param buildableMission BuildableMission
+function BlueSam:OnCrateDroppedOff(buildableMission)
+
+    self._logger:debug("Crate dropped off in zone: " .. self._zoneName)
+
+    self._receivedCrates = self._receivedCrates+ 1
+
+end
+
+---@param buildableMission Mission
+function BlueSam:OnMissionComplete(buildableMission)
+    self._logger:debug("Buildable mission complete for zone: " .. self._zoneName)
+
+    self:SpawnGroups()
+
 end
 
 

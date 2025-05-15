@@ -1,12 +1,15 @@
 
 
----@class FarpZone
+---@class FarpZone : OnCrateDroppedListener, MissionCompleteListener
 ---@field private _startingFarp boolean
 ---@field private _groups Array<SpearheadGroup>
 ---@field private _padNames Array<string>
 ---@field private _database Database
 ---@field private _logger Logger
 ---@field private _zoneName string
+---@field private _requiredCrates number
+---@field private _receivedCrates number
+---@field private _buildableMission BuildableMission?
 local FarpZone = {}
 FarpZone.__index = FarpZone
 
@@ -45,12 +48,28 @@ function FarpZone.New(database, logger, zoneName)
             table.insert(self._groups, group)
             group:Destroy()
         end
+
+        self._requiredCrates = farpData.buildingCrates
+        self._receivedCrates = 0
+
+        if self._requiredCrates ~= nil and self._requiredCrates > 0 then
+            self._logger:debug("FARP zone " .. zoneName .. " requires " .. self._requiredCrates .. " crates to be dropped off")
+            local noLandingZone = self:GetNoLandingZone()
+            self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zoneName, noLandingZone, self._requiredCrates, "FARP_CRATE")
+            if self._buildableMission then
+                self._buildableMission:AddOnCrateDroppedOfListener(self)
+                self._buildableMission:AddMissionCompleteListener(self)
+            end
+
+        end
+
     end
 
     self:Deactivate()
 
     return self
 end
+
 
 ---@return boolean
 function FarpZone:IsStartingFarp()
@@ -59,14 +78,34 @@ end
 
 function FarpZone:Activate()
     self._logger:info("Activating FARP zone: " .. self._zoneName)
-    self:BuildUp()
-    self:SetPadsBlue()
 
+    if self._buildableMission == nil then
+        self:BuildUp()
+        self:SetPadsBlue()
+    else
+        self._buildableMission:SpawnActive()
+    end
 end
 
 function FarpZone:Deactivate()
-
     self:NeutralisePads()
+end
+
+---@param buildableMission BuildableMission
+function FarpZone:OnCrateDroppedOff(buildableMission)
+
+    self._logger:debug("Crate dropped off in zone: " .. self._zoneName)
+
+    self._receivedCrates = self._receivedCrates+ 1
+
+end
+
+---@param buildableMission Mission
+function FarpZone:OnMissionComplete(buildableMission)
+    self._logger:debug("Buildable mission complete for zone: " .. self._zoneName)
+
+    self:BuildUp()
+    self:SetPadsBlue()
 
 end
 
@@ -98,6 +137,39 @@ function FarpZone:SetPadsBlue()
     end
 end
 
+
+---@private 
+---@return SpearheadTriggerZone?
+function FarpZone:GetNoLandingZone()
+
+    ---@type Array<Vec2>
+    local points = {}
+
+    for _, group in pairs(self._groups) do
+        for _, unitPos in pairs(group:GetAllUnitPositions()) do
+            table.insert(points, { x = unitPos.x, y = unitPos.z })
+        end
+    end
+
+    local vecs = Spearhead.Util.getConvexHull(points)
+
+    local zone = Spearhead.DcsUtil.getZoneByName(self._zoneName)
+    if zone == nil then
+        self._logger:error("Zone not found: " .. self._zoneName)
+        return nil
+    end
+
+    ---@type SpearheadTriggerZone
+    local spearheadZone = {
+        name = self._zoneName .. "_noland",
+        location = zone.location,
+        verts = vecs,
+        radius = 0,
+        zone_type = "Polygon"
+    }
+
+    return spearheadZone
+end
 
 if Spearhead == nil then Spearhead = {} end
 if Spearhead.classes == nil then Spearhead.classes = {} end

@@ -62,6 +62,7 @@
 ---@class FarpZoneData
 ---@field groups Array<string>
 ---@field padNames Array<string>
+---@field buildingCrates number?
 
 ---@class Database
 ---@field private _tables DatabaseTables
@@ -183,11 +184,17 @@ function Database.New(Logger)
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
 
-                        if Spearhead.Util.startswith(string.lower(layer_object.name), "author", true) == true then
+                        if Spearhead.Util.startswith(string.lower(layer_object.name), "buildable", true) == true then
                             local blueSamData = self:getBlueSamDataForDrawLayer(layer_object)
                             if blueSamData then
                                 local number = tonumber(layer_object.text)
                                 blueSamData.buildingCrates = number
+                            end
+
+                            local farpData = self:getFarpDataForDrawLayer(layer_object)
+                            if farpData then
+                                local number = tonumber(layer_object.text)
+                                farpData.buildingCrates = number
                             end
                         elseif Spearhead.Util.startswith(string.lower(layer_object.name), "completeat", true) == true then
                             
@@ -330,6 +337,7 @@ function Database.New(Logger)
         return baseData
     end
 
+
     self:initAvailableUnits()
     self:loadCapUnits()
     self:loadBlueSamUnits()
@@ -453,10 +461,11 @@ function Database:initAvailableUnits()
 end
 
 ---comment
+---@private
 ---@param layer_object table
 ---@return BlueSamData?
 function Database:getBlueSamDataForDrawLayer(layer_object)
-    for _, zonename in pairs(self._tables.MissionZones) do
+    for _, zonename in pairs(self._tables.BlueSams) do
         if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
             return self:getOrCreateBlueSamDataForZone(zonename)
         end
@@ -464,6 +473,20 @@ function Database:getBlueSamDataForDrawLayer(layer_object)
     return nil
 end
 
+---@private
+---@param layer_object table
+---@return FarpZoneData?
+function Database:getFarpDataForDrawLayer(layer_object)
+    for _, zonename in pairs(self._tables.AllFarpZones) do
+        if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
+            return self:getOrCreateFarpDataForZone(zonename)
+        end
+    end
+    return nil
+end
+
+
+---@private
 function Database:getOrCreateBlueSamDataForZone(zoneName)
     local blueSamData = self._tables.BlueSamDataPerZone[zoneName]
     if blueSamData == nil then
@@ -474,6 +497,20 @@ function Database:getOrCreateBlueSamDataForZone(zoneName)
         self._tables.BlueSamDataPerZone[zoneName] = blueSamData
     end
     return blueSamData
+end
+
+---@private
+function Database:getOrCreateFarpDataForZone(zoneName)
+    local farpData = self._tables.FarpZoneData[zoneName]
+    if farpData == nil then
+        farpData = {
+            padNames = {},
+            groups = {},
+            buildingCrates = nil
+        }
+        self._tables.FarpZoneData[zoneName] = farpData
+    end
+    return farpData
 end
 
 ---@private

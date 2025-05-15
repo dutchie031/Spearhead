@@ -23,6 +23,7 @@ assert(loadfile(classPath .. "stageClasses\\GlobalStageManager.lua"))()
 assert(loadfile(classPath .. "stageClasses\\missions\\baseMissions\\Mission.lua"))()
 assert(loadfile(classPath .. "stageClasses\\missions\\ZoneMission.lua"))()
 assert(loadfile(classPath .. "stageClasses\\missions\\RunwayStrikeMission.lua"))()
+assert(loadfile(classPath .. "stageClasses\\missions\\BuildableMission.lua"))()
 
 
 assert(loadfile(classPath .. "stageClasses\\Stages\\BaseStage\\Stage.lua"))()

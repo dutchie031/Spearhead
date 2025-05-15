@@ -71,63 +71,8 @@ function SupplyHub:Activate()
     self:StartMonitoringUnitsForCommands()
 end
 
----Loads a crate directly into the unit
----@param groupID number
----@param crateType SupplyType  
-function SupplyHub:UnitRequestCrateLoading(groupID, crateType)
-
-    self._logger:debug("UnitRequestCrateLoading called with groupID: " .. groupID .. " and crateType: " .. crateType)
-
-    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
-    if group ~= nil then
-
-        local crateConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
-        if crateConfig == nil then
-            self._logger:error("Invalid crate type: " .. crateType)
-            return
-        end
-
-        local unit = group:getUnit(1)
-        
-        if unit == nil then return end
-        if unit:isExist() == false then return end
-
-        
-        if unit:inAir() == true then
-            trigger.action.outTextForUnit(unit:getID(), "Land first before crates can be loaded", 10)
-            return
-        end
-
-        trigger.action.outTextForUnit(unit:getID(), "Loading crate of type " .. crateType, 3)
-
-        trigger.action.setUnitInternalCargo(unit:getName(), crateConfig.weight)
-        self._supplyUnitsTracker:AddCargoToUnit(unit:getID(), crateType)
-        self._missionCommandsHelper:updateCommandsForGroup(groupID)
-        trigger.action.outTextForUnit(unit:getID(), "Loaded crate of type " .. crateType, 10)
-        self._logger:debug("Loaded crate of type " .. crateType .. " into unit " .. unit:getName())
-
-    end
-end
 
 
----Spawns a crate for sling loading
----@param groupID number
----@param crateType SupplyType
-function SupplyHub:UnitRequestCrateSpawn(groupID, crateType)
-
-    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
-    if group == nil then
-
-        local crateConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
-        if crateConfig == nil then
-            self._logger:error("Invalid crate type: " .. crateType)
-            return
-        end
-
-        
-
-    end
-end
 
 function SupplyHub:StartMonitoringUnitsForCommands()
     self._logger:debug("Starting to monitor units for commands in Supply Hub zone: " .. self._zoneName)
