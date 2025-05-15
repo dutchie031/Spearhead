@@ -78,6 +78,8 @@
                         </ul>
                     </li>
                     <li><a href="#randomization" class="side-nav-h2">Randomization</a></li>
+                    <li><a href="#in-stage-dependencies" class="side-nav-h2">In stage dependencies</a></li>
+                    <li><a href="#buildable" class="side-nav-h2">Buildables</a></li>
                     <li><a href="#runway-bombing" class="side-nav-h2">Runway Bombing</a></li>
                 </ul>
             </div>
@@ -256,6 +258,20 @@
                     <span class="inline-lua"><span class="lua-variable">dependson_[freeform]</span></span> <br/>
                     And in the text add the "Name" of the mission zone you want the mission to depend on. <br/>
                     The mission will be "pre-activated" (spawned) but won't have a f10 mission menu until the mission(s) it depends on is completed. <br/>
+                </p>
+
+                <h2 id="buildable">Buildables</h2>
+                <p>
+                    Current buildables:  <br/>
+                    <span class="inline-lua"><span class="lua-variable">FARP_</span></span> <br/>
+                    <span class="inline-lua"><span class="lua-variable">BLUESAM_</span></span> <br/>
+                    <br/>
+
+                    Buildables are zones or objects that first require logistics. <br/>
+                    Eg. A forward SAM site or FARP requires logistic crates before it can be built. <br/>
+
+                    To make an item buildable add a text box inside of the trigger zone and name it: <span class="inline-lua"><span class="lua-variable">buildable_[freeform]</span></span> <br/>
+                    Then in the text box type the number of crates you want to be required. <br/>
                 </p>
 
                 <h2>Runway Bombing</h2>
