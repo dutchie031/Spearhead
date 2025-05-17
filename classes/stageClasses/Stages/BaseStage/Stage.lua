@@ -39,6 +39,7 @@
 --- @field protected _stageConfig StageConfig
 --- @field protected _stageDrawingId integer
 --- @field protected _spawnedGroups Array<string>
+--- @field protected _stageZone SpearheadTriggerZone?
 --- @field protected _stageCompleteListeners Array<StageCompleteListener>
 --- @field protected CheckContinuousAsync fun(self:Stage, time:number) : number?
 --- @field protected OnPostStageComplete fun(self:Stage)?
@@ -74,7 +75,8 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     self._isActive = false
     self._isComplete = false
     self.stageName = initData.stageDisplayName
-    
+    self._stageZone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
+
     self.OnPostStageComplete = nil
     self.OnPostBlueActivated = nil
 
@@ -264,13 +266,11 @@ end
 function Stage:CheckAndUpdateSelf()
     self._logger:debug("Checking on Stage: " .. self.zoneName)
 
-    local dbTables = self:GetStageTables()
-
     ---@return Array<Mission>
     local getAvailableMissions = function ()
         ---@type Array<Mission>
         local availableMissions = {}
-        for _, mission in pairs(dbTables.missionsByCode) do
+        for _, mission in pairs(self._db.missionsByCode) do
             if mission:getState() == "NEW" then
                 table.insert(availableMissions, mission)
             end
@@ -281,7 +281,7 @@ function Stage:CheckAndUpdateSelf()
     ---@return number
     local getActiveMissionsCount = function ()
         local result = 0
-        for _, mission in pairs(dbTables.missionsByCode) do
+        for _, mission in pairs(self._db.missionsByCode) do
             if mission:getState() == "ACTIVE" then
                 result = result + 1
             end
@@ -289,7 +289,7 @@ function Stage:CheckAndUpdateSelf()
         return result
     end
 
-    local max = dbTables.maxMissions
+    local max = self._db.maxMissions
     local availableMissionsCount = Spearhead.Util.tableLength(getAvailableMissions())
     local activeCount = getActiveMissionsCount()
     if activeCount < max and availableMissionsCount > 0  then
@@ -407,11 +407,13 @@ function Stage:ActivateStage()
     timer.scheduleFunction(self.CheckContinuousAsync, self, timer.getTime() + 3)
 end
 
----Private usage only
+---@protected
 ---@return StageData
 function Stage:GetStageTables()
     return self._db
 end
+
+
 
 ---comment
 ---@param self Stage

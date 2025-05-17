@@ -190,22 +190,6 @@ do -- INIT UTIL
         return isInComplexPolygon(polygon, x, y)
     end
 
-    ---@param point Vec3
-    ---@param zone SpearheadTriggerZone
-    function UTIL.is3dPointInZone(point, zone)
-        if zone.zone_type == "Polygon" and zone.verts then
-            if UTIL.IsPointInPolygon(zone.verts, point.x, point.z) == true then
-                return true
-            end
-        else
-            if (((point.x - zone.location.x) ^ 2 + (point.z - zone.location.y) ^ 2) ^ 0.5 <= zone.radius) then
-                return true
-            end
-        end
-
-        return false
-    end
-
     ---comment
     ---@param points Array<Vec2> points 
     ---@return Array<Vec2> hullPoints
@@ -303,19 +287,6 @@ do     -- INIT DCS_UTIL
             }
         ]] --
 
-        ---@alias SpearheadTriggerZoneType
-        ---| "Cilinder"
-        ---| "Polygon"
-
-        ---@class SpearheadTriggerZone
-        ---@field name string
-        ---@field location Vec2
-        ---@field radius number
-        ---@field verts Array<Vec2>
-        ---@field zone_type SpearheadTriggerZoneType
-
-        ---@type Array<SpearheadTriggerZone>
-        DCS_UTIL.__trigger_zones = {}
     end
 
     DCS_UTIL.Coalition =
@@ -425,15 +396,12 @@ do     -- INIT DCS_UTIL
                     end
 
                     ---@type SpearheadTriggerZone
-                    local zone = {
-                        name = trigger_zone.name,
-                        zone_type = zoneType,
-                        location = { x = trigger_zone.x, y = trigger_zone.y },
-                        radius = trigger_zone.radius,
-                        verts = verts
-                    }
-
-                    DCS_UTIL.__trigger_zones[zone.name] = zone
+                    local triggerZone = nil
+                    if zoneType == "Cilinder" then
+                        Spearhead.shared.SpearheadTriggerZone.newCircle(trigger_zone.x, trigger_zone.y, trigger_zone.radius, trigger_zone.name)
+                    elseif zoneType == "Polygon" then
+                        Spearhead.shared.SpearheadTriggerZone.newPolygon(trigger_zone.x, trigger_zone.y, verts, trigger_zone.name)
+                    end
                 end
             end
 
@@ -469,32 +437,7 @@ do     -- INIT DCS_UTIL
                         airbase:autoCapture(false)
 
                         DCS_UTIL.__airbaseNamesById[tostring(airbase:getID())] = name
-
-                        if name  then
-                            local relevantPoints = {}
-                            for _, x in pairs(airbase:getRunways()) do
-                                if x.position and x.position.x and x.position.z then
-                                    table.insert(relevantPoints, { x = x.position.x, z = x.position.z, y = 0 })
-                                end
-                            end
-
-                            for _, x in pairs(airbase:getParking()) do
-                                if x.vTerminalPos and x.vTerminalPos.x and x.vTerminalPos.z then
-                                    table.insert(relevantPoints, { x = x.vTerminalPos.x, z = x.vTerminalPos.z, y = 0 })
-                                end
-                            end
-
-                            local points = UTIL.getConvexHull(relevantPoints)
-                            local enlargedPoints = UTIL.enlargeConvexHull(points, 750)
-
-                            DCS_UTIL.__airbaseZonesByName[name] = {
-                                name = name,
-                                location = { x = airbase:getPoint().x, y = airbase:getPoint().z },
-                                zone_type = "Polygon",
-                                radius = 0,
-                                verts = enlargedPoints
-                            }
-                        end
+                        Spearhead.shared.SpearheadTriggerZone.newAirbaseZone(airbase)
                     end
                 end
             end
