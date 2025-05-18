@@ -5,10 +5,13 @@
 ---@field lastUpdate number @last update time
 ---@field updateContinuous fun(self: MissionCommandsHelper, time: number): number @function to update commands continuously
 ---@field pinnedByGroup table<string, Mission> @table of pinned missions by group ID
+---@field private _supplyHubGroups table<string, boolean> @table of supply hub groups by their ID
 ---@field private _logger Logger @logger instance for logging
+---@field private _supplyUnitsTracker SupplyUnitsTracker @supply units tracker instance
 local MissionCommandsHelper = {}
 MissionCommandsHelper.__index = MissionCommandsHelper
 
+local id = 0
 
 local instance = nil
 
@@ -16,21 +19,25 @@ local instance = nil
 ---@param logLevel string @log level for the logger
 function MissionCommandsHelper.getOrCreate(logLevel)
     if instance == nil then
-        local self = setmetatable({}, MissionCommandsHelper)
+        instance = setmetatable({}, MissionCommandsHelper)
 
-        self._logger = Spearhead.LoggerTemplate.new("MissionCommandsHelper", logLevel)
+        instance._logger = Spearhead.LoggerTemplate.new("MissionCommandsHelper", logLevel)
 
-        self.missionsByCode = {}
-        self.enabledByCode = {}
-        self.updateNeeded = false
-        self.pinnedByGroup = {}
-        self.lastUpdate = 0
+        instance._logger:info("Creating MissionCommandsHelper instance")
+
+        instance.missionsByCode = {}
+        instance.enabledByCode = {}
+        instance.updateNeeded = false
+        instance.pinnedByGroup = {}
+        instance.lastUpdate = 0
+        instance._supplyHubGroups = {}
+        instance._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate(logLevel)
 
         ---comment
         ---@param selfA MissionCommandsHelper
         ---@param time number
         ---@return number
-        self.updateContinuous = function(selfA, time)
+        instance.updateContinuous = function(selfA, time)
             if selfA.updateNeeded == false then
                 return time + 10
             end
@@ -49,14 +56,63 @@ function MissionCommandsHelper.getOrCreate(logLevel)
             return time + 10
         end
 
-        timer.scheduleFunction(self.updateContinuous, self, timer.getTime() + 5)
-        Spearhead.Events.AddOnPlayerEnterUnitListener(self)
-        instance = self
+        timer.scheduleFunction(instance.updateContinuous, instance, timer.getTime() + 5)
+        Spearhead.Events.AddOnPlayerEnterUnitListener(instance)
+
     end
 
     return instance
 end
 
+---@param mission Mission
+function MissionCommandsHelper:AddMissionToCommands(mission)
+    self._logger:debug("Adding mission to commands: [" .. mission.code .. "]" .. mission.name)
+    self.missionsByCode[tostring(mission.code)] = mission
+    self.enabledByCode[tostring(mission.code)] = true
+    self.updateNeeded = true
+end
+
+---Removes a mission from the F10 commands menu
+---@param mission Mission
+function MissionCommandsHelper:RemoveMissionToCommands(mission)
+    self.enabledByCode[tostring(mission.code)] = false
+    self.updateNeeded = true
+end
+
+---@param groupID number
+function MissionCommandsHelper:MarkUnitInSupplyHub(groupID)
+    self._logger:debug("Marking unit in supply hub: " .. tostring(groupID))
+    local updateNeeded = false
+    if self._supplyHubGroups[tostring(groupID)] ~= true then
+        updateNeeded = true
+    end
+
+    self._supplyHubGroups[tostring(groupID)] = true
+    if updateNeeded == true then self:updateCommandsForGroup(groupID) end
+end
+
+
+---@param groupID number
+function MissionCommandsHelper:MarkUnitOutsideSupplyHub(groupID)
+    self._logger:debug("Marking unit outide supply hub: " .. tostring(groupID))
+    local updateNeeded = false
+    if self._supplyHubGroups[tostring(groupID)] == true then
+        updateNeeded = true
+    end
+
+    self._supplyHubGroups[tostring(groupID)] = false
+    if updateNeeded == true then self:updateCommandsForGroup(groupID) end
+end
+
+
+
+---@param unit Unit
+function MissionCommandsHelper:OnPlayerEntersUnit(unit)
+    if unit then
+        local group = unit:getGroup()
+        if group then self:updateCommandsForGroup(group:getID()) end
+    end
+end
 
 ---@class MissionBriefingRequestedArgs
 ---@field mission Mission @the mission object
@@ -71,6 +127,22 @@ local missionBriefingRequested = function(args)
 
     mission:ShowBriefing(groupID)
 end
+
+---@class MarkRequestedArgs
+---@field mission Mission @the mission object
+---@field groupId integer @the group ID of the player requesting the briefing
+
+---@param args MarkRequestedArgs
+local markRequested = function(args)
+
+    local mission = args.mission
+    if not mission then return end
+
+    if mission.missionType == "LOGISTICS" then
+        mission:MarkMissionAreaToGroup(args.groupId)
+    end
+end
+
 
 
 ---@class PinMissionCommandArgs
@@ -114,7 +186,7 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
                 end
             end
 
-            return string.format("[%s] %-15s %-20s %10s nM\n", mission.code,  mission.missionTypeDisplay, mission.name, distanceText)
+            return string.format("[%s]\t%s \t%s \t%s nM\n", mission.code,  mission.missionTypeDisplay, mission.name, distanceText)
         end
 
         ---Primary missions
@@ -161,10 +233,10 @@ function MissionCommandsHelper:AddPinnedMission(groupID)
 
 end
 
-
----comment
 ---@param groupID number
 function MissionCommandsHelper:updateCommandsForGroup(groupID)
+
+    self._logger:debug("Updating commands for group: " .. tostring(groupID))
 
     self:AddPinnedMission(groupID)
     self:AddOverviewCommand(groupID)
@@ -180,6 +252,9 @@ function MissionCommandsHelper:updateCommandsForGroup(groupID)
         end
     end
 
+    self:AddSupplyHubCommandsIfApplicable(groupID)
+    self:AddCargoCommands(groupID)
+
     ---@param id number
     local clearView = function(id)
         trigger.action.outTextForGroup(id, "clearing...", 1, true)
@@ -192,7 +267,9 @@ end
 
 local folderNames = {
     primary = "Primary Missions",
-    secondary = "Secondary Missions"
+    secondary = "Secondary Missions",
+    supplyHub = "Supply Hub",
+    cargo = "Cargo"
 }
 
 
@@ -221,31 +298,135 @@ function MissionCommandsHelper:addMissionCommands(groupId, mission)
         local missionFolderName = "[" .. mission.code .. "]" .. mission.name
         missionCommands.addSubMenuForGroup(groupId, missionFolderName, path)
         table.insert(path, missionFolderName)
-        missionCommands.addCommandForGroup(groupId, "Briefing", path, missionBriefingRequested,{ groupId = groupId, mission = mission })
-        missionCommands.addCommandForGroup(groupId, "Pin", path, pinMissionCommand, { self = self, groupId = groupId, mission = mission })
+
+        ---@type MissionBriefingRequestedArgs
+        local missionBriefingRequestedArgs = { groupId = groupId, mission = mission }
+        missionCommands.addCommandForGroup(groupId, "Briefing", path, missionBriefingRequested,missionBriefingRequestedArgs)
+
+        ---@type PinMissionCommandArgs
+        local pinMissionCommandArgs = { self = self, groupId = groupId, mission = mission }
+        missionCommands.addCommandForGroup(groupId, "Pin", path, pinMissionCommand, pinMissionCommandArgs)
+
+        if mission.missionType == "LOGISTICS" then
+            ---@type MarkRequestedArgs
+            local markRequestArgs = { groupId = groupId, mission = mission }
+            missionCommands.addCommandForGroup(groupId, "Mark", path, markRequested, markRequestArgs)
+        end
+
     end
 end
 
----@param mission Mission
-function MissionCommandsHelper:AddMissionToCommands(mission)
-    self._logger:debug("Adding mission to commands: [" .. mission.code .. "]" .. mission.name)
-    self.missionsByCode[tostring(mission.code)] = mission
-    self.enabledByCode[tostring(mission.code)] = true
-    self.updateNeeded = true
+---@private
+---@param groupID integer
+function MissionCommandsHelper:AddSupplyHubCommandsIfApplicable(groupID)
+
+    if  self._supplyHubGroups[tostring(groupID)] ~= true then return end
+
+    self._logger:debug("Adding supply hub commands for group: " .. tostring(groupID))
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group == nil then return end
+
+    local unit = group:getUnit(1)
+    if unit == nil then return end
+
+    ---@class LoadCargoCommandParams
+    ---@field unitID number
+    ---@field groupID number
+    ---@field crateType CrateType
+    ---@field supplyUnitsTracker SupplyUnitsTracker
+
+    ---comment
+    ---@param params LoadCargoCommandParams
+    local loadCargoCommand = function(params)
+        local crateType = params.crateType
+        local supplyUnitsTracker = params.supplyUnitsTracker
+        if supplyUnitsTracker then
+            supplyUnitsTracker:UnitRequestCrateLoading(params.groupID, crateType)
+        end
+    end
+
+    local path = { [1] = folderNames.supplyHub }
+
+    
+    ---@type LoadCargoCommandParams
+    local farpParams1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_1000", supplyUnitsTracker = self._supplyUnitsTracker }
+    missionCommands.addCommandForGroup(groupID, "Load FARP Crate (1000)", path, loadCargoCommand, farpParams1000)
+
+    ---@type LoadCargoCommandParams
+    local farpParams2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_2000", supplyUnitsTracker = self._supplyUnitsTracker }
+    missionCommands.addCommandForGroup(groupID, "Load FARP Crate (2000)", path, loadCargoCommand, farpParams2000)
+
+    ---@type LoadCargoCommandParams
+    local samParms1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_1000",  supplyUnitsTracker = self._supplyUnitsTracker }
+    missionCommands.addCommandForGroup(groupID, "Load SAM Crate (1000)", path, loadCargoCommand, samParms1000)
+
+    ---@type LoadCargoCommandParams
+    local samParms2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker }
+    missionCommands.addCommandForGroup(groupID, "Load SAM Crate (2000)", path, loadCargoCommand, samParms2000)
 end
 
----Removes a mission from the F10 commands menu
----@param mission Mission
-function MissionCommandsHelper:RemoveMissionToCommands(mission)
-    self.enabledByCode[tostring(mission.code)] = false
-    self.updateNeeded = true
+function MissionCommandsHelper:AddCargoCommands(groupID)
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    if group == nil then return end
+
+    local unit = group:getUnit(1)
+    if unit == nil then return end
+
+    ---@class UnloadCargoCommandParams
+    ---@field unitID number
+    ---@field crateType CrateType
+    ---@field supplyUnitsTracker SupplyUnitsTracker
+
+    ---comment
+    ---@param params UnloadCargoCommandParams
+    local unloadCargoCommand = function(params)
+        local unitID = params.unitID
+        local crateType = params.crateType
+        params.supplyUnitsTracker:UnloadRequested(unitID, crateType)
+    end
+
+    local cargo = self._supplyUnitsTracker:GetCargoInUnit(unit:getID())
+    if cargo then
+        for cargoType, amount in pairs(cargo) do
+            local cargoConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(cargoType)
+            if cargoConfig then
+                for i = 1, amount do
+                    local path = { [1] = folderNames.cargo }
+                    ---@type UnloadCargoCommandParams
+                    local params = { unitID = unit:getID(), crateType = cargoType, supplyUnitsTracker = self._supplyUnitsTracker }
+                    missionCommands.addCommandForGroup(groupID, "Unload " .. cargoConfig.displayName, path, unloadCargoCommand, params)
+                end
+            end
+        end
+    end
 end
+
+
 
 ---@private
 ---@param groupId integer
 function MissionCommandsHelper:addMissionFolders(groupId)
+
     missionCommands.addSubMenuForGroup(groupId, folderNames.primary)
     missionCommands.addSubMenuForGroup(groupId, folderNames.secondary)
+
+    if self._supplyHubGroups[tostring(groupId)] == true then
+        self._logger:debug("Adding supply hub commands folder for group: " .. tostring(groupId))
+        missionCommands.addSubMenuForGroup(groupId, folderNames.supplyHub)
+    end
+
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupId)
+    if group == nil then return end
+
+    local unit = group:getUnit(1)
+    if unit == nil then return end
+
+    local cargo = self._supplyUnitsTracker:GetCargoInUnit(unit:getID())
+    if cargo ~= nil then
+        missionCommands.addSubMenuForGroup(groupId, folderNames.cargo)
+    end
 end
 
 ---@private
@@ -253,6 +434,8 @@ end
 function MissionCommandsHelper:removeMissionFolders(groupId)
     missionCommands.removeItemForGroup(groupId, { folderNames.primary })
     missionCommands.removeItemForGroup(groupId, { folderNames.secondary })
+    missionCommands.removeItemForGroup(groupId, { folderNames.supplyHub })
+    missionCommands.removeItemForGroup(groupId, { folderNames.cargo })
 end
 
 ---@private
@@ -262,15 +445,6 @@ function MissionCommandsHelper:ResetFolders(groupID)
 
     -- Add mission folders
     self:addMissionFolders(groupID)
-end
-
----comment
----@param unit Unit
-function MissionCommandsHelper:OnPlayerEntersUnit(unit)
-    if unit then
-        local group = unit:getGroup()
-        if group then self:updateCommandsForGroup(group:getID()) end
-    end
 end
 
 if Spearhead == nil then Spearhead = {} end

@@ -78,6 +78,8 @@
                         </ul>
                     </li>
                     <li><a href="#randomization" class="side-nav-h2">Randomization</a></li>
+                    <li><a href="#in-stage-dependencies" class="side-nav-h2">In stage dependencies</a></li>
+                    <li><a href="#buildable" class="side-nav-h2">Buildables</a></li>
                     <li><a href="#runway-bombing" class="side-nav-h2">Runway Bombing</a></li>
                 </ul>
             </div>
@@ -163,6 +165,22 @@
                     Future: FARP zones will be "buildable" once logistics are implemented.
 
                     
+                </p>
+                
+                <h3 id="supply-hub">Supply Hub</h3>
+                <p>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">SUPPLYHUB_[Name]</span></span> <br />
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">SUPPLYHUB_A_[Name]</span></span> <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">SUPPLYHUB_HOUSTON</span></span> <br/> <br/>
+
+                    Supply hubs are used as zones to pick up logistics for logistic missions. <br/>
+                    They are activated when their parent is activated. <br/>
+                    Activated depends on what it's parent is. <br/>
+                    If it's a stage. It can be SUPPLYHUB_A_[name] when you want it to be active when the stage is initiated. (red state) or SUPPLYHUB_B_ it you want it activated when it's BLUE only. <br/>
+                    If you place the Supply Hub trigger zone inside of a FARP zone the supply hub will activate when the FARP zone is activated. <br/>
+                    If the FARP needs to be built first, then that means the supply hub also is activated later. <br/>
+
+                    NOTE: The supply hub does not spawn anything, but merely give options to pick up logistics.
                 </p>
 
                 <h2 id="mission-types">Mission Types</h2>
@@ -256,6 +274,28 @@
                     <span class="inline-lua"><span class="lua-variable">dependson_[freeform]</span></span> <br/>
                     And in the text add the "Name" of the mission zone you want the mission to depend on. <br/>
                     The mission will be "pre-activated" (spawned) but won't have a f10 mission menu until the mission(s) it depends on is completed. <br/>
+                </p>
+
+                <h2 id="buildable">Buildables</h2>
+                <p>
+                    Current buildables:  <br/>
+                    <span class="inline-lua"><span class="lua-variable">FARP_</span></span> <br/>
+                    <span class="inline-lua"><span class="lua-variable">BLUESAM_</span></span> <br/>
+                    <br/>
+
+                    Buildables are zones or objects that first require logistics. <br/>
+                    Eg. A forward SAM site or FARP requires logistic crates before it can be built. <br/>
+
+                    To make an item buildable add a text box inside of the trigger zone and name it: <span class="inline-lua"><span class="lua-variable">buildable_[freeform]</span></span> <br/>
+                    Then in the text box type amount of kilo's you want to be transfered before the logistisc mission is complete. <br/>
+                    The base will slowly build up with each crate giving both a nice view of it happening AND it's good for performance as there's not a big addition of objects at once. <br/>
+                    Right now a crate takes 15 seconds to unpack per 500kg. Meaning 2 crates of 1000kg will be faster than 1 crate of 2000kg. <br/>
+
+                    All helicopters have a max limit set based on quick google searches and cannot be changed but the ME at this point: <br/>
+                    UH-1H : 2000kg <br/>
+                    Mi-8  : 4000kg <br/>
+                    CH-47 : 10000kg <br/>
+                    MI-24 : 2000kg <br/>
                 </p>
 
                 <h2>Runway Bombing</h2>

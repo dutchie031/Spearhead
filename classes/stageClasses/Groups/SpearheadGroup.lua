@@ -21,6 +21,10 @@ function SpearheadGroup.New(groupName)
     return self
 end
 
+function SpearheadGroup:IsSpawned()
+    return self._isSpawned
+end
+
 function SpearheadGroup:SpawnCorpsesOnly()
 
     if self._isSpawned == true then return end
@@ -144,6 +148,26 @@ function SpearheadGroup:GetUnits()
         end 
     end
     return result
+end
+
+---@return Array<Vec3>
+function SpearheadGroup:GetAllUnitPositions()
+
+     local result = {}
+    if self._isStatic == true then
+        local staticObject = StaticObject.getByName(self.groupName)
+        if staticObject then 
+            table.insert(result, staticObject:getPoint())
+        end
+    else
+        local group = Group.getByName(self.groupName)
+        if not group then return {} end
+        for _, unit in pairs(group:getUnits()) do
+            table.insert(result, unit:getPoint())
+        end 
+    end
+    return result
+
 end
 
 if not Spearhead.classes then Spearhead.classes = {} end

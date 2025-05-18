@@ -1,5 +1,6 @@
 
 
+
 ---@class Mission
 ---@field name string
 ---@field zoneName string
@@ -120,6 +121,8 @@ function Mission:NotifyMissionComplete()
 
 end
 
+function Mission:MarkMissionAreaToGroup(groupId) end
+
 ---endregion
 
 --region PROTECTED
@@ -155,6 +158,7 @@ do --aliases
     --- | "DEAD"
     --- | "SAM"
     --- | "OCA"
+    --- | "LOGISTICS"
 
     --- @alias MissionState
     --- | "NEW"

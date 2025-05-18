@@ -32,7 +32,11 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
     CapBase.__index = CapBase
     local self = setmetatable({}, { __index = CapBase }) --[[@as CapBase]]
 
-    self.groupNames = database:getCapGroupsAtAirbase(airbaseName)
+    local baseData = database:getAirbaseDataForZone(airbaseName)
+    local groupNames = {}
+    if baseData then groupNames = baseData.CapGroups or {} end
+
+    self.groupNames = groupNames
     self.database  = database
     self.runwayBombingTracker = runwayBombingTracker
     self.runwayStrikeMissions = {}
