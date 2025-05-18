@@ -384,7 +384,6 @@ do
 
             if isPlayer(unit) == true then
                 local groupId = unit:getGroup():getID()
-                SpearheadEvents.AddCommandsToGroup(groupId)
                 SpearheadEvents.TriggerPlayerEntersUnit(unit)
             end
 
