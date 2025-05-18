@@ -13,12 +13,13 @@ SupplyUnitsTracker.__index = SupplyUnitsTracker
 local singleton = nil
 
 ---comment
+---@param logLevel LogLevel
 ---@return SupplyUnitsTracker
 function SupplyUnitsTracker.getOrCreate(logLevel)
 
     if singleton == nil then
         singleton = setmetatable({}, SupplyUnitsTracker)
-        singleton._logger = Spearhead.LoggerTemplate.new("SupplyUnitsTracker", "DEBUG")
+        singleton._logger = Spearhead.LoggerTemplate.new("SupplyUnitsTracker", logLevel)
         singleton._unitPositions = {}
         singleton._cargoInUnits = {}
         singleton._supplyUnitsByName = {}

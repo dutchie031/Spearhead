@@ -35,7 +35,7 @@ function SupplyHub.new(database, logger, zoneName)
 
     self._zone = Spearhead.DcsUtil.getZoneByName(zoneName)
     
-    self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate()
+    self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate(logger.LogLevel)
     self._inZone = {}
     self._missionCommandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(logger.LogLevel)
 

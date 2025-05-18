@@ -19,25 +19,25 @@ local instance = nil
 ---@param logLevel string @log level for the logger
 function MissionCommandsHelper.getOrCreate(logLevel)
     if instance == nil then
-        local self = setmetatable({}, MissionCommandsHelper)
+        instance = setmetatable({}, MissionCommandsHelper)
 
-        self._logger = Spearhead.LoggerTemplate.new("MissionCommandsHelper", logLevel)
+        instance._logger = Spearhead.LoggerTemplate.new("MissionCommandsHelper", logLevel)
 
-        self._logger:info("Creating MissionCommandsHelper instance")
+        instance._logger:info("Creating MissionCommandsHelper instance")
 
-        self.missionsByCode = {}
-        self.enabledByCode = {}
-        self.updateNeeded = false
-        self.pinnedByGroup = {}
-        self.lastUpdate = 0
-        self._supplyHubGroups = {}
-        self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate()
+        instance.missionsByCode = {}
+        instance.enabledByCode = {}
+        instance.updateNeeded = false
+        instance.pinnedByGroup = {}
+        instance.lastUpdate = 0
+        instance._supplyHubGroups = {}
+        instance._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate(logLevel)
 
         ---comment
         ---@param selfA MissionCommandsHelper
         ---@param time number
         ---@return number
-        self.updateContinuous = function(selfA, time)
+        instance.updateContinuous = function(selfA, time)
             if selfA.updateNeeded == false then
                 return time + 10
             end
@@ -56,13 +56,9 @@ function MissionCommandsHelper.getOrCreate(logLevel)
             return time + 10
         end
 
-        timer.scheduleFunction(self.updateContinuous, self, timer.getTime() + 5)
-        Spearhead.Events.AddOnPlayerEnterUnitListener(self)
+        timer.scheduleFunction(instance.updateContinuous, instance, timer.getTime() + 5)
+        Spearhead.Events.AddOnPlayerEnterUnitListener(instance)
 
-        if instance == nil then
-            self._logger:info("Setting new MissionCommandsHelper instance " .. tostring(math.random(1, 1000))) --math random makes the message unique
-            instance = self
-        end
     end
 
     return instance

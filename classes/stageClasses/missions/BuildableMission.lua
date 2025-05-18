@@ -71,7 +71,7 @@ function BuildableMission.new(database, logger, targetZoneName, noLandingZone, r
     self._onCrateDroppedOfListeners = {}
     self._completeListeners = {}
     self._markIDsPerGroup = {}
-    self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate()
+    self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate(logger.LogLevel)
     self._state = "NEW"
 
     local spearheadZone = Spearhead.DcsUtil.getZoneByName(targetZoneName)
