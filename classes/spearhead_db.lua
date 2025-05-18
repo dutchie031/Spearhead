@@ -52,7 +52,7 @@
 
 ---@class BlueSamData
 ---@field groups Array<string>
----@field buildingCrates number?
+---@field buildingKilos number?
 
 ---@class MissionZoneData
 ---@field Groups Array<string>
@@ -63,7 +63,7 @@
 ---@class FarpZoneData
 ---@field groups Array<string>
 ---@field padNames Array<string>
----@field buildingCrates number?
+---@field buildingKilos number?
 ---@field supplyHubNames Array<string>
 
 ---@class Database
@@ -188,13 +188,13 @@ function Database.New(Logger)
                             local blueSamData = self:getBlueSamDataForDrawLayer(layer_object)
                             if blueSamData then
                                 local number = tonumber(layer_object.text)
-                                blueSamData.buildingCrates = number
+                                blueSamData.buildingKilos = number
                             end
 
                             local farpData = self:getFarpDataForDrawLayer(layer_object)
                             if farpData then
                                 local number = tonumber(layer_object.text)
-                                farpData.buildingCrates = number
+                                farpData.buildingKilos = number
                             end
                         elseif Spearhead.Util.startswith(string.lower(layer_object.name), "completeat", true) == true then
                             local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)

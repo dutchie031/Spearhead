@@ -1,10 +1,11 @@
 ---@class SupplyUnitsTracker
----@field private _supplyUnits Array<Unit>
----@field private _cargoInUnits table<string, table<SupplyType, number>>
+---@field private _supplyUnitsByName table<string, Unit>
+---@field private _cargoInUnits table<string, table<CrateType, number>>
 ---@field private _logger Logger
 ---@field private _unitPositions table<string, Vec3>
 ---@field private _commandsHelper MissionCommandsHelper
 ---@field private _droppedCrates table<string, StaticObject>
+---@field private _registeredHubs table<SupplyHub, boolean>
 local SupplyUnitsTracker = {}
 SupplyUnitsTracker.__index = SupplyUnitsTracker
 
@@ -13,26 +14,43 @@ local singleton = nil
 
 ---comment
 ---@return SupplyUnitsTracker
-function SupplyUnitsTracker.getOrCreate()
+function SupplyUnitsTracker.getOrCreate(logLevel)
 
     if singleton == nil then
         singleton = setmetatable({}, SupplyUnitsTracker)
-        singleton._logger = Spearhead.LoggerTemplate.new("SupplyUnitsTracker", "INFO")
+        singleton._logger = Spearhead.LoggerTemplate.new("SupplyUnitsTracker", "DEBUG")
         singleton._unitPositions = {}
         singleton._cargoInUnits = {}
-        singleton._supplyUnits = {}
+        singleton._supplyUnitsByName = {}
         singleton._droppedCrates = {}
+        singleton._registeredHubs = {}
 
         singleton._commandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(singleton._logger.LogLevel)
         
         Spearhead.Events.AddOnPlayerEnterUnitListener(singleton)
 
+        ---@param selfA SupplyUnitsTracker
         local function updateTask(selfA, time)
 
             selfA:Update()
             return time + 15
         end
+
         timer.scheduleFunction(updateTask, singleton, timer.getTime() + 15)
+
+        ---comment
+        ---@param selfA SupplyUnitsTracker
+        ---@param time number
+        ---@return number
+        local function checkUnitsInZone(selfA, time)
+            pcall(function()
+                selfA:CheckUnitsInZones()
+            end)
+            return time + 5
+        end
+
+        timer.scheduleFunction(checkUnitsInZone, singleton, timer.getTime() + 5)
+
     end
 
     return singleton
@@ -43,17 +61,16 @@ end
 function SupplyUnitsTracker:OnPlayerEntersUnit(unit)
     if unit == nil then return end
 
-    if self:IsSupplyUnit(unit) == false then return end
-    table.insert(self._supplyUnits, unit)
+    if self:IsSupplyUnit(unit) == true then
+        self._supplyUnitsByName[unit:getName()] = unit
+    end
 end
 
 function SupplyUnitsTracker:Update()
-
-    self._supplyUnits = {}
     local players = Spearhead.DcsUtil.getAllPlayerUnits()
     for _, player in pairs(players) do
-        if player ~= nil then
-            table.insert(self._supplyUnits, player)
+        if player ~= nil and player:isExist() and self:IsSupplyUnit(player) == true then
+            self._supplyUnitsByName[player:getName()] = player
         end
     end
 end
@@ -71,7 +88,7 @@ end
 
 ---comment
 ---@param unitID number
----@param crateType SupplyType
+---@param crateType CrateType
 function SupplyUnitsTracker:AddCargoToUnit(unitID, crateType)
 
     if unitID == nil or crateType == nil then return end
@@ -92,7 +109,7 @@ function SupplyUnitsTracker:AddCargoToUnit(unitID, crateType)
 end
 
 ---@param unitID number
----@param crateType SupplyType
+---@param crateType CrateType
 function SupplyUnitsTracker:RemoveCargoFromUnit(unitID, crateType)
 
     if unitID == nil or crateType == nil then return end
@@ -117,8 +134,45 @@ function SupplyUnitsTracker:RemoveCargoFromUnit(unitID, crateType)
 
 end
 
+
+function SupplyUnitsTracker:CheckUnitsInZones()
+
+    for name, unit in pairs(self._supplyUnitsByName) do
+        if unit ~= nil and unit:isExist() == true then
+            self._logger:debug("Checking unit: " .. unit:getName())
+            local pos = unit:getPoint()
+
+            local group = unit:getGroup()
+
+            for hub, enabled in pairs(self._registeredHubs) do
+                if enabled == true then
+                    local zone = hub:GetZone()
+                    if zone ~= nil then
+                        if Spearhead.Util.is3dPointInZone(pos, zone) then
+                            self._commandsHelper:MarkUnitInSupplyHub(group:getID())
+                        else
+                            self._commandsHelper:MarkUnitOutsideSupplyHub(group:getID())
+                        end
+                    end
+                end
+            end
+
+            self._unitPositions[unit:getID()] = pos
+        end
+    end
+end
+
+function SupplyUnitsTracker:RegisterHub(hub)
+    if hub == nil then return end
+
+    if self._registeredHubs[hub] == nil then
+        self._registeredHubs[hub] = true
+    end
+end
+
+
 ---@param unitID number
----@return table<SupplyType, number>?
+---@return table<CrateType, number>?
 function SupplyUnitsTracker:GetCargoInUnit(unitID)
     if unitID == nil then return end
 
@@ -128,9 +182,9 @@ function SupplyUnitsTracker:GetCargoInUnit(unitID)
     return self._cargoInUnits[unitIDStr]
 end
 
----@return Array<Unit>
+---@return table<string, Unit>
 function SupplyUnitsTracker:GetUnits()
-    return self._supplyUnits
+    return self._supplyUnitsByName
 end
 
 local cargoCount = 0
@@ -147,7 +201,12 @@ function SupplyUnitsTracker:UnloadRequested(unitID, crateType)
 
     self:RemoveCargoFromUnit(unitID, crateType)
     
-    local cargoConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
+    local cargoConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
+
+    if cargoConfig == nil then
+        self._logger:error("Invalid crate type: " .. crateType)
+        return
+    end
 
     local cargoPos = self:GetCargoPlacePosition(unit)
 
@@ -172,7 +231,7 @@ end
 
 ---Loads a crate directly into the unit
 ---@param groupID number
----@param crateType SupplyType  
+---@param crateType CrateType  
 function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
 
     self._logger:debug("UnitRequestCrateLoading called with groupID: " .. groupID .. " and crateType: " .. crateType)
@@ -180,7 +239,7 @@ function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
     local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
     if group ~= nil then
 
-        local crateConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
+        local crateConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
         if crateConfig == nil then
             self._logger:error("Invalid crate type: " .. crateType)
             return
@@ -203,15 +262,15 @@ function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
         ---@field self SupplyUnitsTracker
         ---@field unit Unit
         ---@field groupID number
-        ---@field crateType SupplyType
+        ---@field crateType CrateType
 
         ---@param params LoadCargoParams
         local  LoadCrateTask = function(params)
-            local crateConfigA = Spearhead.classes.stageClasses.helpers.SupplyConfig[params.crateType]
-            trigger.action.setUnitInternalCargo(params.unit:getName(), crateConfigA.weight)
-            self:AddCargoToUnit(params.unit:getID(), params.crateType)
-            self._commandsHelper:updateCommandsForGroup(params.groupID)
-            trigger.action.outTextForUnit(unit:getID(), "Loaded crate :" .. crateConfigA.displayName, 10)
+            
+            local loaded = params.self:TryLoadCrateInUnit(params.unit, params.crateType)
+            if loaded ~= false then
+                trigger.action.outTextForUnit(unit:getID(), "Loaded crate :" .. params.crateType, 10)
+            end
         end
 
         ---@type LoadCargoParams
@@ -227,15 +286,58 @@ function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
     end
 end
 
+---comment
+---@param unit Unit
+---@param crateType CrateType
+---@return boolean
+function SupplyUnitsTracker:TryLoadCrateInUnit(unit, crateType)
+    
+    local crateConfigA = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
+    if crateConfigA == nil then
+        trigger.action.outText("Invalid crate type: " .. crateType, 5)
+        return false
+    end
+
+    local currentWeight = 0
+    for _, cargo in pairs(self._cargoInUnits) do
+        if cargo[crateType] ~= nil then
+            currentWeight = currentWeight + (cargo[crateType] * crateConfigA.weight)
+        end
+    end
+
+    local unitConfig = Spearhead.classes.stageClasses.helpers.supplies.MaxLoadConfig[unit:getTypeName()]
+    if unitConfig == nil then
+        trigger.action.outText("Your unit type is not configured for logistics: " .. crateType, 5)
+        self._logger:error("Invalid unit type: " .. unit:getTypeName())
+        return false
+    end
+    local maxWeight = unitConfig.maxInternalLoad
+
+    if currentWeight + crateConfigA.weight > maxWeight then
+        trigger.action.outText("Failed to load crate due to it overloading your max weight of: " .. maxWeight .. "kg", 5)
+        return false
+    end
+
+    trigger.action.setUnitInternalCargo(unit:getName(), crateConfigA.weight)
+    self:AddCargoToUnit(unit:getID(), crateType)
+
+    local group = unit:getGroup()
+    if group == nil then return false end
+    local groupID = group:getID()
+    self._commandsHelper:updateCommandsForGroup(groupID)
+    
+    return true
+end
+
 ---Spawns a crate for sling loading
 ---@param groupID number
----@param crateType SupplyType
+---@param crateType CrateType
 function SupplyUnitsTracker:UnitRequestCrateSpawn(groupID, crateType)
 
     local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
     if group == nil then
 
-        local crateConfig = Spearhead.classes.stageClasses.helpers.SupplyConfig[crateType]
+        local crateConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
         if crateConfig == nil then
             self._logger:error("Invalid crate type: " .. crateType)
             return

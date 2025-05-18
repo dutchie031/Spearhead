@@ -6,8 +6,8 @@
 ---@field private _zoneName string
 ---@field private _blueGroups Array<SpearheadGroup>
 ---@field private _cleanupUnits table<string, boolean>
----@field private _buildableCrates number?
----@field private _receivedCrates number?
+---@field private _buildableCrateKilos number?
+---@field private _receivedKilos number?
 ---@field private _unitsPerCrate number?
 ---@field private _buildableMission BuildableMission?
 local BlueSam = {}
@@ -34,8 +34,8 @@ function BlueSam.New(database, logger, zoneName)
         return nil
     end
 
-    self._buildableCrates = blueSamData.buildingCrates
-    self._receivedCrates = 0
+    self._buildableCrateKilos = blueSamData.buildingKilos
+    self._receivedKilos = 0
 
     ---@type table<string, Vec3>
     local blueUnitsPos = {}
@@ -76,12 +76,12 @@ function BlueSam.New(database, logger, zoneName)
         end
     end
 
-    if self._buildableCrates ~= nil and self._buildableCrates ~= 0 then
-        self._logger:debug("Buildable mission creating for zone: " .. zoneName .. " with crates: " .. self._buildableCrates)
+    if self._buildableCrateKilos ~= nil and self._buildableCrateKilos ~= 0 then
+        self._logger:debug("Buildable mission creating for zone: " .. zoneName .. " with crates: " .. self._buildableCrateKilos)
 
         local noLandingZone = self:GetNoLandingZone()
 
-        self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zoneName, noLandingZone, self._buildableCrates, "SAM_CRATE")
+        self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zoneName, noLandingZone, self._buildableCrateKilos, "SAM_CRATE")
         self._buildableMission:AddOnCrateDroppedOfListener(self)
         self._buildableMission:AddMissionCompleteListener(self)
     end
@@ -153,11 +153,11 @@ end
 
 
 ---@param buildableMission BuildableMission
-function BlueSam:OnCrateDroppedOff(buildableMission)
+---@param kilos number
+function BlueSam:OnCrateDroppedOff(buildableMission, kilos)
 
     self._logger:debug("Crate dropped off in zone: " .. self._zoneName)
-
-    self._receivedCrates = self._receivedCrates+ 1
+    self._receivedKilos = self._receivedKilos + kilos
 
 end
 

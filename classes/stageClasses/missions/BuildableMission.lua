@@ -1,8 +1,8 @@
 
 
 ---@class BuildableMission : Mission
----@field private _requiredCrates number
----@field private _droppedCrates number
+---@field private _requiredKilos number
+---@field private _droppedKilos number
 ---@field private _crateType SupplyType
 ---@field private _targetZoneName string
 ---@field private _database Database
@@ -17,15 +17,15 @@ local BuildableMission = {}
 BuildableMission.__index = BuildableMission
 
 ---@class OnCrateDroppedListener 
----@field OnCrateDroppedOff fun(self:OnCrateDroppedListener, mission:BuildableMission)
+---@field OnCrateDroppedOff fun(self:OnCrateDroppedListener, mission:BuildableMission, kilos:number)
 
 ---@param database Database
 ---@param targetZoneName string
----@param requiredCrates number
+---@param requiredKilos number
 ---@param requiredCrateType SupplyType
 ---@param noLandingZone SpearheadTriggerZone?
 ---@param logger Logger
-function BuildableMission.new(database, logger, targetZoneName, noLandingZone, requiredCrates, requiredCrateType)
+function BuildableMission.new(database, logger, targetZoneName, noLandingZone, requiredKilos, requiredCrateType)
 
     local Mission = Spearhead.classes.stageClasses.missions.baseMissions.Mission
     setmetatable(BuildableMission, Mission)
@@ -34,8 +34,8 @@ function BuildableMission.new(database, logger, targetZoneName, noLandingZone, r
     
     self._targetZoneName = targetZoneName
     self._database = database
-    self._requiredCrates = requiredCrates
-    self._droppedCrates = 0
+    self._requiredKilos = requiredKilos
+    self._droppedKilos = 0
 
     self._noLandingZone = noLandingZone
 
@@ -107,13 +107,18 @@ function BuildableMission:ShowBriefing(groupID)
     local unitType = Spearhead.DcsUtil.getUnitTypeFromGroup(group)
     local coords = Spearhead.DcsUtil.convertVec2ToUnitUsableType(self.location, unitType)
 
+    local siteType = "FARP"
+    if self._crateType == "SAM_CRATE" then
+        siteType = "SAM site"
+    end
+
     local briefing = "Mission [" .. self.code .. "] " .. self.name .. 
         "\n \n" ..
-        "We've dispatched forward units to find a proper spot for a new FARP." ..
+        "We've dispatched forward units to find a proper spot for a new " .. siteType .. "." ..
         "\nYou will need to drop off supplies so they can start building." ..
         "\nThe coords are: " .. coords ..
         "\n\n" ..
-        "\nCrates still required: " .. self._requiredCrates - self._droppedCrates ..
+        "\nKilos still required: " .. self._requiredKilos - self._droppedKilos ..
         "\n\n" ..
         "NOTE: Do not land in the orange construction zone!"
 
@@ -130,10 +135,11 @@ function BuildableMission:MarkMissionAreaToGroup(groupID)
 end
 
 ---@private
-function BuildableMission:NotifyCrateDroppedOf()
+---@param crate SupplyConfig
+function BuildableMission:NotifyCrateDroppedOf(crate)
     for _, listener in ipairs(self._onCrateDroppedOfListeners) do
         if listener.OnCrateDroppedOff then
-            listener:OnCrateDroppedOff(self)
+            listener:OnCrateDroppedOff(self, crate.weight)
         end
     end
 end
@@ -199,12 +205,15 @@ function BuildableMission:CheckCratesInZone()
     end
     
     for _, foundCrate in pairs(foundCrates) do 
-        self._droppedCrates = self._droppedCrates + 1
-        foundCrate:destroy()
-        self:NotifyCrateDroppedOf()
+        local crateConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.fromObjectName(foundCrate:getName())
+        if crateConfig then
+            self._droppedKilos = self._droppedKilos + crateConfig.weight
+            foundCrate:destroy()
+            self:NotifyCrateDroppedOf(crateConfig)
+        end
     end
 
-    if self._droppedCrates >= self._requiredCrates then
+    if self._droppedKilos >= self._requiredKilos then
         Spearhead.DcsUtil.RemoveMark(self._noLandingZoneId)
         Spearhead.DcsUtil.RemoveMark(self._dropOffZoneId)
         self:NotifyMissionComplete()

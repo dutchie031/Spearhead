@@ -7,9 +7,9 @@
 ---@field private _database Database
 ---@field private _logger Logger
 ---@field private _zoneName string
----@field private _requiredCrates number
----@field private _receivedCrates number
----@field private _groupsPerCrate number
+---@field private _requiredBuildingKilos number
+---@field private _receivedBuildingKilos number
+---@field private _groupsPerKilo number
 ---@field private _buildableMission BuildableMission?
 ---@field private _supplyHubs Array<SupplyHub>
 local FarpZone = {}
@@ -60,25 +60,25 @@ function FarpZone.New(database, logger, zoneName)
             group:Destroy()
         end
 
-        self._requiredCrates = farpData.buildingCrates
-        self._receivedCrates = 0
+        self._requiredBuildingKilos = farpData.buildingKilos
+        self._receivedBuildingKilos = 0
 
-        if self._requiredCrates ~= nil and self._requiredCrates > 0 then
-            self._logger:debug("FARP zone " .. zoneName .. " requires " .. self._requiredCrates .. " crates to be dropped off")
+        if self._requiredBuildingKilos ~= nil and self._requiredBuildingKilos > 0 then
+            self._logger:debug("FARP zone " .. zoneName .. " requires " .. self._requiredBuildingKilos .. " crates to be dropped off")
             local noLandingZone = self:GetNoLandingZone()
-            self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zoneName, noLandingZone, self._requiredCrates, "FARP_CRATE")
+            self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zoneName, noLandingZone, self._requiredBuildingKilos, "FARP_CRATE")
             if self._buildableMission then
                 self._buildableMission:AddOnCrateDroppedOfListener(self)
                 self._buildableMission:AddMissionCompleteListener(self)
             end
 
             local totalGroups = Spearhead.Util.tableLength(self._groups)
-            self._groupsPerCrate = math.floor(totalGroups / self._requiredCrates)
+            self._groupsPerKilo = totalGroups / self._requiredBuildingKilos
         end
     end
-
-    
-
+    if self._buildableMission == nil then
+        self._logger:debug("No buildable mission for zone: " .. zoneName)
+    end
     self:Deactivate()
 
     return self
@@ -106,21 +106,28 @@ function FarpZone:Deactivate()
     self:NeutralisePads()
 end
 
-local timeToUnpack = 30
+---@class UnpackCrateParam
+---@field self FarpZone
+---@field kilos number
+---@field groupsPerKilo number
+---@field kilosPerSecond number
+---@field unpackedItems number
+---@field unpackedKilos number
 
 ---@param params UnpackCrateParam
 ---@param time number
 local startUnpackingCrate = function(params, time)
+    local unpacked = params.unpackedKilos + (params.kilosPerSecond * 2)
+    local alreadySpawned = params.unpackedItems / params.groupsPerKilo
+    local diff = unpacked - alreadySpawned
 
-    local perCrate = params.groupsPerCrate
-    local self = params.self
+    local amount = math.floor(diff * params.groupsPerKilo)
+    local spawned = params.self:SpawnAmount(amount)
 
-    local perIteration = math.ceil(perCrate / timeToUnpack) * 2
-    local spawned = self:SpawnAmount(perIteration)
-
-    params.unpackedItems = params.unpackedItems + perIteration
-    if params.unpackedItems >= perCrate or spawned == false then
-        self:FinaliseCrate()
+    params.unpackedItems = params.unpackedItems + amount
+    params.unpackedKilos = unpacked
+    if params.unpackedKilos >= params.kilos or spawned == false then
+        params.self:FinaliseCrate(params.kilos)
         return
     end
 
@@ -144,7 +151,7 @@ function FarpZone:SpawnAmount(amount)
 
     for i = 1, amount do
         local spawned = spawnOne()
-        if spawned == nil then
+        if spawned ~= true then
             self._logger:debug("No more groups to spawn in zone: " .. self._zoneName)
             return false
         end
@@ -154,36 +161,34 @@ function FarpZone:SpawnAmount(amount)
 end
 
 ---@param buildableMission BuildableMission
-function FarpZone:OnCrateDroppedOff(buildableMission)
+function FarpZone:OnCrateDroppedOff(buildableMission, kilos)
 
     self._logger:debug("Crate dropped off in zone: " .. self._zoneName)
 
-    ---@class UnpackCrateParam
-    ---@field self FarpZone
-    ---@field groupsPerCrate number
-    ---@field unpackedItems number
+    local timeToUnpack = (kilos / 500) * 15
 
     ---@type UnpackCrateParam
     local params = {
         self = self,
-        groupsPerCrate = self._groupsPerCrate,
-        unpackedItems = 0
+        groupsPerKilo = self._groupsPerKilo,
+        unpackedItems = 0,
+        kilosPerSecond = kilos/timeToUnpack,
+        unpackedKilos = 0,
+        kilos = kilos
     }
 
     timer.scheduleFunction(startUnpackingCrate, params, timer.getTime() + 2)
 
 end
 
-function FarpZone:FinaliseCrate()
-
-    self._receivedCrates = self._receivedCrates+ 1
-    
-    if self._receivedCrates >= self._requiredCrates then
+---@param kilos number
+function FarpZone:FinaliseCrate(kilos)
+    self._receivedBuildingKilos = self._receivedBuildingKilos + kilos
+    if self._receivedBuildingKilos >= self._requiredBuildingKilos then
         self:BuildUp()
         self:SetPadsBlue()
         self:ActivateSupplyHubs()
     end
-
 end
 
 ---@param buildableMission Mission

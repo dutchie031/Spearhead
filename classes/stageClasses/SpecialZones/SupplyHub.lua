@@ -2,6 +2,7 @@
 ---@field private _database Database
 ---@field private _logger Logger
 ---@field private _zoneName string
+---@field private _zone SpearheadTriggerZone?
 ---@field private _supplyUnitsTracker SupplyUnitsTracker
 ---@field private _isCommmandAdded table<string, boolean>
 ---@field private _missionCommandsHelper MissionCommandsHelper
@@ -32,6 +33,8 @@ function SupplyHub.new(database, logger, zoneName)
         self._activeAtStart = false
     end
 
+    self._zone = Spearhead.DcsUtil.getZoneByName(zoneName)
+    
     self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate()
     self._inZone = {}
     self._missionCommandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(logger.LogLevel)
@@ -47,6 +50,11 @@ end
 
 function SupplyHub:GetZoneName()
     return self._zoneName
+end
+
+---@return SpearheadTriggerZone?
+function SupplyHub:GetZone()
+    return self._zone
 end
 
 function SupplyHub:Activate()
@@ -68,47 +76,8 @@ function SupplyHub:Activate()
         self._drawID = Spearhead.DcsUtil.DrawZone(zone, lineColor, fillColor, lineStyle)
     end
 
-    self:StartMonitoringUnitsForCommands()
-end
+    self._supplyUnitsTracker:RegisterHub(self)
 
-
-
-
-function SupplyHub:StartMonitoringUnitsForCommands()
-    self._logger:debug("Starting to monitor units for commands in Supply Hub zone: " .. self._zoneName)
-
-    ---@param selfA SupplyHub
-    ---@param time number
-    local monitorTask = function(selfA, time)
-        selfA:CheckUnitsInZone()
-        return time + 5
-    end
-
-    timer.scheduleFunction(monitorTask, self, timer.getTime() + 10)
-end
-
-function SupplyHub:CheckUnitsInZone()
-    local units = self._supplyUnitsTracker:GetUnits()
-    for _, unit in ipairs(units) do
-        if unit and unit:isExist() then
-           local pos = unit:getPoint()
-           if Spearhead.DcsUtil.isPositionInZone(pos.x, pos.z, self._zoneName) then
-                local group = unit:getGroup()
-                if group then
-                    self._missionCommandsHelper:AddSupplyHubCommandsForGroup(group:getID(), self)
-                    if self._inZone[unit:getName()] == nil then
-                        self._inZone[unit:getName()] = true
-                        self._logger:debug("Unit " .. unit:getName() .. " entered the zone " .. self._zoneName)
-                    end
-                end
-            else
-                if self._inZone[unit:getName()] == true then
-                    self._inZone[unit:getName()] = false
-                    self._logger:debug("Unit " .. unit:getName() .. " left the zone " .. self._zoneName)
-                end
-            end
-        end
-    end
 end
 
 
