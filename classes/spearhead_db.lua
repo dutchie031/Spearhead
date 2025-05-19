@@ -49,6 +49,7 @@
 ---@field RedGroups Array<string>
 ---@field BlueGroups Array<string>
 ---@field supplyHubNames Array<string>
+---@field buildingKilos number?
 
 ---@class BlueSamData
 ---@field groups Array<string>
@@ -195,6 +196,13 @@ function Database.New(Logger)
                             if farpData then
                                 local number = tonumber(layer_object.text)
                                 farpData.buildingKilos = number
+                            end
+
+                            local airbaseData = self:getAirbaseDataForDrawLayer(layer_object)
+                            if airbaseData then
+                                self._logger:debug("found airbase data for " .. layer_object.name)
+                                local number = tonumber(layer_object.text)
+                                airbaseData.buildingKilos = number
                             end
                         elseif Spearhead.Util.startswith(string.lower(layer_object.name), "completeat", true) == true then
                             local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)
@@ -347,22 +355,6 @@ function Database.New(Logger)
         end
     end
 
-    ---@private
-    ---@param baseName string
-    ---@return AirbaseData
-    function Database:getOrCreateAirbaseData(baseName)
-        local baseData = self._tables.AirbaseDataPerAirfield[baseName]
-        if baseData == nil then
-            baseData = {
-                CapGroups = {},
-                RedGroups = {},
-                BlueGroups = {},
-                supplyHubNames = {}
-            }
-            self._tables.AirbaseDataPerAirfield[baseName] = baseData
-        end
-        return baseData
-    end
 
     self:initAvailableUnits()
     self:loadCapUnits()
@@ -511,6 +503,21 @@ function Database:getFarpDataForDrawLayer(layer_object)
     return nil
 end
 
+---comment
+---@param layer_object table
+---@return AirbaseData?
+function Database:getAirbaseDataForDrawLayer(layer_object)
+    for _, airbase in pairs(world.getAirbases()) do
+        local zone = Spearhead.DcsUtil.getAirbaseZoneByName(airbase:getName())
+
+        if zone and Spearhead.Util.is2dPointInZone({ x = layer_object.mapX, y = layer_object.mapY }, zone) == true then
+            return self:getOrCreateAirbaseData(airbase:getName())
+        end
+    end
+
+    return nil
+end
+
 ---@private
 function Database:getOrCreateBlueSamDataForZone(zoneName)
     local blueSamData = self._tables.BlueSamDataPerZone[zoneName]
@@ -537,6 +544,23 @@ function Database:getOrCreateFarpDataForZone(zoneName)
         self._tables.FarpZoneData[zoneName] = farpData
     end
     return farpData
+end
+
+---@private
+---@param baseName string
+---@return AirbaseData
+function Database:getOrCreateAirbaseData(baseName)
+    local baseData = self._tables.AirbaseDataPerAirfield[baseName]
+    if baseData == nil then
+        baseData = {
+            CapGroups = {},
+            RedGroups = {},
+            BlueGroups = {},
+            supplyHubNames = {}
+        }
+        self._tables.AirbaseDataPerAirfield[baseName] = baseData
+    end
+    return baseData
 end
 
 ---@private

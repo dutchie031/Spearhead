@@ -487,29 +487,36 @@ do     -- INIT DCS_UTIL
                         DCS_UTIL.__airbaseNamesById[tostring(airbase:getID())] = name
 
                         if name  then
+                            ---@type Array<Vec2>
                             local relevantPoints = {}
                             for _, x in pairs(airbase:getRunways()) do
                                 if x.position and x.position.x and x.position.z then
-                                    table.insert(relevantPoints, { x = x.position.x, z = x.position.z, y = 0 })
+                                    table.insert(relevantPoints, { x = x.position.x, y = x.position.z })
                                 end
                             end
 
                             for _, x in pairs(airbase:getParking()) do
                                 if x.vTerminalPos and x.vTerminalPos.x and x.vTerminalPos.z then
-                                    table.insert(relevantPoints, { x = x.vTerminalPos.x, z = x.vTerminalPos.z, y = 0 })
+                                    table.insert(relevantPoints, { x = x.vTerminalPos.x, y = x.vTerminalPos.z })
                                 end
                             end
 
                             local points = UTIL.getConvexHull(relevantPoints)
                             local enlargedPoints = UTIL.enlargeConvexHull(points, 750)
 
-                            DCS_UTIL.__airbaseZonesByName[name] = {
+                            local triggerZone = {
                                 name = name,
                                 location = { x = airbase:getPoint().x, y = airbase:getPoint().z },
                                 zone_type = "Polygon",
                                 radius = 0,
                                 verts = enlargedPoints
                             }
+
+                            if SpearheadConfig and SpearheadConfig.debugEnabled == true then
+                                DCS_UTIL.DrawZone(triggerZone, { r = 0, g = 1, b = 0, a = 1 }, { a = 0, r = 0, g = 1, b = 0 }, 1)
+                            end
+
+                            DCS_UTIL.__airbaseZonesByName[name] = triggerZone
                         end
                     end
                 end
@@ -732,10 +739,10 @@ do     -- INIT DCS_UTIL
 
     ---comment
     ---@param airbaseName string
-    ---@return SpearheadTriggerZone? zone { name,b zone_type, x, z, radius, verts }
+    ---@return SpearheadTriggerZone? zone 
     function DCS_UTIL.getAirbaseZoneByName(airbaseName)
-        if string == nil then return nil end
-        return DCS_UTIL.__airbaseZonesByName[string]
+        if airbaseName == nil then return nil end
+        return DCS_UTIL.__airbaseZonesByName[airbaseName]
     end
 
     ---maps the category name to the DCS group category

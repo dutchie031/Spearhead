@@ -358,12 +358,16 @@ function MissionCommandsHelper:AddSupplyHubCommandsIfApplicable(groupID)
     missionCommands.addCommandForGroup(groupID, "Load FARP Crate (2000)", path, loadCargoCommand, farpParams2000)
 
     ---@type LoadCargoCommandParams
-    local samParms1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_1000",  supplyUnitsTracker = self._supplyUnitsTracker }
+    local samParms1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "SAM_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker }
     missionCommands.addCommandForGroup(groupID, "Load SAM Crate (1000)", path, loadCargoCommand, samParms1000)
 
     ---@type LoadCargoCommandParams
-    local samParms2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker }
+    local samParms2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "SAM_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker }
     missionCommands.addCommandForGroup(groupID, "Load SAM Crate (2000)", path, loadCargoCommand, samParms2000)
+
+    ---@type LoadCargoCommandParams
+    local samParms2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "AIRBASE_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker }
+    missionCommands.addCommandForGroup(groupID, "Airbase Crate (2000)", path, loadCargoCommand, samParms2000)
 end
 
 function MissionCommandsHelper:AddCargoCommands(groupID)
