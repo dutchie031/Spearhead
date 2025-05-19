@@ -2,6 +2,7 @@
 ---@alias SupplyType
 ---| "FARP_CRATE"
 ---| "SAM_CRATE"
+---| "AIRBASE_CRATE"
 
 ---@alias CrateType
 ---| "FARP_CRATE_500"
@@ -10,6 +11,7 @@
 ---| "SAM_CRATE_500"
 ---| "SAM_CRATE_1000"
 ---| "SAM_CRATE_2000"
+---| "AIRBASE_CRATE_2000"
 
 ---@class SupplyConfig
 ---@field type SupplyType
@@ -53,6 +55,12 @@ local SupplyConfig = {
         type = "SAM_CRATE",
         weight = 2000,
         displayName = "SAM Crate (2000)",
+        staticType = "container_cargo",
+    },
+    ["AIRBASE_CRATE_2000"] = {
+        type = "AIRBASE_CRATE",
+        weight = 2000,
+        displayName = "Airbase Crate (2000)",
         staticType = "container_cargo",
     },
 }

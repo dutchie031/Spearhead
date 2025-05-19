@@ -4,7 +4,7 @@
 ---@field private _requiredKilos number
 ---@field private _droppedKilos number
 ---@field private _crateType SupplyType
----@field private _targetZoneName string
+---@field private _targetZone SpearheadTriggerZone
 ---@field private _database Database
 ---@field private _onCrateDroppedOfListeners Array<OnCrateDroppedListener>
 ---@field private _markIDsPerGroup table<string, number>
@@ -20,19 +20,19 @@ BuildableMission.__index = BuildableMission
 ---@field OnCrateDroppedOff fun(self:OnCrateDroppedListener, mission:BuildableMission, kilos:number)
 
 ---@param database Database
----@param targetZoneName string
+---@param targetZone SpearheadTriggerZone
 ---@param requiredKilos number
 ---@param requiredCrateType SupplyType
 ---@param noLandingZone SpearheadTriggerZone?
 ---@param logger Logger
-function BuildableMission.new(database, logger, targetZoneName, noLandingZone, requiredKilos, requiredCrateType)
+function BuildableMission.new(database, logger, targetZone, noLandingZone, requiredKilos, requiredCrateType)
 
     local Mission = Spearhead.classes.stageClasses.missions.baseMissions.Mission
     setmetatable(BuildableMission, Mission)
 
     local self = setmetatable({}, { __index = BuildableMission })
     
-    self._targetZoneName = targetZoneName
+    self._targetZone = targetZone
     self._database = database
     self._requiredKilos = requiredKilos
     self._droppedKilos = 0
@@ -46,7 +46,7 @@ function BuildableMission.new(database, logger, targetZoneName, noLandingZone, r
 
         ---@type SpearheadTriggerZone
         local dropOfZone = {
-            name = targetZoneName .. "_dropZone",
+            name = targetZone.name .. "_dropZone",
             zone_type = "Polygon",
             radius = 0,
             verts = enlarged,
@@ -66,7 +66,7 @@ function BuildableMission.new(database, logger, targetZoneName, noLandingZone, r
         type = "FARP"
     end
 
-    self.zoneName = targetZoneName .. "_supply"
+    self.zoneName = targetZone.name .. "_supply"
     self._logger = logger
     self._onCrateDroppedOfListeners = {}
     self._completeListeners = {}
@@ -74,13 +74,8 @@ function BuildableMission.new(database, logger, targetZoneName, noLandingZone, r
     self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate(logger.LogLevel)
     self._state = "NEW"
 
-    local spearheadZone = Spearhead.DcsUtil.getZoneByName(targetZoneName)
-    if spearheadZone == nil then
-        logger:error("Zone not found: " .. targetZoneName)
-        return nil
-    end
 
-    self.location = spearheadZone.location
+    self.location = targetZone.location
 
     self.missionType = "LOGISTICS"
     self.missionTypeDisplay = "LOGISTICS"
@@ -110,6 +105,8 @@ function BuildableMission:ShowBriefing(groupID)
     local siteType = "FARP"
     if self._crateType == "SAM_CRATE" then
         siteType = "SAM site"
+    elseif self._crateType == "AIRBASE_CRATE"  then
+        siteType = "airbase"
     end
 
     local briefing = "Mission [" .. self.code .. "] " .. self.name .. 
@@ -145,6 +142,11 @@ function BuildableMission:NotifyCrateDroppedOf(crate)
 end
 
 function BuildableMission:SpawnActive()
+
+    if self._state ~= "NEW" then
+        self._logger:debug("Mission already spawned: " .. self.code)
+        return
+    end
 
     self._logger:debug("Spawning buildable mission: " .. self.code)
 

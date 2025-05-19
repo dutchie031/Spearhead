@@ -80,10 +80,13 @@ function BlueSam.New(database, logger, zoneName)
         self._logger:debug("Buildable mission creating for zone: " .. zoneName .. " with crates: " .. self._buildableCrateKilos)
 
         local noLandingZone = self:GetNoLandingZone()
-
-        self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zoneName, noLandingZone, self._buildableCrateKilos, "SAM_CRATE")
-        self._buildableMission:AddOnCrateDroppedOfListener(self)
-        self._buildableMission:AddMissionCompleteListener(self)
+        local zone = Spearhead.DcsUtil.getZoneByName(zoneName)
+        if zone then
+            self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zone, noLandingZone, self._buildableCrateKilos, "SAM_CRATE")
+            self._buildableMission:AddOnCrateDroppedOfListener(self)
+            self._buildableMission:AddMissionCompleteListener(self)
+        end
+       
     end
 
 

@@ -66,14 +66,17 @@ function FarpZone.New(database, logger, zoneName)
         if self._requiredBuildingKilos ~= nil and self._requiredBuildingKilos > 0 then
             self._logger:debug("FARP zone " .. zoneName .. " requires " .. self._requiredBuildingKilos .. " crates to be dropped off")
             local noLandingZone = self:GetNoLandingZone()
-            self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zoneName, noLandingZone, self._requiredBuildingKilos, "FARP_CRATE")
-            if self._buildableMission then
-                self._buildableMission:AddOnCrateDroppedOfListener(self)
-                self._buildableMission:AddMissionCompleteListener(self)
-            end
+            local zone = Spearhead.DcsUtil.getZoneByName(zoneName)
+            if zone then
+                self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zone, noLandingZone, self._requiredBuildingKilos, "FARP_CRATE")
+                if self._buildableMission then
+                    self._buildableMission:AddOnCrateDroppedOfListener(self)
+                    self._buildableMission:AddMissionCompleteListener(self)
+                end
 
-            local totalGroups = Spearhead.Util.tableLength(self._groups)
-            self._groupsPerKilo = totalGroups / self._requiredBuildingKilos
+                local totalGroups = Spearhead.Util.tableLength(self._groups)
+                self._groupsPerKilo = totalGroups / self._requiredBuildingKilos
+            end
         end
     end
     if self._buildableMission == nil then
