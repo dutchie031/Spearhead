@@ -51,8 +51,8 @@ Stage.__index = Stage
 
 Stage.StageColors = {
     INVISIBLE = { r=0, g=0, b=0, a=0 },
-    RED_ACTIVE = { r=1, g=0, b=0, a=0.12 },
-    RED_PREACTIVE = { r=1, g=0, b=0, a=0.05},
+    RED_ACTIVE = { r=1, g=0, b=0, a=0.15 },
+    RED_PREACTIVE = { r=1, g=0, b=0, a=0.10},
     BLUE = { r=0, g=0, b=1, a=0.10},
     GRAY = { r=80/255, g=80/255, b=80/255, a=0.10 }
 }
@@ -378,6 +378,10 @@ function Stage:MarkStage(stageColor)
 
     if stageColor.a > 0 then
         lineColor.a = 1
+    end
+
+    if stageColor == Stage.StageColors.RED_PREACTIVE then
+        lineColor.a = 0
     end
 
     if self._stageDrawingId and self._stageConfig.isDrawStagesEnabled == true then
