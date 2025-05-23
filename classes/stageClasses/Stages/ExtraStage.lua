@@ -35,8 +35,17 @@ end
 ---@param number integer
 function ExtraStage:OnStageNumberChanged(number)
 
+    if self._activeStage == number then --only activate once for a stage
+        return
+    end
+
+    local previousActive = self._activeStage
     self._activeStage = number
-    if Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
+
+    if self.stageNumber - self._activeStage  == self._stageConfig.AmountPreactivateStage then
+        self._logger:debug("Pre-activating stage: " .. self.zoneName .. " with number: " .. number)
+        self:PreActivate(true)
+    elseif Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
         self:PreActivate(false)
     end
 

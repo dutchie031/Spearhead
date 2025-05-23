@@ -51,10 +51,10 @@ Stage.__index = Stage
 
 Stage.StageColors = {
     INVISIBLE = { r=0, g=0, b=0, a=0 },
-    RED_ACTIVE = { r=1, g=0, b=0, a=0.15 },
-    RED_PREACTIVE = { r=230/255, g=153/255, b=0, a=0.3},
-    BLUE = { r=0, g=0, b=1, a=0.15},
-    GRAY = { r=80/255, g=80/255, b=80/255, a=0.15 }
+    RED_ACTIVE = { r=1, g=0, b=0, a=0.12 },
+    RED_PREACTIVE = { r=1, g=0, b=0, a=0.05},
+    BLUE = { r=0, g=0, b=1, a=0.10},
+    GRAY = { r=80/255, g=80/255, b=80/255, a=0.10 }
 }
 
 ---comment
