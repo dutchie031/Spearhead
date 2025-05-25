@@ -198,6 +198,21 @@ function SpearheadGroup:SetInvisible()
     end
 end
 
+
+function SpearheadGroup:SetVisible()
+
+    local group = Group.getByName(self.groupName)
+    if group then
+        local setInvisible = {
+            id = 'SetInvisible',
+            params = {
+                value = false
+            }
+        }
+        group:getController():setCommand(setInvisible)
+    end
+end
+
 if not Spearhead.classes then Spearhead.classes = {} end
 if not Spearhead.classes.stageClasses then Spearhead.classes.stageClasses = {} end
 if not Spearhead.classes.stageClasses.Groups then Spearhead.classes.stageClasses.Groups = {} end

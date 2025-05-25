@@ -111,7 +111,7 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
     end
 
     local completeAtIndex = database:getMissionCompleteAt(zoneName)
-    if completeAtIndex == nil and self.missionType == "BAI" then
+    if completeAtIndex == nil and self.missionType == "BAI" or self.missionType == "CAS" then
         self._completeAtIndex = 0.8
     elseif completeAtIndex == nil then
         self._completeAtIndex = 1

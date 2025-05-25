@@ -49,6 +49,7 @@ end
 
 function BattleManager:Stop()
     self._isActive = false
+    self:SetAllVisible()
 end
 
 ---@private
@@ -59,6 +60,18 @@ function BattleManager:SetAllInvisible()
 
     for _, group in pairs(self._blueGroups) do
         group:SetInvisible()
+    end
+end
+
+
+---@private
+function BattleManager:SetAllVisible()
+    for _, group in pairs(self._redGroups) do
+        group:SetVisible()
+    end
+
+    for _, group in pairs(self._blueGroups) do
+        group:SetVisible()
     end
 end
 
@@ -126,7 +139,7 @@ end
 ---@param targetGroups Array<SpearheadGroup>
 function BattleManager:LetUnitsShoot(groups, targetGroups)
 
-    local shootChance = 0.3 -- Adjust this value to control the shooting probability (0.0 to 1.0)
+    local shootChance = math.random(3, 7) / 10
 
     for _, group in pairs(groups) do
 
