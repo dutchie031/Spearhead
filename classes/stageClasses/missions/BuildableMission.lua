@@ -174,6 +174,11 @@ function BuildableMission:SpawnActive()
     ---@param time number
     local checkForCrateTasks = function (selfA, time)
         selfA:CheckCratesInZone()
+
+        if selfA:getState() == "COMPLETED" then
+            return nil
+        end
+
         return time + 10
     end
 

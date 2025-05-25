@@ -77,10 +77,15 @@ function SupplyUnitsTracker:Update()
 end
 
 ---@private
+---@param unit Unit
 function SupplyUnitsTracker:IsSupplyUnit(unit)
     if unit == nil then return false end
 
     if unit:hasAttribute("Transport helicopters") then
+        return true
+    end
+
+    if unit:hasAttribute("Helicopters") and unit:hasAttribute("Transports") then
         return true
     end
 

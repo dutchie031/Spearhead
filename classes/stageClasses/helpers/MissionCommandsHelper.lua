@@ -195,7 +195,7 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
             
             if enabled == true then
                 local mission = self.missionsByCode[code]
-                if mission and mission.priority == "primary" then
+                if mission and mission:getState() == "ACTIVE" and mission.priority == "primary" then
                     text = text .. formatLine(mission)
                 end
             end
@@ -207,7 +207,7 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
             
             if enabled == true then
                 local mission = self.missionsByCode[code]
-                if mission and mission.priority == "secondary" then
+                if mission and mission:getState() == "ACTIVE" and mission.priority == "secondary" then
                     text = text .. formatLine(mission)
                 end
             end
