@@ -148,6 +148,11 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
         for _, unit in pairs(units) do
 
             if self:IsUnitApplicable(unit) == true then
+
+                if unit:hasAttribute("Infantry") == true then
+                    shootChance = 0.8
+                end
+
                 if math.random() <= shootChance then
                     local unitPos = unit:getPoint()
                     local point = self:GetRandomPoint({x = unitPos.x, y = unitPos.z }, targetGroups)
