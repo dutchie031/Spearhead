@@ -26,13 +26,22 @@ function SpearheadGroup:SpawnCorpsesOnly()
 
     if self._isSpawned == true then return end
 
-    local group = Spearhead.DcsUtil.SpawnGroupTemplate(self.groupName)
-    if group then
-        for _, unit in pairs(group:getUnits()) do
-            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
-            Spearhead.DcsUtil.DestroyUnit(self.groupName, unit:getName())
-            if deathState and deathState.isDead == true then
-                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
+    local group, isStatic = Spearhead.DcsUtil.SpawnGroupTemplate(self.groupName)
+    if isStatic == true then
+        self._isStatic = true
+        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(self.groupName)
+        if deathState and deathState.isDead == true then
+            Spearhead.DcsUtil.DestroyGroup(self.groupName)
+            Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, self.groupName, deathState.type, deathState.pos, deathState.heading)
+        end
+    else
+        if group then
+            for _, unit in pairs(group:getUnits()) do
+                local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
+                Spearhead.DcsUtil.DestroyUnit(unit:getName())
+                if deathState and deathState.isDead == true then
+                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
+                end
             end
         end
     end

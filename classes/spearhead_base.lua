@@ -622,16 +622,9 @@ do     -- INIT DCS_UTIL
     ---destroy the given unit
     ---@param unitName string
     function DCS_UTIL.DestroyUnit(unitName)
-        if DCS_UTIL.IsGroupStatic(unitName) == true then
-            local object = StaticObject.getByName(unitName)
-            if object ~= nil then
-                object:destroy()
-            end
-        else
-            local unit = Unit.getByName(unitName)
-            if unit and unit:isExist() then
-                unit:destroy()
-            end
+        local unit = Unit.getByName(unitName)
+        if unit and unit:isExist() then
+            unit:destroy()
         end
     end
 

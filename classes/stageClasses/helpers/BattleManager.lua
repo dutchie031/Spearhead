@@ -184,10 +184,6 @@ end
 ---@return number 
 function BattleManager:getBestAmmo(unit)
 
-    if unit:getName() == "Ground-32-1" then
-        env.info(Spearhead.Util.toString(unit:getAmmo()))
-    end
-
     local ammo = unit:getAmmo()
 
     if not ammo then return 3221225470, 1 end -- Default ammo if no ammo is found
