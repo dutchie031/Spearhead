@@ -56,7 +56,8 @@
 ---@field buildingKilos number?
 
 ---@class MissionZoneData
----@field Groups Array<string>
+---@field RedGroups Array<string>
+---@field BlueGroups Array<string>
 
 ---@class MissionData
 ---@field Groups Array<string>
@@ -423,7 +424,14 @@ function Database.New(Logger)
     local missions = 0
     for _, data in pairs(self._tables.MissionZoneData) do
         missions = missions + 1
-        for _, groupName in pairs(data.Groups) do
+        for _, groupName in pairs(data.RedGroups) do
+            local group = Group.getByName(groupName)
+            if group then
+                totalUnits = totalUnits + group:getInitialSize()
+            end
+        end
+
+        for _, groupName in pairs(data.BlueGroups) do
             local group = Group.getByName(groupName)
             if group then
                 totalUnits = totalUnits + group:getInitialSize()
@@ -645,13 +653,19 @@ function Database:loadMissionzoneUnits()
     local all_groups = getAvailableGroups()
     for _, missionZoneName in pairs(self._tables.MissionZones) do
         self._tables.MissionZoneData[missionZoneName] = {
-            Groups = {}
+            RedGroups = {},
+            BlueGroups = {},
         }
 
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
         for _, groupName in pairs(groups) do
+            local group = Group.getByName(groupName)
+            if group and group:getCoalition() == coalition.side.RED then
+                table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
+            elseif group and group:getCoalition() == coalition.side.BLUE then
+                table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+            end
             is_group_taken[groupName] = true
-            table.insert(self._tables.MissionZoneData[missionZoneName].Groups, groupName)
         end
     end
 end
@@ -661,12 +675,19 @@ function Database:loadRandomMissionzoneUnits()
     local all_groups = getAvailableGroups()
     for _, missionZoneName in pairs(self._tables.RandomMissionZones) do
         self._tables.MissionZoneData[missionZoneName] = {
-            Groups = {}
+            RedGroups = {},
+            BlueGroups = {},
         }
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
         for _, groupName in pairs(groups) do
+            local group = Group.getByName(groupName)
+            if group and group:getCoalition() == coalition.side.RED then
+                table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
+            elseif group and group:getCoalition() == coalition.side.BLUE then
+                table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+            end
+
             is_group_taken[groupName] = true
-            table.insert(self._tables.MissionZoneData[missionZoneName].Groups, groupName)
         end
     end
 end
@@ -885,11 +906,9 @@ function Database:getRandomMissionsForStage(stagename)
     return stageZone.RandomMissionZones
 end
 
----@return Array<string>
-function Database:getGroupsForMissionZone(missionZoneName)
-    local missionZoneData = self._tables.MissionZoneData[missionZoneName]
-    if not missionZoneData then return {} end
-    return missionZoneData.Groups
+---@return MissionZoneData?
+function Database:getMissionDataForZone(missionZoneName)
+    return self._tables.MissionZoneData[missionZoneName]
 end
 
 ---@param stageName string

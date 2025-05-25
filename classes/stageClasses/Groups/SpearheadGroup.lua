@@ -6,13 +6,10 @@
 ---@field private _isStatic boolean
 ---@field private _isSpawned boolean
 local SpearheadGroup = {}
+SpearheadGroup.__index = SpearheadGroup
 
 function SpearheadGroup.New(groupName)
-
-    SpearheadGroup.__index = SpearheadGroup
-
-    local o = {}
-    local self = setmetatable(o, SpearheadGroup)
+    local self = setmetatable({}, SpearheadGroup)
 
     self._isStatic = Spearhead.DcsUtil.IsGroupStatic(groupName) == true
     self.groupName = groupName
@@ -132,7 +129,7 @@ end
 
 ---comment
 ---@return table result list of objects
-function SpearheadGroup:GetUnits()
+function SpearheadGroup:GetObjects()
 
     local result = {}
     if self._isStatic == true then
@@ -147,6 +144,24 @@ function SpearheadGroup:GetUnits()
             table.insert(result, unit)
         end 
     end
+    return result
+end
+
+
+---comment
+---@return Array<Unit> result list of objects
+function SpearheadGroup:GetAsUnits()
+
+    if self._isStatic == true then
+        return {}
+    end
+
+    local result = {}
+    local group = Group.getByName(self.groupName)
+    if not group then return {} end
+    for _, unit in pairs(group:getUnits()) do
+        table.insert(result, unit)
+    end 
     return result
 end
 
@@ -167,7 +182,35 @@ function SpearheadGroup:GetAllUnitPositions()
         end 
     end
     return result
+end
 
+function SpearheadGroup:SetInvisible()
+
+    local group = Group.getByName(self.groupName)
+    if group then
+        local setInvisible = {
+            id = 'SetInvisible',
+            params = {
+                value = true
+            }
+        }
+        group:getController():setCommand(setInvisible)
+    end
+end
+
+
+function SpearheadGroup:SetVisible()
+
+    local group = Group.getByName(self.groupName)
+    if group then
+        local setInvisible = {
+            id = 'SetInvisible',
+            params = {
+                value = false
+            }
+        }
+        group:getController():setCommand(setInvisible)
+    end
 end
 
 if not Spearhead.classes then Spearhead.classes = {} end

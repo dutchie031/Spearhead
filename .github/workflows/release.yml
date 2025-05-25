@@ -92,6 +92,11 @@ jobs:
         git tag ${{ steps.calculate_tag.outputs.new_tag }}
         git push origin ${{ steps.calculate_tag.outputs.new_tag }}
 
+    - name: Copy Release to Versioned File
+      run: |
+        cp ./output/spearhead.lua ./output/spearhead.${{ steps.calculate_tag.outputs.new_tag }}.lua
+        echo "Versioned file created: spearhead.${{ steps.calculate_tag.outputs.new_tag }}.lua"
+
     - name: Create GitHub Release
       uses: actions/create-release@v1
       id: create_release
@@ -111,6 +116,16 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./output/spearhead.lua
+        asset_name: spearhead.lua
+        asset_content_type: application/octet-stream
+
+    - name: Upload Spearhead.lua Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./output/spearhead.${{steps.calculate_tag.outputs.new_tag}}.lua
         asset_name: spearhead.lua
         asset_content_type: application/octet-stream
 

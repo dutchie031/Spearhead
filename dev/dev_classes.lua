@@ -37,6 +37,7 @@ assert(loadfile(classPath .. "stageClasses\\Groups\\SpearheadGroup.lua"))()
 assert(loadfile(classPath .. "stageClasses\\helpers\\MissionCommandsHelper.lua"))()
 assert(loadfile(classPath .. "stageClasses\\helpers\\SupplyConfig.lua"))()
 assert(loadfile(classPath .. "stageClasses\\helpers\\SupplyUnitsTracker.lua"))()
+assert(loadfile(classPath .. "stageClasses\\helpers\\BattleManager.lua"))()
 
 assert(loadfile(classPath .. "stageClasses\\SpecialZones\\StageBase.lua"))()
 assert(loadfile(classPath .. "stageClasses\\SpecialZones\\BlueSam.lua"))()

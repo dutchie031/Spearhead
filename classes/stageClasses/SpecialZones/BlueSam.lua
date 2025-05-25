@@ -53,7 +53,7 @@ function BlueSam.New(database, logger, zoneName)
             end
 
 
-            for _, unit in pairs(SpearheadGroup:GetUnits()) do
+            for _, unit in pairs(SpearheadGroup:GetObjects()) do
                 if SpearheadGroup:GetCoalition() == 1 then
                     table.insert(blueUnitsPos, unit:getPoint())
                 elseif SpearheadGroup:GetCoalition() == 2 then

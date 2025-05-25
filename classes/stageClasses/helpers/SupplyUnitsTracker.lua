@@ -1,3 +1,6 @@
+
+env.info("Spearhead SupplyUnitsTracker loaded")
+
 ---@class SupplyUnitsTracker
 ---@field private _supplyUnitsByName table<string, Unit>
 ---@field private _cargoInUnits table<string, table<CrateType, number>>
@@ -402,7 +405,6 @@ function SupplyUnitsTracker:GetCargoPlacePosition(unit)
     
     
 end
-
 
 
 if Spearhead == nil then Spearhead = {} end
