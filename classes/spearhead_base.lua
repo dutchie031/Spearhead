@@ -287,6 +287,48 @@ do -- INIT UTIL
 
         return UTIL.getConvexHull(allpoints)
     end
+
+    ---Returns hull points visible from origin (not blocked by hull edges)
+---@param hull Array<Vec2>
+---@param origin Vec2
+---@return Array<Vec2>
+function UTIL.GetVisibleHullPointsFromOrigin(hull, origin)
+    local function segmentsIntersect(a, b, c, d)
+        -- Helper: returns true if segment ab intersects cd (excluding endpoints)
+        local function ccw(p1, p2, p3)
+            return (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x)
+        end
+        return (ccw(a, c, d) ~= ccw(b, c, d)) and (ccw(a, b, c) ~= ccw(a, b, d))
+    end
+
+    local n = #hull
+    local visible = {}
+
+    for i = 1, n do
+        local p = hull[i]
+        local isVisible = true
+
+        -- Check against all hull edges except those incident to p
+        for j = 1, n do
+            local a = hull[j]
+            local b = hull[(j % n) + 1]
+            -- skip edges incident to p
+            if (a ~= p and b ~= p) then
+                if segmentsIntersect(origin, p, a, b) then
+                    isVisible = false
+                    break
+                end
+            end
+        end
+
+        if isVisible then
+            table.insert(visible, p)
+        end
+    end
+
+    return visible
+end
+
 end
 Spearhead.Util = UTIL
 

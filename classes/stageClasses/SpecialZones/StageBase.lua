@@ -50,7 +50,7 @@ function StageBase.New(databaseManager, logger, airbaseName)
             local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
             table.insert(self._red_groups, shGroup)
 
-            for _, unit in pairs(shGroup:GetUnits()) do
+            for _, unit in pairs(shGroup:GetObjects()) do
                 redUnitsPos[unit:getName()] = unit:getPoint()
             end
 
@@ -61,7 +61,7 @@ function StageBase.New(databaseManager, logger, airbaseName)
             local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
             table.insert(self._blue_groups, shGroup)
 
-            for _, unit in pairs(shGroup:GetUnits()) do
+            for _, unit in pairs(shGroup:GetObjects()) do
                 blueUnitsPos[unit:getName()] = unit:getPoint()
             end
 

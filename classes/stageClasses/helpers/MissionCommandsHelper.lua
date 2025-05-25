@@ -1,3 +1,4 @@
+
 ---@class MissionCommandsHelper
 ---@field missionsByCode table<string, Mission> @table of missions by their code
 ---@field enabledByCode table<string, boolean> @table of enabled missions by their code
@@ -31,6 +32,7 @@ function MissionCommandsHelper.getOrCreate(logLevel)
         instance.pinnedByGroup = {}
         instance.lastUpdate = 0
         instance._supplyHubGroups = {}
+
         instance._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate(logLevel)
 
         ---comment

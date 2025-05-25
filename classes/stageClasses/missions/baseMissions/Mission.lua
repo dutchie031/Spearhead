@@ -154,6 +154,7 @@ do --aliases
     --- @alias MissionType
     --- | "nil"
     --- | "STRIKE"
+    --- | "CAS"
     --- | "BAI"
     --- | "DEAD"
     --- | "SAM"

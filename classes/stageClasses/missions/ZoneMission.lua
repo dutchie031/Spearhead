@@ -5,11 +5,13 @@
 ---@field private _dependencies table<string, boolean>
 ---@field private _completeAtIndex number
 ---@field private _parentStage Stage
+---@field private _battleManager? BattleManager
 local ZoneMission = {}
 
 --- @class MissionGroups
 --- @field hasTargets boolean
---- @field groups Array<SpearheadGroup>
+--- @field redGroups Array<SpearheadGroup>
+--- @field blueGroups Array<SpearheadGroup>
 --- @field unitsAlive table<string, table<string, boolean>>
 --- @field targetsAlive table<string, table<string, boolean>>
 --- @field groupNamesPerunit table<string,string>
@@ -38,6 +40,7 @@ local function ParseZoneName(input)
     local inputType = string.lower(split_name[2])
     if inputType == "dead" then parsedType = "DEAD" end
     if inputType == "strike" then parsedType = "STRIKE" end
+    if inputType == "cas" then parsedType = "CAS" end
     if inputType == "bai" then parsedType = "BAI" end
     if inputType == "sam" then parsedType = "SAM" end
 
@@ -91,7 +94,8 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
     end
 
     self._missionGroups = {
-        groups = {},
+        redGroups = {},
+        blueGroups = {},
         unitsAlive = {},
         targetsAlive = {},
         hasTargets = false,
@@ -118,13 +122,24 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
     self._logger:debug("Complete at index " .. self.zoneName .. ": " .. self._completeAtIndex)
 
     local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
-    local groupNames = database:getGroupsForMissionZone(zoneName)
-    for _, groupName in pairs(groupNames) do
+
+    local missionData = database:getMissionDataForZone(zoneName)
+    if not missionData then return end
+
+    for _, groupName in pairs(missionData.BlueGroups) do
         local spearheadGroup = SpearheadGroup.New(groupName)
-        table.insert(self._missionGroups.groups, spearheadGroup)
+        if spearheadGroup then
+            table.insert(self._missionGroups.blueGroups, spearheadGroup)
+        end
+        spearheadGroup:Destroy()
+    end
+
+    for _, groupName in pairs(missionData.RedGroups) do
+        local spearheadGroup = SpearheadGroup.New(groupName)
+        table.insert(self._missionGroups.redGroups, spearheadGroup)
 
         local isGroupTarget = Spearhead.Util.startswith(string.lower(groupName), "tgt_")
-        for _, unit in pairs(spearheadGroup:GetUnits()) do
+        for _, unit in pairs(spearheadGroup:GetObjects()) do
             local unitName = unit:getName()
             local isUnitTarget = Spearhead.Util.startswith(string.lower(unitName), "tgt_")
 
@@ -148,10 +163,15 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
             Spearhead.Events.addOnUnitLostEventListener(unitName, self)
         end
 
-        Spearhead.DcsUtil.DestroyGroup(groupName)
+        spearheadGroup:Destroy()
     end
 
-    self._logger:debug("Mission " .. self.name .. " group count: " .. Spearhead.Util.tableLength(groupNames))
+    if self.missionType == "CAS" then
+        self._battleManager = Spearhead.classes.stageClasses.helpers.BattleManager.New(self._missionGroups.redGroups, self._missionGroups.blueGroups, self.zoneName, self._logger.LogLevel)
+
+    end
+
+    self._logger:debug("Mission " .. self.name .. " group count: " .. Spearhead.Util.tableLength(missionData.RedGroups))
 
     return self
 end
@@ -291,10 +311,14 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
             self._state = "COMPLETED"
         end
     end
+
+    if self._state == "COMPLETED" and self._battleManager then
+        self._battleManager:Stop()
+    end
 end
 
 function ZoneMission:SpawnPersistedState()
-    for _, group in pairs(self._missionGroups.groups) do
+    for _, group in pairs(self._missionGroups.redGroups) do
         group:Spawn()
     end
 end
@@ -303,7 +327,7 @@ end
 function ZoneMission:SpawnInactive()
     self._logger:info("PreActivating " .. self.name)
 
-    for _, group in pairs(self._missionGroups.groups) do
+    for _, group in pairs(self._missionGroups.redGroups) do
         group:Spawn()
     end
 end
@@ -323,8 +347,16 @@ function ZoneMission:SpawnActive()
     end
 
     self._state = "ACTIVE"
-    for _, group in pairs(self._missionGroups.groups) do
+    for _, group in pairs(self._missionGroups.redGroups) do
         group:Spawn()
+    end
+
+    for _, group in pairs(self._missionGroups.blueGroups) do
+        group:Spawn()
+    end
+
+    if self._battleManager then
+        self._battleManager:Start()
     end
 
     self._missionCommandsHelper:AddMissionToCommands(self)
