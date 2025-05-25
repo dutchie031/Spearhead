@@ -153,19 +153,14 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
                     local point = self:GetRandomPoint({x = unitPos.x, y = unitPos.z }, targetGroups)
                     if point then
 
-                        local qty = 1
-                        local ammo = unit:getAmmo()
-
-                        if ammo and ammo[1]  then
-                            qty = math.ceil((ammo[1].count or 1) / 50)
-                        end
-                        
+                        local ammo, qty = self:getBestAmmo(unit)
                         local shootTask = {
                             id = "FireAtPoint",
                             params = {
                                 point = point,
                                 radius = 1,
                                 expendQty = qty,
+                                weaponType = ammo,
                                 expendQtyEnabled = true,
                                 counterbattaryRadius = math.random(5, 10)
                             }
@@ -182,6 +177,41 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
             end
         end
     end
+end 
+
+---@param unit Unit
+---@return number
+---@return number 
+function BattleManager:getBestAmmo(unit)
+
+    if unit:getName() == "Ground-32-1" then
+        env.info(Spearhead.Util.toString(unit:getAmmo()))
+    end
+
+    local ammo = unit:getAmmo()
+
+    if not ammo then return 3221225470, 1 end -- Default ammo if no ammo is found
+
+    local shells = {}
+
+    for _, entry in pairs(ammo) do
+        if entry.count and entry.count > 0 then
+            if entry.desc.category == Weapon.Category.SHELL then
+                table.insert(shells, entry)
+            end
+        end
+    end
+
+    local entry = Spearhead.Util.randomFromList(shells)
+    if entry.desc.warhead then
+        local caliber = entry.desc.warhead.caliber
+        if caliber > 50 then
+            return 258503344128, 1
+        else
+            return 258503344129, 25
+        end
+    end
+    return 3221225470, 1
 end
 
 ---@private
