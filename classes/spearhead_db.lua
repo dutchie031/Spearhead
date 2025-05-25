@@ -659,11 +659,22 @@ function Database:loadMissionzoneUnits()
 
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
         for _, groupName in pairs(groups) do
-            local group = Group.getByName(groupName)
-            if group and group:getCoalition() == coalition.side.RED then
-                table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
-            elseif group and group:getCoalition() == coalition.side.BLUE then
-                table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+                local object = StaticObject.getByName(groupName)
+                
+                if object and object:getCoalition() == coalition.side.RED then
+                    table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
+                elseif object  then
+                    table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+                end
+                
+            else
+                local group = Group.getByName(groupName)
+                if group and group:getCoalition() == coalition.side.RED then
+                    table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
+                elseif group then
+                    table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+                end
             end
             is_group_taken[groupName] = true
         end
@@ -680,13 +691,23 @@ function Database:loadRandomMissionzoneUnits()
         }
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
         for _, groupName in pairs(groups) do
-            local group = Group.getByName(groupName)
-            if group and group:getCoalition() == coalition.side.RED then
-                table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
-            elseif group and group:getCoalition() == coalition.side.BLUE then
-                table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+                local object = StaticObject.getByName(groupName)
+                
+                if object and object:getCoalition() == coalition.side.RED then
+                    table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
+                elseif object  then
+                    table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+                end
+                
+            else
+                local group = Group.getByName(groupName)
+                if group and group:getCoalition() == coalition.side.RED then
+                    table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
+                elseif group then
+                    table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+                end
             end
-
             is_group_taken[groupName] = true
         end
     end
