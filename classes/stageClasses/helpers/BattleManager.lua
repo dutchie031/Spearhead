@@ -93,7 +93,6 @@ function BattleManager:Update()
 end
 
 
-local drawID = 8633
 ---@private
 ---@param groups Array<SpearheadGroup>
 ---@param targetGroups Array<SpearheadGroup>
@@ -215,7 +214,7 @@ function BattleManager:GetRandomPoint(origin, groups)
     if not group then return nil end
 
     local points = {}
-    for _, unit in pairs(group:GetAsUnits()) do
+    for _, unit in pairs(group:GetObjects()) do
         local pos = unit:getPoint()
         table.insert(points, {x = pos.x, y = pos.z})
     end
