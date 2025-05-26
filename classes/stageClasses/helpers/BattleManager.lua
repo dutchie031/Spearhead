@@ -93,48 +93,6 @@ function BattleManager:Update()
 end
 
 ---@private
----@param fromGroups Array<SpearheadGroup>
----@param targetGroups Array<SpearheadGroup>
----@return Array<Vec2>
-function BattleManager:CalculateShootAtPoints(fromGroups, targetGroups)
-
-    ---@type Array<Vec2>
-    local result = {}
-   
-    for _, group in pairs(targetGroups) do
-         ---@type Array<Vec2>
-        local points = {}
-
-        self._logger:debug("Processing red group: " .. group.groupName)
-        local groupUnits = group:GetAsUnits()
-        for _, unit in pairs(group:GetAsUnits()) do
-            local pos = unit:getPoint()
-            table.insert(points, {x = pos.x, y = pos.z})
-        end
-
-        local hull = Spearhead.Util.getConvexHull(points)
-        local enlargedHull = Spearhead.Util.enlargeConvexHull(hull, 30) -- Enlarge the hull by 50 meters
-
-        local randomGroup = Spearhead.Util.randomFromList(fromGroups) --[[@as SpearheadGroup]]
-        if randomGroup then
-
-            local randomUnit = Spearhead.Util.randomFromList(randomGroup:GetObjects()) --[[@as Object]]
-            local pos = randomUnit:getPoint()
-
-            ---@type Vec2
-            local vec2 = {x = pos.x, y = pos.z}
-
-            local shootPoints = Spearhead.Util.GetVisibleHullPointsFromOrigin(enlargedHull, vec2)
-            for _, point in pairs(shootPoints) do
-                table.insert(result, point)
-            end
-        end
-    end
-    return result
-
-end
-
----@private
 ---@param groups Array<SpearheadGroup>
 ---@param targetGroups Array<SpearheadGroup>
 function BattleManager:LetUnitsShoot(groups, targetGroups)
@@ -244,15 +202,16 @@ function BattleManager:GetRandomPoint(origin, groups)
     if not group then return nil end
 
     local points = {}
-    local groupUnits = group:GetAsUnits()
     for _, unit in pairs(group:GetAsUnits()) do
         local pos = unit:getPoint()
         table.insert(points, {x = pos.x, y = pos.z})
     end
 
-    local hull = Spearhead.Util.getConvexHull(points)
-    local enlargedHull = Spearhead.Util.enlargeConvexHull(hull, 30)
-    local shootPoints = Spearhead.Util.GetVisibleHullPointsFromOrigin(enlargedHull, origin)
+    local hulls = Spearhead.Util.getSeparatedConvexHulls(points, 50)
+    local hull = Spearhead.Util.randomFromList(hulls) --[[@as Array<Vec2>]]
+    local enlargedHull = Spearhead.Util.enlargeConvexHull(hull, 25)
+    local shootPoints = Spearhead.Util.GetTangentHullPointsFromOrigin(enlargedHull, origin)
+    
     return Spearhead.Util.randomFromList(shootPoints) --[[@as Vec2]]
 end
 
