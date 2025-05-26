@@ -315,6 +315,10 @@ do -- INIT UTIL
 
     ---@param points Array<Vec2>
     function UTIL.enlargeConvexHull(points, meters)
+        if points == nil or #points == 0 then
+            return {}
+        end
+
         ---@type Array<Vec2>
         local allpoints = {}
 
@@ -382,6 +386,10 @@ end
 ---@param origin Vec2
 ---@return Array<Vec2>
 function UTIL.GetTangentHullPointsFromOrigin(hull, origin)
+
+    if hull == nil or #hull <= 0 then
+        return {}
+    end
 
     local function orientation(a, b, c)
         -- Returns >0 if c is to the left of ab, <0 if to the right, 0 if colinear

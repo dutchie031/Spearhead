@@ -222,6 +222,7 @@ function BattleManager:GetRandomPoint(origin, groups)
 
     local hulls = Spearhead.Util.getSeparatedConvexHulls(points, 50)
     local hull = Spearhead.Util.randomFromList(hulls) --[[@as Array<Vec2>]]
+    if not hull then return nil end
     local enlargedHull = Spearhead.Util.enlargeConvexHull(hull, 25)
     local shootPoints = Spearhead.Util.GetTangentHullPointsFromOrigin(enlargedHull, origin)
 
