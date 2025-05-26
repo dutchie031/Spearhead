@@ -130,12 +130,17 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
                             }
                         }
 
-                        local color = {r = 1, g = 0, b = 0, a = 1}
-                        if unit:getCoalition() == 2 then
-                            color = {r = 0, g = 0, b = 1, a = 1}
-                        end
+                        ---- DEBUG ONLY!!
+                        --- DRAWS THE SHOOTING LINE
+                        -- do 
+                        --     local color = {r = 1, g = 0, b = 0, a = 1}
+                        --     if unit:getCoalition() == 2 then
+                        --         color = {r = 0, g = 0, b = 1, a = 1}
+                        --     end
 
-                        Spearhead.DcsUtil.DrawLine(unitPos, {x = point.x, y = 0, z = point.y}, color, 1)
+                        --     Spearhead.DcsUtil.DrawLine(unitPos, {x = point.x, y = 0, z = point.y}, color, 1)
+                        -- end
+                        
 
                         self._logger:debug("Red unit " .. unit:getName() .. " will shoot " .. qty .. " rounds at point: " .. tostring(point))
 
@@ -220,30 +225,32 @@ function BattleManager:GetRandomPoint(origin, groups)
     local enlargedHull = Spearhead.Util.enlargeConvexHull(hull, 25)
     local shootPoints = Spearhead.Util.GetTangentHullPointsFromOrigin(enlargedHull, origin)
 
-    for _, drawHull in pairs(hulls) do
+    ---- DEBUG ONLY!!
+    ---- DRAWS the hulls of the units
+    -- for _, drawHull in pairs(hulls) do
         
-        ---@type SpearheadTriggerZone
-        local zone = {
-            name = "temp",
-            zone_type = "Polygon",
-            radius = 0,
-            verts = drawHull,
-            location = { x=drawHull[1].x, y=drawHull[1].y },
-        }
+    --     ---@type SpearheadTriggerZone
+    --     local zone = {
+    --         name = "temp",
+    --         zone_type = "Polygon",
+    --         radius = 0,
+    --         verts = drawHull,
+    --         location = { x=drawHull[1].x, y=drawHull[1].y },
+    --     }
 
-        Spearhead.DcsUtil.DrawZone(zone, {r =0, g= 1, b =0, a = 0.5} ,{r =0, g= 1, b =0, a = 0}, 1)
+    --     Spearhead.DcsUtil.DrawZone(zone, {r =0, g= 1, b =0, a = 0.5} ,{r =0, g= 1, b =0, a = 0}, 1)
 
-        local enlarged = Spearhead.Util.enlargeConvexHull(drawHull, 25)
-        local enlargedZone = {
-            name = "temp_enlarged",
-            zone_type = "Polygon",
-            radius = 0,
-            verts = enlarged,
-            location = { x=enlarged[1].x, y=enlarged[1].y },
-        }
-        Spearhead.DcsUtil.DrawZone(enlargedZone, {r =0, g= 0, b =1, a = 0.5} ,{r =0, g= 1, b =0, a = 0}, 1)
+    --     local enlarged = Spearhead.Util.enlargeConvexHull(drawHull, 25)
+    --     local enlargedZone = {
+    --         name = "temp_enlarged",
+    --         zone_type = "Polygon",
+    --         radius = 0,
+    --         verts = enlarged,
+    --         location = { x=enlarged[1].x, y=enlarged[1].y },
+    --     }
+    --     Spearhead.DcsUtil.DrawZone(enlargedZone, {r =0, g= 0, b =1, a = 0.5} ,{r =0, g= 1, b =0, a = 0}, 1)
 
-    end
+    -- end
 
 
     return Spearhead.Util.randomFromList(shootPoints) --[[@as Vec2]]
