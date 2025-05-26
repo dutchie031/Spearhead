@@ -265,6 +265,54 @@ do -- INIT UTIL
         return hull
     end
 
+    ---Splits points into clusters with at least minSeparation between clusters, returns convex hull for each cluster
+    ---@param points Array<Vec2>
+    ---@param minSeparation number
+    ---@return Array<Array<Vec2>> hulls
+    function UTIL.getSeparatedConvexHulls(points, minSeparation)
+        if #points == 0 then return {} end
+
+        -- Simple clustering: group points that are within minSeparation of each other
+        local clusters = {}
+        local assigned = {}
+
+        for i, p in ipairs(points) do
+            if not assigned[i] then
+                local cluster = { p }
+                assigned[i] = true
+                -- Find all points close to p (BFS)
+                local queue = { i }
+                while #queue > 0 do
+                    local idx = table.remove(queue)
+                    local base = points[idx]
+                    for j, q in ipairs(points) do
+                        if not assigned[j] then
+                            local dx = base.x - q.x
+                            local dy = base.y - q.y
+                            if (dx * dx + dy * dy) <= (minSeparation * minSeparation) then
+                                table.insert(cluster, q)
+                                assigned[j] = true
+                                table.insert(queue, j)
+                            end
+                        end
+                    end
+                end
+                table.insert(clusters, cluster)
+            end
+        end
+
+        -- Compute convex hull for each cluster
+        local hulls = {}
+        for _, cluster in ipairs(clusters) do
+            local hull = UTIL.getConvexHull(cluster)
+            if #hull > 0 then
+                table.insert(hulls, hull)
+            end
+        end
+
+        return hulls
+    end
+
     ---@param points Array<Vec2>
     function UTIL.enlargeConvexHull(points, meters)
         ---@type Array<Vec2>
@@ -327,6 +375,44 @@ function UTIL.GetVisibleHullPointsFromOrigin(hull, origin)
     end
 
     return visible
+end
+
+---Returns the two tangent points ("scratch points") from origin to the convex hull
+---@param hull Array<Vec2>
+---@param origin Vec2
+---@return Array<Vec2>
+function UTIL.GetTangentHullPointsFromOrigin(hull, origin)
+    local function cross(o, a, b)
+        return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+    end
+
+    local n = #hull
+    if n == 0 then return {} end
+    if n == 1 then return { hull[1] } end
+
+    local left, right = nil, nil
+    for i = 1, n do
+        local prev = hull[(i - 2 + n) % n + 1]
+        local curr = hull[i]
+        local next = hull[(i % n) + 1]
+
+        local cp1 = cross(origin, curr, prev)
+        local cp2 = cross(origin, curr, next)
+
+        -- Tangent if the cross products have different signs or one is zero
+        if cp1 * cp2 <= 0 then
+            if not left then
+                left = curr
+            else
+                right = curr
+            end
+        end
+    end
+
+    local result = {}
+    if left then table.insert(result, left) end
+    if right and right ~= left then table.insert(result, right) end
+    return result
 end
 
 end
