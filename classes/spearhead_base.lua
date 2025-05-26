@@ -382,37 +382,37 @@ end
 ---@param origin Vec2
 ---@return Array<Vec2>
 function UTIL.GetTangentHullPointsFromOrigin(hull, origin)
-    local function cross(o, a, b)
-        return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+
+    local function orientation(a, b, c)
+        -- Returns >0 if c is to the left of ab, <0 if to the right, 0 if colinear
+        return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
     end
 
     local n = #hull
     if n == 0 then return {} end
     if n == 1 then return { hull[1] } end
 
-    local left, right = nil, nil
-    for i = 1, n do
-        local prev = hull[(i - 2 + n) % n + 1]
-        local curr = hull[i]
-        local next = hull[(i % n) + 1]
-
-        local cp1 = cross(origin, curr, prev)
-        local cp2 = cross(origin, curr, next)
-
-        -- Tangent if the cross products have different signs or one is zero
-        if cp1 * cp2 <= 0 then
-            if not left then
-                left = curr
-            else
-                right = curr
+    -- Find left tangent: the hull point where all other points are to the right of the line from origin to that point
+    local function findTangent(isLeft)
+        local best = 1
+        for i = 2, n do
+            local o = orientation(origin, hull[best], hull[i])
+            if (isLeft and o < 0) or (not isLeft and o > 0) then
+                best = i
             end
         end
+        return hull[best]
     end
 
-    local result = {}
-    if left then table.insert(result, left) end
-    if right and right ~= left then table.insert(result, right) end
-    return result
+    local leftTangent = findTangent(true)
+    local rightTangent = findTangent(false)
+
+    -- If tangents are the same (can happen if origin is colinear), only return one
+    if leftTangent.x == rightTangent.x and leftTangent.y == rightTangent.y then
+        return { leftTangent }
+    else
+        return { leftTangent, rightTangent }
+    end
 end
 
 end
@@ -1089,7 +1089,6 @@ do     -- INIT DCS_UTIL
             end
             functionString = functionString .. "{0,1,0,1}, {0,1,0,1}, " .. lineStyle .. ")"
 
-            env.info(functionString)
             ---@diagnostic disable-next-line: deprecated
             local f, err = loadstring(functionString)
             if f then
@@ -1115,6 +1114,25 @@ do     -- INIT DCS_UTIL
         trigger.action.setMarkupColorFill(drawID, fillColorMapped)
         trigger.action.setMarkupColor(drawID, lineColorMapped)
 
+        return drawID
+    end
+
+    ---@param start Vec3
+    ---@param finish Vec3
+    ---@param lineColor DrawColor
+    ---@param lineStyle LineType
+    function DCS_UTIL.DrawLine(start, finish, lineColor, lineStyle)
+        if lineStyle == nil then lineStyle = 4 end
+        drawID = drawID + 1
+
+        local lineColorMapped = {
+            lineColor.r or 0,
+            lineColor.g or 0,
+            lineColor.b or 0,
+            lineColor.a or 1
+        }
+
+        trigger.action.lineToAll(-1, drawID, start, finish, lineColorMapped, lineStyle)
         return drawID
     end
 

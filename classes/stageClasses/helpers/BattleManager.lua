@@ -92,6 +92,8 @@ function BattleManager:Update()
     return math.random(4, 10) -- Return a random interval between 5 and 10 seconds for the next update
 end
 
+
+local drawID = 8633
 ---@private
 ---@param groups Array<SpearheadGroup>
 ---@param targetGroups Array<SpearheadGroup>
@@ -124,10 +126,16 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
                                 radius = 1,
                                 expendQty = qty,
                                 weaponType = ammo,
-                                expendQtyEnabled = true,
-                                counterbattaryRadius = math.random(5, 10)
+                                expendQtyEnabled = true
                             }
                         }
+
+                        local color = {r = 1, g = 0, b = 0, a = 1}
+                        if unit:getCoalition() == 2 then
+                            color = {r = 0, g = 0, b = 1, a = 1}
+                        end
+
+                        Spearhead.DcsUtil.DrawLine(unitPos, {x = point.x, y = 0, z = point.y}, color, 1)
 
                         self._logger:debug("Red unit " .. unit:getName() .. " will shoot " .. qty .. " rounds at point: " .. tostring(point))
 
@@ -211,7 +219,33 @@ function BattleManager:GetRandomPoint(origin, groups)
     local hull = Spearhead.Util.randomFromList(hulls) --[[@as Array<Vec2>]]
     local enlargedHull = Spearhead.Util.enlargeConvexHull(hull, 25)
     local shootPoints = Spearhead.Util.GetTangentHullPointsFromOrigin(enlargedHull, origin)
-    
+
+    for _, drawHull in pairs(hulls) do
+        
+        ---@type SpearheadTriggerZone
+        local zone = {
+            name = "temp",
+            zone_type = "Polygon",
+            radius = 0,
+            verts = drawHull,
+            location = { x=drawHull[1].x, y=drawHull[1].y },
+        }
+
+        Spearhead.DcsUtil.DrawZone(zone, {r =0, g= 1, b =0, a = 0.5} ,{r =0, g= 1, b =0, a = 0}, 1)
+
+        local enlarged = Spearhead.Util.enlargeConvexHull(drawHull, 25)
+        local enlargedZone = {
+            name = "temp_enlarged",
+            zone_type = "Polygon",
+            radius = 0,
+            verts = enlarged,
+            location = { x=enlarged[1].x, y=enlarged[1].y },
+        }
+        Spearhead.DcsUtil.DrawZone(enlargedZone, {r =0, g= 0, b =1, a = 0.5} ,{r =0, g= 1, b =0, a = 0}, 1)
+
+    end
+
+
     return Spearhead.Util.randomFromList(shootPoints) --[[@as Vec2]]
 end
 
