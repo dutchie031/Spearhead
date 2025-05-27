@@ -530,7 +530,7 @@ do     -- INIT DCS_UTIL
                                                 dead = group.dead
                                             }
 
-                                            if string.lower(unit.category) == "planes" then
+                                            if unit and unit.category and string.lower(unit.category) == "planes" then
                                                 staticObj.livery_id = unit.livery_id
                                             end
 
