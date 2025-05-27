@@ -156,7 +156,6 @@ function SpearheadGroup:GetObjects()
     return result
 end
 
-
 ---comment
 ---@return Array<Unit> result list of objects
 function SpearheadGroup:GetAsUnits()
