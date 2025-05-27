@@ -194,15 +194,21 @@ end
 
 function SpearheadGroup:SetInvisible()
 
-    local group = Group.getByName(self.groupName)
-    if group then
-        local setInvisible = {
-            id = 'SetInvisible',
-            params = {
-                value = true
+    if self._isStatic == true then
+        local country = Spearhead.DcsUtil.GetNeutralCountry()
+        Spearhead.DcsUtil.SpawnGroupTemplate(self.groupName, nil, nil, nil, country)
+    else
+        local group = Group.getByName(self.groupName)
+        if group then
+            local setInvisible = {
+                id = 'SetInvisible',
+                params = {
+                    value = true
+                }
             }
-        }
-        group:getController():setCommand(setInvisible)
+            group:getController():setCommand(setInvisible)
+        end
+
     end
 end
 
