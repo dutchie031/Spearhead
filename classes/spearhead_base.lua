@@ -1203,9 +1203,10 @@ do     -- INIT DCS_UTIL
     ---@param location table? vector 3 data. { x , z, alt }
     ---@param route table? route of the group. If nil wil be the default route.
     ---@param uncontrolled boolean? Sets the group to be uncontrolled on spawn
+    ---@param countryId CountryID? Overwrites the country
     ---@return table? new_group the Group class that was spawned
     ---@return boolean? isStatic whether the group is a static or not
-    function DCS_UTIL.SpawnGroupTemplate(groupName, location, route, uncontrolled)
+    function DCS_UTIL.SpawnGroupTemplate(groupName, location, route, uncontrolled, countryId)
         if groupName == nil then
             return nil, nil
         end
@@ -1217,7 +1218,8 @@ do     -- INIT DCS_UTIL
         if template.category == DCS_UTIL.GroupCategory.STATIC then
             --TODO: Implement location and route stuff
             local spawn_template = template.group_template
-            return coalition.addStaticObject(template.country_id, spawn_template), true
+            local country = countryId or template.country_id
+            return coalition.addStaticObject(country, spawn_template), true
         else
             local spawn_template = template.group_template
             if location ~= nil then
@@ -1244,8 +1246,18 @@ do     -- INIT DCS_UTIL
             if uncontrolled ~= nil then
                 spawn_template.uncontrolled = uncontrolled
             end
-            local new_group = coalition.addGroup(template.country_id, template.category, spawn_template)
+            local country = countryId or template.country_id
+            local new_group = coalition.addGroup(country, template.category, spawn_template)
             return new_group, false
+        end
+    end
+
+    ---@return number? id
+    function DCS_UTIL.GetNeutralCountry()
+        for name, id in pairs(country.id) do
+            if coalition.getCountryCoalition(id) == DCS_UTIL.Coalition.NEUTRAL then
+                return id
+            end
         end
     end
 

@@ -93,13 +93,14 @@ function BattleManager:Update()
 end
 
 
-local drawID = 8633
 ---@private
 ---@param groups Array<SpearheadGroup>
 ---@param targetGroups Array<SpearheadGroup>
 function BattleManager:LetUnitsShoot(groups, targetGroups)
 
     local shootChance = math.random(3, 7) / 10
+
+    local targetHulls = self:ToShootingHulls(targetGroups)
 
     for _, group in pairs(groups) do
 
@@ -115,7 +116,7 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
 
                 if math.random() <= shootChance then
                     local unitPos = unit:getPoint()
-                    local point = self:GetRandomPoint({x = unitPos.x, y = unitPos.z }, targetGroups)
+                    local point = self:GetRandomPoint({x = unitPos.x, y = unitPos.z }, targetHulls)
                     if point then
 
                         local ammo, qty = self:getBestAmmo(unit)
@@ -129,18 +130,10 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
                                 expendQtyEnabled = true
                             }
                         }
-
-                        ---- DEBUG ONLY!!
-                        --- DRAWS THE SHOOTING LINE
-                        -- do 
-                        --     local color = {r = 1, g = 0, b = 0, a = 1}
-                        --     if unit:getCoalition() == 2 then
-                        --         color = {r = 0, g = 0, b = 1, a = 1}
-                        --     end
-
-                        --     Spearhead.DcsUtil.DrawLine(unitPos, {x = point.x, y = 0, z = point.y}, color, 1)
-                        -- end
                         
+                        if SpearheadConfig and SpearheadConfig.debugEnabled == true then
+                            self:DrawDebugLine(point, unit)
+                        end
 
                         self._logger:debug("Red unit " .. unit:getName() .. " will shoot " .. qty .. " rounds at point: " .. tostring(point))
 
@@ -207,55 +200,84 @@ function BattleManager:IsUnitApplicable(unit)
 end
 
 ---@private
----@param origin Vec2
 ---@param groups Array<SpearheadGroup>
----@return Vec2?
-function BattleManager:GetRandomPoint(origin, groups)
-    local group = Spearhead.Util.randomFromList(groups) --[[@as SpearheadGroup]]
-    if not group then return nil end
+---@return Array<Array<Vec2>>
+function BattleManager:ToShootingHulls(groups)
+    local result = {}
 
     local points = {}
-    for _, unit in pairs(group:GetAsUnits()) do
-        local pos = unit:getPoint()
-        table.insert(points, {x = pos.x, y = pos.z})
+    for _, group in pairs(groups) do
+        for _, unit in pairs(group:GetObjects()) do
+            local pos = unit:getPoint()
+            table.insert(points, {x = pos.x, y = pos.z})
+        end
     end
 
     local hulls = Spearhead.Util.getSeparatedConvexHulls(points, 50)
-    local hull = Spearhead.Util.randomFromList(hulls) --[[@as Array<Vec2>]]
+    local enlargedHulls = {}
+    for _, hull in pairs(hulls) do
+        local enlarged = Spearhead.Util.enlargeConvexHull(hull, 25)
+        if enlarged then
+            table.insert(enlargedHulls, enlarged)
+        end
+    end
+
+    for _, hull in pairs(enlargedHulls) do
+        if #hull > 2 then
+            table.insert(result, hull)
+        end
+    end
+
+    return result
+end
+
+---@private
+---@param origin Vec2
+---@param groupHulls Array<Array<Vec2>>
+---@return Vec2?
+function BattleManager:GetRandomPoint(origin, groupHulls)
+    
+    local hull = Spearhead.Util.randomFromList(groupHulls) --[[@as Array<Vec2>]]
     if not hull then return nil end
-    local enlargedHull = Spearhead.Util.enlargeConvexHull(hull, 25)
-    local shootPoints = Spearhead.Util.GetTangentHullPointsFromOrigin(enlargedHull, origin)
+    local shootPoints = Spearhead.Util.GetTangentHullPointsFromOrigin(hull, origin)
 
-    ---- DEBUG ONLY!!
-    ---- DRAWS the hulls of the units
-    -- for _, drawHull in pairs(hulls) do
-        
-    --     ---@type SpearheadTriggerZone
-    --     local zone = {
-    --         name = "temp",
-    --         zone_type = "Polygon",
-    --         radius = 0,
-    --         verts = drawHull,
-    --         location = { x=drawHull[1].x, y=drawHull[1].y },
-    --     }
-
-    --     Spearhead.DcsUtil.DrawZone(zone, {r =0, g= 1, b =0, a = 0.5} ,{r =0, g= 1, b =0, a = 0}, 1)
-
-    --     local enlarged = Spearhead.Util.enlargeConvexHull(drawHull, 25)
-    --     local enlargedZone = {
-    --         name = "temp_enlarged",
-    --         zone_type = "Polygon",
-    --         radius = 0,
-    --         verts = enlarged,
-    --         location = { x=enlarged[1].x, y=enlarged[1].y },
-    --     }
-    --     Spearhead.DcsUtil.DrawZone(enlargedZone, {r =0, g= 0, b =1, a = 0.5} ,{r =0, g= 1, b =0, a = 0}, 1)
-
-    -- end
-
+    if SpearheadConfig and SpearheadConfig.debugEnabled == true then
+        self:DrawDebugZone({ hull })
+    end
 
     return Spearhead.Util.randomFromList(shootPoints) --[[@as Vec2]]
 end
+
+do --DEBUG
+
+    ---@param unit Unit
+    ---@param target Vec2
+    function BattleManager:DrawDebugLine(target, unit)
+        local color = {r = 1, g = 0, b = 0, a = 1}
+        if unit:getCoalition() == 2 then
+            color = {r = 0, g = 0, b = 1, a = 1}
+        end
+
+        Spearhead.DcsUtil.DrawLine(unit:getPoint(), {x = target.x, y = 0, z = target.y}, color, 1)
+    end
+
+    ---@param hulls Array<Array<Vec2>>
+    function BattleManager:DrawDebugZone(hulls)
+        for _, drawHull in pairs(hulls) do
+            
+            ---@type SpearheadTriggerZone
+            local zone = {
+                name = "temp",
+                zone_type = "Polygon",
+                radius = 0,
+                verts = drawHull,
+                location = { x=drawHull[1].x, y=drawHull[1].y },
+            }
+
+            Spearhead.DcsUtil.DrawZone(zone, {r =0, g=0, b =1, a = 0.5} ,{r =0, g= 0, b =1, a = 0}, 1)
+        end
+    end
+end --DEBUG
 
 if Spearhead == nil then Spearhead = {} end
 if Spearhead.classes == nil then Spearhead.classes = {} end

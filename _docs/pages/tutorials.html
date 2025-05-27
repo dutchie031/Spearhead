@@ -58,6 +58,7 @@
                         <ul>
                             <li><a href="#mission-1-dead" class="side-nav-h3">Mission: DEAD</a></li>
                             <li><a href="#mission-2-strike" class="side-nav-h3">Mission: STRIKE</a></li>
+                            <li><a href="#mission-cas" class="side-nav-h3">Mission: CAS</a></li>
                         </ul>
                     </li>
                     <li><a href="#mission-briefings" class="side-nav-h2">Mission Briefings</a></li>
@@ -244,10 +245,61 @@
                     Even some SHORADS to spice the whole thing up. <br/>
                     In the picture below all units that are selected and who show up as white (they are actually red) have the prefix <span class="inline-lua"><span class="lua-variable">TGT_</span></span> in front of their name. <br/>
                 </p>
+
                 <p>
                     This will make it so the mission will be marked as complete when those units are destroyed. The rest of the units will exist until the entire stage is cleaned up. <br/>
                 </p>
                 <img src="../img/strike_target.png"/><br/>
+
+                <h3 id="mission-cas">Mision: CAS</h3>
+                <p>
+                    A CAS mission will add an additional layer to the mission. <br/>
+                    Whereas BAI, Strike and DEAD missions are somewhat clean, CAS missions are where the chaos starts. <br/>
+                    <br/>
+                    With CAS missions an additional BattleManager will be activated. <br/>
+                    This BattleManager will scan for units and force them to fire at other units in the zone. <br/>
+                    Great efforts are made to make AI miss. In the end we want players to be they key factor to mission success. <br/>
+                    If AI do seem to be hitting more than 1 or 2 unfortunate targets, it is most likely you either have another script controlling the units, or you have placed the units too staggered. <br/>
+                    Please make sure to also read the "Notes" section below the image. <br/>
+
+                    <img src="../img/cas_mission.png" style="width: 100%;"></img>
+
+                    Notes: <br/>
+                    <ul>
+                        <li>
+                            AAA units will sometimes also follow their lead and fire at targets on the ground.<br/>
+                            They will however always prioritize AIR targets as at that point they have a threat themselves and won't follow their lead's targets. <br/>
+                            If you really don't like this, it's best to put the AAA units in a separate group. 
+                        </li>
+                        <li>
+                            Units will purposely aim past a target. <br/>
+                            This simulates a fight, but doesn't actually do anything, so the player is the only person that can complete a mission. <br/>
+                            Be aware that if you stagger groups too much, shooting past a target might hit another. <br/>
+                            Best would be to always test it. <br/>
+                            You can also enable debugging. <br/>
+                            This will draw all boxes and lines. <br/> 
+                            NOTE: Keep DEBUG disabled on an actual mission. 
+                        </li>
+                        <li>
+                            When you want AI to shoot through gaps a distance of approx 150ft is required between the two outer units. <br/>
+                            These gaps will be automatically detected and can even exist within a group itself. <br/>
+                        </li>
+                        <li>
+                            Line of sight is important, dependent on which type of unit. <br/>
+                            Units won't shoot when they can't fire at a certain point. <br/>
+                            As a mission editor it's up to you to set the range, line of sight and cover. <br/>
+                        </li>
+                        <li>
+                            As Performance is something that's on any multiplayer mission maker's mind, this is a very optimised way. 
+                            AI does not have to know, scan, priorise targets every second. <br/>
+                            It does not really have to think or move. <br/>
+                            Ofcourse, there is a balance and too many can be too much. <br/>
+                            For now it has been tested with 60+ units in 3 seperate CAS zones active at a time. <br/>
+                            No performance degradation was seen at all. <br/>
+                        </li>
+                    </ul>
+
+                </p>
 
                 <h2 id="mission-briefings">Mission Briefings</h2>
                 <p>
