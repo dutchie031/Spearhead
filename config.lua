@@ -45,6 +45,11 @@ SpearheadConfig = {
         drawStages = true, -- default true
         drawPreActivated = true, -- default true
 
+        --Marking the last contact for any mission.
+        --If a unit is killed the location will be permanently marked on the map until the mission is complete.
+        --The location will continously update for the last killed unit.
+        markLastContact = false, -- default false
+
         --AutoStages will continue to the next stage automatically on completion of the missions within the stage. 
         -- If you want to make it so the next stage triggers only when you want to disable it here and manually implement the actions needed.
         --[[
