@@ -530,7 +530,7 @@ do     -- INIT DCS_UTIL
                                                 dead = group.dead
                                             }
 
-                                            if string.lower(unit.category) == "planes" then
+                                            if unit and unit.category and string.lower(unit.category) == "planes" then
                                                 staticObj.livery_id = unit.livery_id
                                             end
 
@@ -1144,18 +1144,24 @@ do     -- INIT DCS_UTIL
         return drawID
     end
 
-    
-    local _markID = 200
-
     ---@param groupID number
     ---@param text string
     ---@param location Vec3
     ---@return number markID
     function DCS_UTIL.AddMarkToGroup(groupID, text, location)
+        drawID = drawID + 1
+        trigger.action.markToGroup(drawID, text, location, groupID, true, nil)
+        return drawID
+    end
 
-        _markID = _markID + 1
-        trigger.action.markToGroup(_markID, text, location, groupID, true, nil)
-        return _markID
+    ---comment
+    ---@param text any
+    ---@param location Vec3
+    ---@return integer
+    function DCS_UTIL.AddMarkToAll(text, location)
+        drawID = drawID + 1
+        trigger.action.markToAll(drawID, text, location, true, nil)
+        return drawID
     end
 
     ---@param markId number
