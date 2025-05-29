@@ -128,7 +128,7 @@ function BuildableMission:MarkMissionAreaToGroup(groupID)
         Spearhead.DcsUtil.RemoveMark(self._markIDsPerGroup[groupID])
     end
 
-    local text = "[" .. self.code .. "] " .. self.name
+    local text = "[" .. self.code .. "] " .. self.name .. " | " .. self._crateType
     local location = { x= self.location.x, y=land.getHeight(self.location), z=self.location.y }
     local markID = Spearhead.DcsUtil.AddMarkToGroup(groupID, text, location)
 

@@ -130,23 +130,6 @@ local missionBriefingRequested = function(args)
     mission:ShowBriefing(groupID)
 end
 
----@class MarkRequestedArgs
----@field mission Mission @the mission object
----@field groupId integer @the group ID of the player requesting the briefing
-
----@param args MarkRequestedArgs
-local markRequested = function(args)
-
-    local mission = args.mission
-    if not mission then return end
-
-    if mission.missionType == "LOGISTICS" then
-        mission:MarkMissionAreaToGroup(args.groupId)
-    end
-end
-
-
-
 ---@class PinMissionCommandArgs
 ---@field self MissionCommandsHelper @the MissionCommandsHelper instance
 ---@field groupId integer @the group ID of the player requesting the briefing
@@ -343,13 +326,6 @@ function MissionCommandsHelper:addMissionCommands(groupId, path, mission)
         ---@type PinMissionCommandArgs
         local pinMissionCommandArgs = { self = self, groupId = groupId, mission = mission }
         missionCommands.addCommandForGroup(groupId, "Pin", path, pinMissionCommand, pinMissionCommandArgs)
-
-        if mission.missionType == "LOGISTICS" then
-            ---@type MarkRequestedArgs
-            local markRequestArgs = { groupId = groupId, mission = mission }
-            missionCommands.addCommandForGroup(groupId, "Mark", path, markRequested, markRequestArgs)
-        end
-
     end
 end
 

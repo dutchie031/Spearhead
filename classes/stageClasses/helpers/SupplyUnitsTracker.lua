@@ -167,18 +167,19 @@ function SupplyUnitsTracker:RemoveCargoFromUnit(unitID, crateType)
 
 end
 
-function SupplyUnitsTracker:UpdateWeightForUnit(unitID)
+---@param unit Unit
+function SupplyUnitsTracker:UpdateWeightForUnit(unit)
 
     local weight = 0
-    if self._cargoInUnits[tostring(unitID)] then
-        for crateType, count in pairs(self._cargoInUnits[tostring(unitID)]) do
+    if self._cargoInUnits[tostring(unit:getID())] then
+        for crateType, count in pairs(self._cargoInUnits[tostring(unit:getID())]) do
             local crateConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
             if crateConfig and count then
                 weight = weight + (crateConfig.weight * count)
             end
         end
     end
-    trigger.action.setUnitInternalCargo(unitID, weight)
+    trigger.action.setUnitInternalCargo(unit:getName(), weight)
 end
 
 
@@ -247,7 +248,7 @@ function SupplyUnitsTracker:UnloadRequested(unitID, crateType)
     end
 
     self:RemoveCargoFromUnit(unitID, crateType)
-    self:UpdateWeightForUnit(unitID)
+    self:UpdateWeightForUnit(unit)
     
     local cargoConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
 
@@ -366,7 +367,7 @@ function SupplyUnitsTracker:TryLoadCrateInUnit(unit, crateType)
     end
 
     self:AddCargoToUnit(unit:getID(), crateType)
-    self:UpdateWeightForUnit(unit:getID())
+    self:UpdateWeightForUnit(unit)
 
     local group = unit:getGroup()
     if group == nil then return false end
