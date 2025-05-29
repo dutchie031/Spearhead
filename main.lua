@@ -1,4 +1,3 @@
-
 --Single player purpose
 
 local defaultLogLevel = "INFO"
@@ -53,8 +52,8 @@ Spearhead.LoadingDone()
 
 Spearhead.internal.GlobalStageManager:printFullOverview()
 
---Check lines of code in directory per file: 
--- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }; GCI . -Include *.lua* -Recurse | foreach{(GC $_).Count} | measure-object -sum |  % Sum  
+--Check lines of code in directory per file:
+-- Get-ChildItem . -Include *.lua -Recurse | foreach {""+(Get-Content $_).Count + " => " + $_.name }; GCI . -Include *.lua* -Recurse | foreach{(GC $_).Count} | measure-object -sum |  % Sum
 -- find . -name '*.lua' | xargs wc -l
 
 --- ==================== DEBUG ORDER OR ZONE VEC ===========================
@@ -68,7 +67,7 @@ Spearhead.internal.GlobalStageManager:printFullOverview()
 --     local b = zone.verts[i+1]
 
 --     local color = {0,0,0,1}
-    
+
 --     color[i] = 1
 
 --     trigger.action.textToAll(-1,  46+i , { x= a.x, y = 0, z = a.z } , color, {0,0,0}, 24 , true , "" .. i )
