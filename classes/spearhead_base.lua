@@ -455,7 +455,15 @@ do     -- INIT DCS_UTIL
                 group_template
             }
         ]] --
+
+        ---@class MizGroupData
+        ---@field category GroupCategory
+        ---@field country_id integer
+        ---@field group_template table
+
+        ---@type table<string, MizGroupData>
         DCS_UTIL.__miz_groups = {}
+
         DCS_UTIL.__groupNames = {}
         DCS_UTIL.__blueGroupNames = {}
         DCS_UTIL.__redGroupNames = {}
@@ -499,6 +507,7 @@ do     -- INIT DCS_UTIL
         Polygon = 2
     }
 
+    ---@enum SpearheadGroupCategory
     DCS_UTIL.GroupCategory = {
         AIRPLANE   = 0,
         HELICOPTER = 1,
@@ -533,25 +542,14 @@ do     -- INIT DCS_UTIL
                                         if category_id == DCS_UTIL.GroupCategory.STATIC then
                                             local unit = group.units[1]
 
-                                            if unit.category == "Heliports" then
+                                            if unit and  unit.category == "Heliports" then
+                                                skippable = true
+                                            elseif unit then
+                                                name = unit.name
+                                            else
+                                                env.error("Group " .. name .. " has no units, skipping it.")
                                                 skippable = true
                                             end
-
-                                            name = unit.name
-                                            local staticObj = {
-                                                heading = unit.heading,
-                                                name = unit.name,
-                                                x = unit.x,
-                                                y = unit.y,
-                                                type = unit.type,
-                                                dead = group.dead
-                                            }
-
-                                            if unit and unit.category and string.lower(unit.category) == "planes" then
-                                                staticObj.livery_id = unit.livery_id
-                                            end
-
-                                            group = staticObj
                                         end
 
                                         if skippable == false then
@@ -708,7 +706,7 @@ do     -- INIT DCS_UTIL
     ---@param groupName string
     function DCS_UTIL.IsGroupStatic(groupName)
         if DCS_UTIL.__miz_groups[groupName] then
-            return DCS_UTIL.__miz_groups[groupName].category == 5;
+            return DCS_UTIL.__miz_groups[groupName].category == DCS_UTIL.GroupCategory.STATIC;
         end
 
         return StaticObject.getByName(groupName) ~= nil
@@ -1272,7 +1270,15 @@ do     -- INIT DCS_UTIL
             --TODO: Implement location and route stuff
             local spawn_template = template.group_template
             local country = countryId or template.country_id
-            return coalition.addStaticObject(country, spawn_template), true
+
+            ---disable diagnostic as -1 is actually valid
+            ---@diagnostic disable-next-line: param-type-mismatch
+            coalition.addGroup(country, -1, spawn_template)
+
+            local object = StaticObject.getByName(spawn_template.name)
+            if object then
+                return object, true
+            end
         else
             local spawn_template = template.group_template
             if location ~= nil then
