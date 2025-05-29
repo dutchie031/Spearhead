@@ -9,6 +9,7 @@ env.info("Spearhead SupplyUnitsTracker loaded")
 ---@field private _commandsHelper MissionCommandsHelper
 ---@field private _droppedCrates table<string, StaticObject>
 ---@field private _registeredHubs table<SupplyHub, boolean>
+---@field private _supplyUnitSpawnedListener Array<SupplyUnitSpawnedListener>
 local SupplyUnitsTracker = {}
 SupplyUnitsTracker.__index = SupplyUnitsTracker
 
@@ -67,7 +68,30 @@ function SupplyUnitsTracker:OnPlayerEntersUnit(unit)
 
     if self:IsSupplyUnit(unit) == true then
         self._supplyUnitsByName[unit:getName()] = unit
+        self._cargoInUnits[tostring(unit:getID())] = nil
+        self._unitPositions[tostring(unit:getID())] = unit:getPoint()
     end
+
+    for _, listener in pairs(self._supplyUnitSpawnedListener) do
+        pcall(function()
+            listener:SupplyUnitSpawned(unit)
+        end)
+    end
+
+end
+
+---@class SupplyUnitSpawnedListener
+---@field SupplyUnitSpawned fun(self:SupplyUnitSpawnedListener, unit:Unit)
+
+---@param listener SupplyUnitSpawnedListener
+function SupplyUnitsTracker:AddOnSupplyUnitSpawnedListener(listener)
+    if listener == nil then return end
+
+    if self._supplyUnitSpawnedListener == nil then
+        self._supplyUnitSpawnedListener = {}
+    end
+
+    table.insert(self._supplyUnitSpawnedListener, listener)
 end
 
 function SupplyUnitsTracker:Update()
@@ -143,6 +167,20 @@ function SupplyUnitsTracker:RemoveCargoFromUnit(unitID, crateType)
 
 end
 
+function SupplyUnitsTracker:UpdateWeightForUnit(unitID)
+
+    local weight = 0
+    if self._cargoInUnits[tostring(unitID)] then
+        for crateType, count in pairs(self._cargoInUnits[tostring(unitID)]) do
+            local crateConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
+            if crateConfig and count then
+                weight = weight + (crateConfig.weight * count)
+            end
+        end
+    end
+    trigger.action.setUnitInternalCargo(unitID, weight)
+end
+
 
 function SupplyUnitsTracker:CheckUnitsInZones()
 
@@ -209,6 +247,7 @@ function SupplyUnitsTracker:UnloadRequested(unitID, crateType)
     end
 
     self:RemoveCargoFromUnit(unitID, crateType)
+    self:UpdateWeightForUnit(unitID)
     
     local cargoConfig = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
 
@@ -228,7 +267,6 @@ function SupplyUnitsTracker:UnloadRequested(unitID, crateType)
     }
 
     local spawned = coalition.addStaticObject(unit:getCoalition(), cargoSpawnObject)
-
     self._droppedCrates[cargoSpawnObject.name] = spawned
     self._commandsHelper:updateCommandsForGroup(group:getID())
 end
@@ -303,7 +341,7 @@ function SupplyUnitsTracker:TryLoadCrateInUnit(unit, crateType)
     
     local crateConfigA = Spearhead.classes.stageClasses.helpers.supplies.SupplyConfigHelper.getSupplyConfig(crateType)
     if crateConfigA == nil then
-        trigger.action.outText("Invalid crate type: " .. crateType, 5)
+        trigger.action.outTextForUnit(unit:getID(), "Invalid crate type: " .. crateType, 5)
         return false
     end
 
@@ -316,19 +354,19 @@ function SupplyUnitsTracker:TryLoadCrateInUnit(unit, crateType)
 
     local unitConfig = Spearhead.classes.stageClasses.helpers.supplies.MaxLoadConfig[unit:getTypeName()]
     if unitConfig == nil then
-        trigger.action.outText("Your unit type is not configured for logistics: " .. crateType, 5)
+        trigger.action.outTextForUnit(unit:getID(), "Your unit type is not configured for logistics: " .. crateType, 5)
         self._logger:error("Invalid unit type: " .. unit:getTypeName())
         return false
     end
     local maxWeight = unitConfig.maxInternalLoad
 
     if currentWeight + crateConfigA.weight > maxWeight then
-        trigger.action.outText("Failed to load crate due to it overloading your max weight of: " .. maxWeight .. "kg", 5)
+        trigger.action.outTextForUnit(unit:getID(), "Failed to load crate due to it overloading your max weight of: " .. maxWeight .. "kg", 5)
         return false
     end
 
-    trigger.action.setUnitInternalCargo(unit:getName(), crateConfigA.weight)
     self:AddCargoToUnit(unit:getID(), crateType)
+    self:UpdateWeightForUnit(unit:getID())
 
     local group = unit:getGroup()
     if group == nil then return false end

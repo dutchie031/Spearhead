@@ -1,6 +1,6 @@
 
 
----@class BuildableMission : Mission
+---@class BuildableMission : Mission, SupplyUnitSpawnedListener
 ---@field private _requiredKilos number
 ---@field private _droppedKilos number
 ---@field private _crateType SupplyType
@@ -124,6 +124,10 @@ end
 
 function BuildableMission:MarkMissionAreaToGroup(groupID)
 
+    if self._markIDsPerGroup[groupID] then
+        Spearhead.DcsUtil.RemoveMark(self._markIDsPerGroup[groupID])
+    end
+
     local text = "[" .. self.code .. "] " .. self.name
     local location = { x= self.location.x, y=land.getHeight(self.location), z=self.location.y }
     local markID = Spearhead.DcsUtil.AddMarkToGroup(groupID, text, location)
@@ -188,12 +192,36 @@ function BuildableMission:SpawnActive()
     self._state = "ACTIVE"
 
     self._missionCommandsHelper:AddMissionToCommands(self)
+    self._supplyUnitsTracker:AddOnSupplyUnitSpawnedListener(self)
 
+    local units = self._supplyUnitsTracker:GetUnits()
+    if units then
+        for _, unit in pairs(units) do
+            if unit and unit:isExist() then
+                local group = unit:getGroup()
+                if group then
+                    self:MarkMissionAreaToGroup(group:getID())
+                end
+            end
+        end
+    end
 end
 
 function BuildableMission:SpawnForwardUnits()
 
 end
+
+---@param unit Unit
+function BuildableMission:SupplyUnitSpawned(unit)
+
+    if self._state ~= "ACTIVE" then return end
+
+    local group = unit:getGroup()
+    if group == nil then return end
+
+    self:MarkMissionAreaToGroup(unit:getGroup():getID())
+end
+
 
 function BuildableMission:CheckCratesInZone()
 
@@ -225,6 +253,15 @@ function BuildableMission:CheckCratesInZone()
         Spearhead.DcsUtil.RemoveMark(self._dropOffZoneId)
         self:NotifyMissionComplete()
         self._state = "COMPLETED"
+    end
+    
+    if self._state == "COMPLETED" then
+        for groupID, markID in pairs(self._markIDsPerGroup) do
+            if markID then
+                Spearhead.DcsUtil.RemoveMark(markID)
+                self._markIDsPerGroup[groupID] = nil
+            end
+        end
     end
 
 end
