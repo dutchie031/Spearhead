@@ -314,7 +314,7 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
     end
 
     if self._state == "COMPLETED" and self._lastContactMarkerID then
-        Spearhead.DcsUtil.RemoveMarker(self._lastContactMarkerID)
+        Spearhead.DcsUtil.RemoveMark(self._lastContactMarkerID)
     end
 
     if self._state == "COMPLETED" and self._battleManager then

@@ -503,19 +503,23 @@ end
 ---@return number strike
 ---@return number dead
 ---@return number bai
+---@return number cas
 function Stage:GetStageStats()
 
     local strike = 0
     local dead = 0
     local bai = 0
+    local cas = 0
 
     for _, mission in pairs(self._db.missions) do
         if mission.missionType == "STRIKE" then
             strike = strike + 1
-        elseif mission.missionType == "DEAD" then
+        elseif mission.missionType == "DEAD" or mission.missionType == "SAM" then
             dead = dead + 1
         elseif mission.missionType == "BAI" then
             bai = bai + 1
+        elseif mission.missionType == "CAS" then
+            cas = cas + 1
         end
     end
 
@@ -523,7 +527,7 @@ function Stage:GetStageStats()
         dead = dead + 1
     end
 
-    return strike, dead, bai
+    return strike, dead, bai, cas
 
 end
 

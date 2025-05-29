@@ -245,14 +245,7 @@ function MissionCommandsHelper:updateCommandsForGroup(groupID)
 
     self:ResetFolders(groupID)
 
-    for code, enabled in pairs(self.enabledByCode) do
-        if enabled == true then
-            local mission = self.missionsByCode[code]
-            if mission then
-                self:addMissionCommands(groupID, mission)
-            end
-        end
-    end
+    self:AddAllMissionCommandsToGroup(groupID)
 
     self:AddSupplyHubCommandsIfApplicable(groupID)
     self:AddCargoCommands(groupID)
@@ -283,18 +276,60 @@ function MissionCommandsHelper:PinMission(mission, groupID)
     self:updateCommandsForGroup(groupID)
 end
 
+function MissionCommandsHelper:AddAllMissionCommandsToGroup(groupID)
+
+    local perFolder = 9
+
+    do --- primary missions
+        local count = 0
+        local path = { [1] = folderNames.primary }
+        for code, enabled in pairs(self.enabledByCode) do
+            if enabled == true then
+                local mission = self.missionsByCode[code]
+                if mission and mission.priority == "primary" then
+                    count = count + 1
+                    if count <= perFolder then 
+                        local copied = Spearhead.Util.copyTable(path)
+                        self:addMissionCommands(groupID, copied, mission)
+                    else
+                        local name = "Next Menu ..."
+                        missionCommands.addSubMenuForGroup(groupID, name, path)
+                        path[#path+1] = name
+                        count = 0
+                    end
+                end
+            end
+        end
+    end
+
+    do --- secondary missions
+        local count = 0
+        local path = { [1] = folderNames.secondary }
+        for code, enabled in pairs(self.enabledByCode) do
+            if enabled == true then
+                local mission = self.missionsByCode[code]
+                if mission and mission.priority == "secondary" then
+                    count = count + 1
+                    if count <= perFolder then
+                        local copied = Spearhead.Util.copyTable(path)
+                        self:addMissionCommands(groupID, copied, mission)
+                    else
+                        local name = "Next Menu ..."
+                        missionCommands.addSubMenuForGroup(groupID, name, path)
+                        path[#path+1] = "more missions ..."
+                    end
+                end
+            end
+        end
+    end
+end
+
 ---comment
 ---@private
 ---@param groupId integer
+---@param path Array<string>
 ---@param mission Mission
-function MissionCommandsHelper:addMissionCommands(groupId, mission)
-    local path = nil
-
-    if mission.priority == "primary" then
-        path = { [1] = folderNames.primary }
-    elseif mission.priority == "secondary" then
-        path = { [1] = folderNames.secondary }
-    end
+function MissionCommandsHelper:addMissionCommands(groupId, path, mission)
 
     if path then
         local missionFolderName = "[" .. mission.code .. "]" .. mission.name

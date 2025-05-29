@@ -34,6 +34,23 @@ do -- INIT UTIL
         return count
     end
 
+    ---@param orig table
+    ---@return table copy
+    function UTIL.copyTable(orig)
+        local orig_type = type(orig)
+        local copy
+        if orig_type == 'table' then
+            copy = {}
+            for orig_key, orig_value in next, orig, nil do
+                copy[UTIL.copyTable(orig_key)] = UTIL.copyTable(orig_value)
+            end
+            setmetatable(copy, UTIL.copyTable(getmetatable(orig)))
+        else -- number, string, boolean, etc
+            copy = orig
+        end
+        return copy
+    end
+
     ---Gets a random from the list
     ---@param list Array
     ---@return any @random element from the list
@@ -900,6 +917,17 @@ do     -- INIT DCS_UTIL
         return nil;
     end
 
+    ---@type table<string, CoordType>
+    local config =
+    {
+        ["ah-64d_blk_ii"] = "MGRS",
+        ["fa-18c_hornet"] = "DMS",
+        ["av8bna"] = "DMS",
+        ["f-14b"] = "DMS",
+        ["f-14a-135-gr"] = "DMS"
+    }
+
+
     ---@param location Vec2
     ---@param unitType string
     function DCS_UTIL.convertVec2ToUnitUsableType(location, unitType)
@@ -907,17 +935,19 @@ do     -- INIT DCS_UTIL
         local height = land.getHeight(location)
         local vec3 = { x = location.x, y = height, z = location.y }
 
-        if unitType == "AH-64D_BLK_II" then
-            return DCS_UTIL.convertToDisplayCoord(vec3, "MGRS")
-        end
+        local unitType = string.lower(unitType or "")
+        local conversionType = config[unitType]
 
-        return DCS_UTIL.convertToDisplayCoord(vec3, "DDM")
+        if not conversionType then conversionType = "DDM" end
+        return DCS_UTIL.convertToDisplayCoord(vec3, conversionType)
     end
 
     ---@alias CoordType
-    ---| "MGRS"
-    ---| "DDM"
+    ---| "MGRS" MGRS
+    ---| "DMS" DECIMAL SECONDS
+    ---| "DDM" DECIMAL MINUTES
 
+    ---@private
     ---@param location Vec3
     ---@param coordType CoordType
     function DCS_UTIL.convertToDisplayCoord(location, coordType)
@@ -942,10 +972,27 @@ do     -- INIT DCS_UTIL
         local lat_hemisphere = lattitude >= 0 and "N" or "S"
         local lon_hemisphere = longitude >= 0 and "E" or "W"
 
-        return string.format("%d° %.3f' %s %d° %.3f' %s %d ft",
-            math.abs(lat_deg), lat_min, lat_hemisphere,
-            math.abs(lon_deg), lon_min, lon_hemisphere,
-            altitude * 3,28084)
+        if coordType == "DDM" then
+            return string.format("%s%02d°%06.3f' %s%03d°%06.3f' %dft",
+                lat_hemisphere, math.abs(lat_deg), lat_min,
+                lon_hemisphere, math.abs(lon_deg), lon_min,
+                altitude * 3,28084)
+        end
+
+        if coordType == "DMS" then
+
+            local lat_min_display = math.floor(lat_min)
+            local lon_min_display = math.floor(lon_min)
+
+            local lat_sec_display = math.floor((lat_min - lat_min_display) * 60)
+            local lon_sec_display = math.floor((lon_min - lon_min_display) * 60)
+
+            return string.format("%s%02d°%02d'%02d %s%03d°%02d'%02d %dft",
+                lat_hemisphere, math.abs(lat_deg), lat_min_display, lat_sec_display,
+                lon_hemisphere, math.abs(lon_deg), lon_min_display, lon_sec_display,
+                altitude * 3,28084)
+        end
+        
     end
 
     ---@param group Group

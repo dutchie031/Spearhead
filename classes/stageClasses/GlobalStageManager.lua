@@ -217,15 +217,17 @@ GlobalStageManager.printFullOverview = function ()
         local totalbai = 0
         local totaldead = 0
         local totalMissions = 0
+        local totalCas = 0
 
         for _, stage in pairs(stages) do
             
-            local strike, dead, bai = stage:GetStageStats()
+            local strike, dead, bai, cas = stage:GetStageStats()
 
             totalStrike = totalStrike + strike
             totalbai = totalbai + bai
             totaldead = totaldead + dead
-            totalMissions = totalMissions + strike + dead + bai
+            totalCas = totalCas + cas
+            totalMissions = totalMissions + strike + dead + bai + cas
         end
 
         local index = tonumber(stageIndex)
@@ -233,7 +235,7 @@ GlobalStageManager.printFullOverview = function ()
             if index > max then
                 max = index
             end
-            lines[index] ="Stage# " .. tostring(stageIndex).. " | " .. totalStrike .. " strikes |  " .. totaldead .. " dead | " .. totalbai .. " BAI | Total:" .. totalMissions
+            lines[index] ="Stage# " .. tostring(stageIndex).. " | " .. totalStrike .. " strikes |  " .. totaldead .. " dead | " .. totalbai .. " BAI | " .. totalCas .. " CAS | Total:" .. totalMissions
         else
             logger:warn("Stage index is not a number: " .. stageIndex)
         end
