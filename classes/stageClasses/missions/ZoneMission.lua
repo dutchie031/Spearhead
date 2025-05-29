@@ -6,6 +6,7 @@
 ---@field private _completeAtIndex number
 ---@field private _parentStage Stage
 ---@field private _battleManager? BattleManager
+---@field private _lastContactMarkerID number;
 local ZoneMission = {}
 
 --- @class MissionGroups
@@ -312,6 +313,10 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
         end
     end
 
+    if self._state == "COMPLETED" and self._lastContactMarkerID then
+        Spearhead.DcsUtil.RemoveMarker(self._lastContactMarkerID)
+    end
+
     if self._state == "COMPLETED" and self._battleManager then
         self._battleManager:Stop()
     end
@@ -382,8 +387,8 @@ function ZoneMission:StartCheckingContinuous()
     timer.scheduleFunction(Check, self, timer.getTime() + 30)
 end
 
----@protected
-function ZoneMission:ToStateString()
+---@return number
+function ZoneMission:PercentageComplete()
     if self._missionGroups.hasTargets == true then
         local dead = 0
         local total = 0
@@ -399,8 +404,7 @@ function ZoneMission:ToStateString()
         end
 
         if total > 0 then
-            local completionPercentage = math.floor((dead / total) * 100)
-            return "Targets Destroyed: " .. completionPercentage .. "%"
+            return math.floor((dead / total) * 100)
         end
     else
         local dead = 0
@@ -417,10 +421,15 @@ function ZoneMission:ToStateString()
         end
 
         if total > 0 then
-            local completionPercentage = math.floor((dead / total) * 100)
-            return "Units Destroyed: " .. completionPercentage .. "%"
+            return math.floor((dead / total) * 100)
         end
     end
+    return 0
+end
+
+---@protected
+function ZoneMission:ToStateString()
+    return "Units Destroyed: " .. self:PercentageComplete() .. "%"
 end
 
 function ZoneMission:OnUnitLost(object)
@@ -428,6 +437,10 @@ function ZoneMission:OnUnitLost(object)
         OnUnit lost event
     ]] --
     self._logger:debug("Getting on unit lost event")
+
+    if SpearheadConfig and SpearheadConfig.StageConfig and SpearheadConfig.StageConfig.markLastContact == true then
+        self:MarkLastContact(object)
+    end
 
     local category = Object.getCategory(object)
     if category == Object.Category.UNIT then
@@ -451,6 +464,29 @@ function ZoneMission:OnUnitLost(object)
         end
     end
     self:UpdateState(false, true)
+end
+
+---@private
+---@param unit Object
+function ZoneMission:MarkLastContact(unit)
+
+    if not unit then 
+        self._logger:error("MarkLastContact called with nil unit")
+        return
+    end
+
+    local point = unit:getPoint() 
+    if not point then
+        self._logger:error("MarkLastContact called with unit without point")
+        return
+    end
+
+
+    if self._lastContactMarkerID then
+        Spearhead.DcsUtil.RemoveMark(self._lastContactMarkerID)
+    end
+
+    self._lastContactMarkerID = Spearhead.DcsUtil.AddMarkToAll("Last Contact: " .. self.name .. " [" .. self.code .. "]", point)
 end
 
 if not Spearhead.classes then Spearhead.classes = {} end

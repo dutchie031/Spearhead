@@ -70,7 +70,9 @@ function Mission:SpawnActive() end
 function Mission:UpdateState(checkHealth, messageIfDone) end
 function Mission:StartCheckingContinuous() end
 
-
+function Mission:PercentageComplete()
+    return 0
+end
 ---comment
 ---@param groupId number
 function Mission:ShowBriefing(groupId)

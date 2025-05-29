@@ -41,6 +41,8 @@ SpearheadConfig = {
 
         --Will draw the active and the next stage 
         drawStages = true, -- default true
+        drawPreActivated = true,
+        markLastContact = true,
 
         --AutoStages will continue to the next stage automatically on completion of the missions within the stage. 
         -- If you want to make it so the next stage triggers only when you want to disable it here and manually implement the actions needed.

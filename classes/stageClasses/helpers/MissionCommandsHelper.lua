@@ -188,7 +188,7 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
                 end
             end
 
-            return string.format("[%s]\t%s \t%s \t%s nM\n", mission.code,  mission.missionTypeDisplay, mission.name, distanceText)
+            return string.format("[%s]\t%s \t%s \t%s %% \t%s nM\n", mission.code,  mission.missionTypeDisplay, mission.name, mission:PercentageComplete(), distanceText)
         end
 
         ---Primary missions
