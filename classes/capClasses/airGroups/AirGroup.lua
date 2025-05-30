@@ -69,6 +69,7 @@ function AirGroup:Spawn()
         self._state = "ReadOnTheRamp"
     else 
         self._state = "Rearming"
+        timer.scheduleFunction(RearmDelayed, self, timer.getTime() + self._config)
     end
     
     ---@param selfA AirGroup
