@@ -129,7 +129,7 @@ function CapBase:CheckAndScheduleCAP()
         for _, backupGroup in pairs(self.BackupGroups) do
             if backupGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.INTRANSIT or backupGroup.state == Spearhead.classes.capClasses.CapGroup.GroupState.ONSTATION then
                 local supposedTargetStage = backupGroup:GetTargetZone(self.activeStage)
-                if supposedTargetStage then
+                if supposedTargetStage then 
                     if supposedTargetStage ~= backupGroup.assignedStageNumber then
                         backupGroup:SendToStage(supposedTargetStage)
                     end
