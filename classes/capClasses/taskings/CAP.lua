@@ -1,3 +1,4 @@
+---@class CAPTasking : Tasking
 local CAP = {}
 
 ---@param attackHelos boolean
@@ -14,11 +15,11 @@ local function GetCAPTargetTypes(attackHelos)
     return targetTypes
 end
 
-function CAP.createMission()
+function CAP.getAsMission()
     
 end
 
-function CAP.CreateCAPTask(groupName, position, altitude, speed, duration, engageHelos, deviationdistance, pattern)
+function CAP.getAsTasking(groupName, position, altitude, speed, duration, engageHelos, deviationdistance, pattern)
     local durationBefore10 = duration - 600
     if durationBefore10 < 0 then durationBefore10 = 0 end
     local durationAfter10 = 600
@@ -138,3 +139,10 @@ function CAP.CreateCAPTask(groupName, position, altitude, speed, duration, engag
         }
     }
 end
+
+
+if not Spearhead then Spearhead = {} end
+if not Spearhead.classes then Spearhead.classes = {} end
+if not Spearhead.classes.capClasses then Spearhead.classes.capClasses = {} end
+if not Spearhead.classes.capClasses.taskings then Spearhead.classes.capClasses.taskings = {} end
+Spearhead.classes.capClasses.taskings.CAP = CAP

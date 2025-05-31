@@ -25,13 +25,26 @@ SpearheadConfig = {
         -- unit: feet
         maxAlt = 28000, -- default 28000
 
+        -- DELAYS.
+        -- Delays work as follow.
+        -- When an aircraft lands alive and well it will be rearmed and ready to go.
+        -- When part of the flight died it will be repaired and then rearmed. (both delays)
+        -- When the entire group dies it will first wait for the deathDelay, then it will be repaired and rearmed.
+        -- while rearming: Spawned on the ramp.
+        -- while repairing: Spawned on the ramp.
+        -- while deathDelay no unit is spawned.
+
         --Delay for aircraft from touchdown to off the chocks.
         -- unit: seconds
         rearmDelay = 600, -- default 600
 
-        --Delay for aircraft from death to takeoff.
-        --When the seconds remaining is the same at the rearmDelay it will be spawned on the ramp and follow the rearm logic.
-        -- !! Can not be lower than rearmDelay
+        -- Delay for aircraft that has died to be repaired before rearming starts.
+        -- unit: seconds
+        repairDelay = 600, -- default 600
+
+        --Delay for aircraft before the repairing and rearming cycles begin.
+        -- applied when the whole group dies.
+        -- (see this as an additional bonus delay for destroying an entire group)
         -- unit: seconds
         deathDelay = 1800, -- default 1800
     },
