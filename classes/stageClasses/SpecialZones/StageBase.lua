@@ -159,14 +159,17 @@ function StageBase:SpawnBlueUnits()
 end
 
 function StageBase:ActivateRedStage()
-    if self._initialSide == 2 and self._airbase then
-        self._airbase:setCoalition(1)
+    self._logger:debug("Activate red stage for airbase: " .. self._airbase:getName())
+    if self._airbase and (self._initialSide == 2 or self._initialSide == 1) then
+        self._airbase:setCoalition(coalition.side.RED)
         self._airbase:autoCapture(false)
     end
     self:SpawnRedUnits()
 end
 
 function StageBase:ActivateBlueStage()
+    self._logger:debug("Activate blue stage for airbase: " .. self._airbase:getName())
+
     self:CleanRedUnits()
 
     if self._buildableMission and self._buildableMission:getState() ~= "COMPLETED" then
@@ -178,7 +181,8 @@ end
 
 function StageBase:FinaliseBlueStage()
     if self._initialSide == 2 and self._airbase then
-        self._airbase:setCoalition(2)
+        self._airbase:setCoalition(coalition.side.BLUE)
+        self._airbase:autoCapture(false)
     end
 
     self:SpawnBlueUnits()

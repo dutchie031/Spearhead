@@ -29,6 +29,7 @@ function SupplyUnitsTracker.getOrCreate(logLevel)
         singleton._supplyUnitsByName = {}
         singleton._droppedCrates = {}
         singleton._registeredHubs = {}
+        singleton._supplyUnitSpawnedListener = {}
 
         singleton._commandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(singleton._logger.LogLevel)
         

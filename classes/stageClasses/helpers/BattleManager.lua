@@ -9,6 +9,8 @@
 local BattleManager = {}
 BattleManager.__index = BattleManager
 
+local debugDrawing = false
+
 ---@param redGroups Array<SpearheadGroup>
 ---@param blueGroups Array<SpearheadGroup>
 ---@param name string
@@ -131,11 +133,9 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
                             }
                         }
                         
-                        if SpearheadConfig and SpearheadConfig.debugEnabled == true then
+                        if debugDrawing == true then
                             self:DrawDebugLine(point, unit)
                         end
-
-                        self._logger:debug("Red unit " .. unit:getName() .. " will shoot " .. qty .. " rounds at point: " .. tostring(point))
 
                         local controller = unit:getController()
                         if controller then
@@ -241,7 +241,7 @@ function BattleManager:GetRandomPoint(origin, groupHulls)
     if not hull then return nil end
     local shootPoints = Spearhead.Util.GetTangentHullPointsFromOrigin(hull, origin)
 
-    if SpearheadConfig and SpearheadConfig.debugEnabled == true then
+    if debugDrawing == true then
         self:DrawDebugZone({ hull })
     end
 

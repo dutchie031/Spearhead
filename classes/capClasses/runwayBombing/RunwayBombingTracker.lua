@@ -21,16 +21,12 @@ end
 ---@param weapon Weapon
 function RunwayBombingTracker:OnWeaponFired(unit, weapon, target)
 
-    if weapon == nil then 
+    if weapon == nil then
         return
     end
 
-    self._logger:debug("Tracking weapon for runway impact onWeaponFired")
-
     local desc = weapon:getDesc()
-
     local isTrackable = desc.category == Weapon.Category.BOMB or (desc.category == Weapon.Category.MISSILE and desc.missileCategory == Weapon.MissileCategory.CRUISE)
-
     if isTrackable == true then
         
         ---@type WeaponTrackingArgs

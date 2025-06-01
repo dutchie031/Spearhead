@@ -145,8 +145,8 @@
 
                 <h3 id="cap-routes">CAP Routes</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">CAPROUTE_[Name]</span></span> <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">CAPROUTE_ALPHA</span></span>
+                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">CAPROUTE_[routeID]_[Name]</span></span> <br />
+                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">CAPROUTE_103_ALPHA</span></span>
                 </p>
                 <p>
                     CAP routes define the patrol paths for CAP units. They are tied to specific stages and zones.
@@ -249,18 +249,16 @@
 
                 <h3 id="cap-group-config">CAP Group Config</h3>
                 <pre>
-                <span class="lua-comment">1 at x:</span>               <span class="lua-variable">[&lt;activeStage&gt;]&lt;capStage&gt;</span>
-                <span class="lua-comment">n and n  at x:</span>        <span class="lua-variable">[&lt;activeStage&gt;,&lt;activeStage&gt;]&lt;capStage&gt;</span>
-                <span class="lua-comment">n till n at x:</span>        <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;]&lt;capStage&gt;</span>
-                <span class="lua-comment">n till n and n at x:</span>  <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;,&lt;activeStage&gt;]&lt;capStage&gt;</span>
-                <span class="lua-comment">n till n at Active:</span>   <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;]A</span>
+                <span class="lua-comment">1 at x:</span>               <span class="lua-variable">[&lt;activeStage&gt;]&lt;CapRouteID&gt;</span>
+                <span class="lua-comment">n and n  at x:</span>        <span class="lua-variable">[&lt;activeStage&gt;,&lt;activeStage&gt;]&lt;CapRouteID&gt;</span>
+                <span class="lua-comment">n till n at x:</span>        <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;]&lt;CapRouteID&gt;</span>
+                <span class="lua-comment">n till n and n at x:</span>  <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;,&lt;activeStage&gt;]&lt;CapRouteID&gt;</span>
 
                 <span class="lua-comment">Divider: |</span>
 
                 <span class="lua-comment">Examples:</span>
                 <span class="lua-variable">CAP_A[1-4,6]7|[5,7]8_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at stage 7 when stages 1 through 4 and 6 are active and will fly CAP at 8 when 5 and 7 are active.</span>
-                <span class="lua-variable">CAP_A[2-5]5|[6]6_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at stage 5 when stages 2 through 5 are active and will fly CAP at 6 when 6 is active.</span>
-                <span class="lua-variable">CAP_A[1-5]A|[6]7_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at the ACTIVE stage if stages 1-5 are active. Then when 6 is active, it will fly in 7.</span>
+                <span class="lua-variable">CAP_A[2-5]5|[6]6_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at stage 5 when stages 2 through 5 are active and will fly CAP at CapRoute 6 when 6 is active.</span>
                 </pre>
 
                 <h3 id="active-and-backup-cap">Active and Backup CAP</h3>
