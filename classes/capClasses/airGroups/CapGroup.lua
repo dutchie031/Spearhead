@@ -121,7 +121,7 @@ function CapGroup:InitWithName(groupName)
                                 end
                             end
                         else
-                            if targetZone == "A" then
+                            if Spearhead.Util.strContains(targetZone, "A") == true then
                                 self._targetZoneIdPerStage[tostring(dashSeperated[1])] = string.gsub(targetZone, "A", tostring(dashSeperated[1]))
                             else
                                 self._targetZoneIdPerStage[tostring(dashSeperated[1])] = targetZone
