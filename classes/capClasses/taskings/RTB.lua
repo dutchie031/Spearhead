@@ -99,7 +99,7 @@ end
 local function calcInitialPoint(airbase)
     local runwayCourseRad = getRunwayIntoWindCourseRad(airbase)
     local heading = math.deg(runwayCourseRad)
-    local flipped = heading + 180 % 360
+    local flipped = (heading + 180) % 360
     local basePoint = airbase:getPoint()
     local basePointVec2 = {x = basePoint.x, y = basePoint.z}
     local point = Spearhead.Util.vectorMove(basePointVec2, flipped, 22000)
