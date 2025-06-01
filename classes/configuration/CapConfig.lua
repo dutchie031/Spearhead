@@ -34,7 +34,7 @@ function CapConfig.new()
     self._minDurationOnStation = 1200
     self._maxDurationOnStation = 2700
 
-    self._maxDeviationRange = 20 * 1852 -- 20 nautical miles in meters
+    self._maxDeviationRange = 35 * 1852 -- in meters
     self._rearmDelay = tonumber(SpearheadConfig.CapConfig.rearmDelay) or 600
     self._repairDelay = tonumber(SpearheadConfig.CapConfig.repairDelay) or 600
     self._deathDelay = tonumber(SpearheadConfig.CapConfig.deathDelay) or 1800

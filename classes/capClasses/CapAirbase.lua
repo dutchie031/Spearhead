@@ -85,7 +85,7 @@ end
 function CapBase:SpawnIfApplicable()
     self.logger:debug("Check spawns for airbase " .. self.airbaseName)
     for groupName, capGroup in pairs(self.capGroupsByName) do
-        local targetStage = capGroup:GetZoneIDWhenStageID(self.activeStage)
+        local targetStage = capGroup:GetZoneIDWhenStageID(tostring(self.activeStage))
 
         if targetStage ~= nil and capGroup:GetState() == "UnSpawned" then
             capGroup:Spawn()
@@ -104,41 +104,43 @@ function CapBase:CheckAndScheduleCAP()
         return nil
     end
 
+    local activeStageID = tostring(self.activeStage)
+
     --Count back up groups that are active or reassign to the new zone if that's needed
     for _, group in pairs(self.capGroupsByName) do
         if group:IsBackup() == true then
             local state = group:GetState()
             if state == "InTransit" or state == "OnStation" or state == "RtbInTen" then
                 
-                local supposedTargetZoneID = group:GetZoneIDWhenStageID(self.activeStage)
+                local supposedTargetZoneID = group:GetZoneIDWhenStageID(activeStageID)
                 local currentTargetZone = group:GetCurrentTargetZoneID()
 
                 if supposedTargetZoneID == nil then
-                    self.logger:debug("CapGroup " .. group:GetName() .. " has no target zone for stage " .. self.activeStage)
+                    self.logger:debug("CapGroup " .. group:GetName() .. " has no target zone for stage " .. activeStageID)
                     group:SendRTB(airbase)
-                end
-
-                if supposedTargetZoneID and supposedTargetZoneID ~= currentTargetZone then
-                    if state == "RtbInTen" then
-                        self.logger:debug("CapGroup " .. group:GetName() .. " is RTB in 10 minutes, sending to RTB already")
-                        group:SendRTB(airbase)
-                    else
-                        local triggerZone = self.database:GetCapZoneForZoneID(tostring(supposedTargetZoneID))
-                        if triggerZone then
-                            group:SendToZone(triggerZone, supposedTargetZoneID, airbase)
-                        else
-                            self.logger:debug("CapGroup " .. group:GetName() .. " has no trigger zone for stage " .. self.activeStage)
+                else
+                    if supposedTargetZoneID and supposedTargetZoneID ~= currentTargetZone then
+                        if state == "RtbInTen" then
+                            self.logger:debug("CapGroup " .. group:GetName() .. " is RTB in 10 minutes, sending to RTB already")
                             group:SendRTB(airbase)
+                        else
+                            local triggerZone = self.database:GetCapZoneForZoneID(supposedTargetZoneID)
+                            if triggerZone then
+                                group:SendToZone(triggerZone, supposedTargetZoneID, airbase)
+                            else
+                                self.logger:debug("CapGroup " .. group:GetName() .. " has no trigger zone for stage " .. activeStageID)
+                                group:SendRTB(airbase)
+                            end
                         end
                     end
-                end
-                
-                if countPerStage[tostring(supposedTargetZoneID)] == nil then
-                    countPerStage[tostring(supposedTargetZoneID)] = 0
-                end
+                    
+                    if countPerStage[supposedTargetZoneID] == nil then
+                        countPerStage[supposedTargetZoneID] = 0
+                    end
 
-                if supposedTargetZoneID == group:GetCurrentTargetZoneID() then
-                    countPerStage[tostring(supposedTargetZoneID)] = countPerStage[tostring(supposedTargetZoneID)] + 1
+                    if supposedTargetZoneID == group:GetCurrentTargetZoneID() and (state == "OnStation" or state =="InTransit") then
+                        countPerStage[supposedTargetZoneID] = countPerStage[supposedTargetZoneID] + 1
+                    end
                 end
             end
         end
@@ -147,49 +149,42 @@ function CapBase:CheckAndScheduleCAP()
     --Schedule or reassign primary units if applicable
     for _, group in pairs(self.capGroupsByName) do
         if group:IsBackup() == false then
-            self.logger:debug("CapGroup " .. group:GetName() .. " is a primary group, checking state")
             local state = group:GetState()
-            local supposedZone = group:GetZoneIDWhenStageID(self.activeStage)
+            local supposedZone = group:GetZoneIDWhenStageID(activeStageID)
             if supposedZone then
-                if requiredPerStage[tostring(supposedZone)] == nil then
-                    requiredPerStage[tostring(supposedZone)] = 0
+                if requiredPerStage[supposedZone] == nil then
+                    requiredPerStage[supposedZone] = 0
                 end
 
-                if countPerStage[tostring(supposedZone)] == nil then
-                    countPerStage[tostring(supposedZone)] = 0
+                if countPerStage[supposedZone] == nil then
+                    countPerStage[supposedZone] = 0
                 end
 
-                requiredPerStage[tostring(supposedZone)] = requiredPerStage[tostring(supposedZone)] + 1
+                requiredPerStage[supposedZone] = requiredPerStage[supposedZone] + 1
 
                 if state == "ReadyOnTheRamp" then
-                    self.logger:debug("CapGroup " .. group:GetName() .. " is ready on the ramp, checking if it needs to be sent to zone")
-                    if countPerStage[tostring(supposedZone)] < requiredPerStage[tostring(supposedZone)] then
-                        
-                        self.logger:debug("CapGroup " .. group:GetName() .. " is ready on the ramp, sending to zone")
-
-                        local triggerZone = self.database:GetCapZoneForZoneID(tostring(supposedZone))
+                    if countPerStage[supposedZone] < requiredPerStage[supposedZone] then
+                        local triggerZone = self.database:GetCapZoneForZoneID(supposedZone)
                         if triggerZone then
                             group:SendToZone(triggerZone, supposedZone, airbase)
                         end
 
-                        countPerStage[tostring(supposedZone)] = countPerStage[tostring(supposedZone)] + 1
+                        countPerStage[supposedZone] = countPerStage[supposedZone] + 1
                     end
                 elseif state == "InTransit" or state == "OnStation" then
                     
                     if supposedZone ~= group:GetCurrentTargetZoneID() then
-                        if countPerStage[tostring(supposedZone)] < requiredPerStage[tostring(supposedZone)] then
-                            local triggerZone = self.database:GetCapZoneForZoneID(tostring(supposedZone))
+                        if countPerStage[supposedZone] < requiredPerStage[supposedZone] then
+                            local triggerZone = self.database:GetCapZoneForZoneID(supposedZone)
                             if triggerZone then
                                 group:SendToZone(triggerZone, supposedZone, airbase)
                             else
-                                self.logger:debug("CapGroup " .. group:GetName() .. " has no trigger zone for stage " .. self.activeStage)
                                 group:SendRTB(airbase)
                             end
                         end
                     end
-                    countPerStage[tostring(supposedZone)] = countPerStage[tostring(supposedZone)] + 1
+                    countPerStage[supposedZone] = countPerStage[supposedZone] + 1
                 elseif state == "RtbInTen" and supposedZone ~= group:GetCurrentTargetZoneID() then
-                    self.logger:debug("CapGroup " .. group:GetName() .. " is RTB in 10 minutes, sending to RTB already")
                     group:SendRTB(airbase)
                 end
             else
@@ -197,7 +192,6 @@ function CapBase:CheckAndScheduleCAP()
                     -- If the group is in transit or on station but has no target zone, send it back to base
                     group:SendRTB(airbase)
                 end
-                 self.logger:debug("CapGroup " .. group:GetName() .. " has no target zone for stage " .. self.activeStage)
             end
         end
     end
@@ -205,19 +199,19 @@ function CapBase:CheckAndScheduleCAP()
     for _, group in pairs(self.capGroupsByName) do
         if group:IsBackup() == true then
             if group:GetState() == "ReadyOnTheRamp" then
-                local supposedZone = group:GetZoneIDWhenStageID(self.activeStage)
+                local supposedZone = group:GetZoneIDWhenStageID(activeStageID)
                 if supposedZone then
-                    if countPerStage[tostring(supposedZone)] == nil then
-                        countPerStage[tostring(supposedZone)] = 0
+                    if countPerStage[supposedZone] == nil then
+                        countPerStage[supposedZone] = 0
                     end
 
-                    if countPerStage[tostring(supposedZone)] < requiredPerStage[tostring(supposedZone)] then
-                        local triggerZone = self.database:GetCapZoneForZoneID(tostring(supposedZone))
+                    if countPerStage[supposedZone] < requiredPerStage[supposedZone] then
+                        local triggerZone = self.database:GetCapZoneForZoneID(supposedZone)
                         if triggerZone then
                             group:SendToZone(triggerZone, supposedZone, airbase)
                         end
                         
-                        countPerStage[tostring(supposedZone)] = countPerStage[tostring(supposedZone)] + 1
+                        countPerStage[supposedZone] = countPerStage[supposedZone] + 1
                     end
                 end
             end
@@ -240,7 +234,7 @@ end
 ---@return boolean
 function CapBase:IsBaseActiveWhenStageIsActive(stageNumber)
     for _, group in pairs(self.capGroupsByName) do
-        local target = group:GetZoneIDWhenStageID(stageNumber)
+        local target = group:GetZoneIDWhenStageID(tostring(stageNumber))
         if group:IsBackup() == false and target ~= nil then
             return true
         end

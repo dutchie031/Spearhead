@@ -16,7 +16,8 @@ local function GetCAPTargetTypes(attackHelos)
 end
 
 ---@class CapTaskingOptions
----@field point Vec2
+---@field furthest Vec2
+---@field closest Vec2
 ---@field legLength number
 ---@field width number
 ---@field hotLegDir number
@@ -55,11 +56,13 @@ local function GetCAPPointFromTriggerZone(airBase, capZone)
     local pointA = capZone.verts[furthestA]
     local pointB = capZone.verts[furthestB]
     local furthest = pointA
+    local closest = pointB
 
     local heading = Spearhead.Util.vectorHeadingFromTo(pointA, pointB)
 
     if Spearhead.Util.VectorDistance2d(baseVec2, pointB) > Spearhead.Util.VectorDistance2d(baseVec2, pointA) then
         furthest = pointB
+        closest = pointA
         heading = Spearhead.Util.vectorHeadingFromTo(pointB, pointA)
     end
 
@@ -70,9 +73,11 @@ local function GetCAPPointFromTriggerZone(airBase, capZone)
 
     return {
         width = 10000,
-        point = furthest,
+        furthest = furthest,
+        closest = closest,
         legLength = distance,
-        hotLegDir = math.rad(heading)
+        hotLegDir = math.rad(heading),
+        orbitOriginPoint = closest
     }
 end
 
@@ -83,60 +88,37 @@ local GetOutboundTask = function(airbase, capZone, capConfig)
     local airbaseVec3 = airbase:getPoint()
     local airbaseVec2 = { x = airbaseVec3.x, y = airbaseVec3.z }
     local heading = Spearhead.Util.vectorHeadingFromTo(airbaseVec2, capZone.location)
-    local point = Spearhead.Util.vectorMove(airbaseVec2, heading, 18520 * 10)
-
+    local point = Spearhead.Util.vectorMove(airbaseVec2, heading, 18520)
 
     return {
-        ["alt"] = 2000,
-        ["action"] = "Turning Point",
-        ["alt_type"] = "BARO",
-        ["speed"] = 138.88888888889,
-        ["task"] = 
-        {
-            ["id"] = "ComboTask",
-            ["params"] = 
-            {
-                ["tasks"] = {},
-            }, -- end of ["params"]
-        }, -- end of ["task"]
-        ["type"] = "Turning Point",
-        ["ETA"] = 543.52051876058,
-        ["ETA_locked"] = false,
-        ["y"] = 494100,
-        ["x"] = -274394,
-        ["speed_locked"] = true,
-        ["formation_template"] = "",
+        alt = 2000,
+        action = "Fly Over Point",
+        type = "Turning Point",
+        alt_type = "BARO",
+        speed = capConfig:getMinSpeed(),
+        ETA = 0,
+        ETA_locked = false,
+        x = point.x,
+        y = point.y,
+        speed_locked = false,
+        formation_template = "",
+        task = {
+            id = "ComboTask",
+            params = {
+                tasks = {
+                    [1] = {
+                        id = 'EngageTargets',
+                        params = {
+                            maxDist = capConfig:getMaxDeviationRange() + 10 * 1852,
+                            maxDistEnabled = capConfig:getMaxDeviationRange() > 0,     -- required to check maxDist
+                            targetTypes = GetCAPTargetTypes(false),
+                            priority = 0
+                        }
+                    },
+                }
+            }
+        }
     }
-
-
-    -- return {
-    --     alt = 2000,
-    --     action = "Fly Over Point",
-    --     alt_type = "BARO",
-    --     speed = capConfig:getMinSpeed(),
-    --     ETA = 0,
-    --     ETA_locked = false,
-    --     x = point.x,
-    --     y = point.y,
-    --     speed_locked = false,
-    --     formation_template = "",
-    --     task = {
-    --         id = "ComboTask",
-    --         params = {
-    --             tasks = {
-    --                 -- [1] = {
-    --                 --     id = 'EngageTargets',
-    --                 --     params = {
-    --                 --         maxDist = capConfig:getMaxDeviationRange(),
-    --                 --         maxDistEnabled = capConfig:getMaxDeviationRange() >= 0,     -- required to check maxDist
-    --                 --         targetTypes = GetCAPTargetTypes(false),
-    --                 --         priority = 0
-    --                 --     }
-    --                 -- },
-    --             }
-    --         }
-    --     }
-    -- }
 end
 
 ---@param groupName string
@@ -145,13 +127,13 @@ end
 ---@param capConfig CapConfig
 function CAP.getAsMissionFromAirbase(groupName, airbase, capZone, capConfig)
     local points = {
-        [1] = GetOutboundTask(airbase, capZone, capConfig)
+        [1] = GetOutboundTask(airbase, capZone, capConfig),
+        [2] = GetOutboundTask(airbase, capZone, capConfig),
+        [3] = CAP.getAsTasking(groupName, airbase, capZone, capConfig),
+        [4] = Spearhead.classes.capClasses.taskings.RTB.getApproachPoint(airbase, capZone.location, capConfig),
+        [5] = Spearhead.classes.capClasses.taskings.RTB.getInitialPoint(airbase),
+        [6] = Spearhead.classes.capClasses.taskings.RTB.getLandingPoint(airbase)
     }
-
-    -- [2] = CAP.getAsTasking(groupName, airbase, capZone, capConfig),
-    -- [3] = Spearhead.classes.capClasses.taskings.RTB.getApproachPoint(airbase, capConfig),
-    -- [4] = Spearhead.classes.capClasses.taskings.RTB.getInitialPoint(airbase),
-    -- [5] = Spearhead.classes.capClasses.taskings.RTB.getLandingPoint(airbase)
 
     local mission = {
         id = 'Mission',
@@ -163,9 +145,6 @@ function CAP.getAsMissionFromAirbase(groupName, airbase, capZone, capConfig)
         }
     }
 
-    -- local result = Spearhead.Util.toString(mission)
-    -- env.info("CAP.getAsMissionFromAirbase: " .. result)
-
     return mission
 end
 
@@ -174,17 +153,19 @@ end
 ---@param capZone SpearheadTriggerZone
 ---@param capConfig CapConfig
 function CAP.getAsMission(groupName, airbase, capZone, capConfig)
+    local points = {
+        [1] = CAP.getAsTasking(groupName, airbase, capZone, capConfig),
+        [2] = Spearhead.classes.capClasses.taskings.RTB.getApproachPoint(airbase, capZone.location, capConfig),
+        [3] = Spearhead.classes.capClasses.taskings.RTB.getInitialPoint(airbase),
+        [4] = Spearhead.classes.capClasses.taskings.RTB.getLandingPoint(airbase)
+    }
+
     local mission = {
-        id = "Mission",
+        id = 'Mission',
         params = {
             airborne = true,
             route = {
-                points = {
-                    [1] = CAP.getAsTasking(groupName, airbase, capZone, capConfig),
-                    [2] = Spearhead.classes.capClasses.taskings.RTB.getApproachPoint(airbase, capConfig),
-                    [3] = Spearhead.classes.capClasses.taskings.RTB.getInitialPoint(airbase),
-                    [4] = Spearhead.classes.capClasses.taskings.RTB.getLandingPoint(airbase)
-                }
+                points = points
             }
         }
     }
@@ -219,8 +200,8 @@ function CAP.getAsTasking(groupName, airbase, capZone, capConfig)
         speed = speed,
         ETA = 0,
         ETA_locked = false,
-        x = capTaskingOptions.point.x,
-        y = capTaskingOptions.point.y,
+        x = capTaskingOptions.closest.x,
+        y = capTaskingOptions.closest.y,
         speed_locked = true,
         formation_template = "",
         task = {
@@ -263,6 +244,10 @@ function CAP.getAsTasking(groupName, airbase, capZone, capConfig)
                                     altitude = alt,
                                     pattern = "Anchored",
                                     speed = speed,
+                                    point = {
+                                        x = capTaskingOptions.closest.x,
+                                        y = capTaskingOptions.closest.y
+                                    },
                                     speedEdited = true,
                                     clockWise = false,
                                     hotLegDir = capTaskingOptions.hotLegDir,
@@ -272,7 +257,7 @@ function CAP.getAsTasking(groupName, airbase, capZone, capConfig)
                             },
                             stopCondition = {
                                 duration = durationBefore10,
-                                condition = "return Spearhead.DcsUtil.IsBingoFuel(\"" .. groupName .. "\", 0.10)",
+                                condition = "return Spearhead.DcsUtil.NeedsRTBInTen(\"" .. groupName .. "\", 0.10)",
                             }
                         }
                     },
@@ -300,13 +285,13 @@ function CAP.getAsTasking(groupName, airbase, capZone, capConfig)
                                 id = "Orbit",
                                 params = {
                                     altitude = alt,
-                                    pattern = "Anchored",
+                                    pattern = "Circle",
                                     speed = speed,
-                                    speedEdited = true,
-                                    clockWise = false,
-                                    hotLegDir = capTaskingOptions.hotLegDir,
-                                    legLength = capTaskingOptions.legLength,
-                                    width = capTaskingOptions.width,
+                                    -- speedEdited = true,
+                                    -- clockWise = false,
+                                    -- hotLegDir = capTaskingOptions.hotLegDir,
+                                    -- legLength = capTaskingOptions.legLength,
+                                    -- width = capTaskingOptions.width,
                                 }
                             },
                             stopCondition = {

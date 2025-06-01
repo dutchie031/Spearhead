@@ -271,8 +271,8 @@ function MissionCommandsHelper:AddAllMissionCommandsToGroup(groupID)
                 local mission = self.missionsByCode[code]
                 if mission and mission.priority == "primary" then
                     count = count + 1
-                    if count <= perFolder then 
-                        local copied = Spearhead.Util.copyTable(path)
+                    if count <= perFolder then
+                        local copied = Spearhead.Util.deepCopyTable(path)
                         self:addMissionCommands(groupID, copied, mission)
                     else
                         local name = "Next Menu ..."
@@ -294,7 +294,7 @@ function MissionCommandsHelper:AddAllMissionCommandsToGroup(groupID)
                 if mission and mission.priority == "secondary" then
                     count = count + 1
                     if count <= perFolder then
-                        local copied = Spearhead.Util.copyTable(path)
+                        local copied = Spearhead.Util.deepCopyTable(path)
                         self:addMissionCommands(groupID, copied, mission)
                     else
                         local name = "Next Menu ..."

@@ -1,5 +1,3 @@
-
-
 ---@class AirGroup : OnUnitLostListener
 ---@field protected _logger Logger
 ---@field protected _groupName string
@@ -24,8 +22,7 @@ function AirGroup:New(groupName, groupType, config, logger)
     self._logger = logger
 
     local group = Group.getByName(self._groupName)
-    if group then 
-
+    if group then
         Spearhead.Events.addOnGroupRTBListener(self._groupName, self)
         Spearhead.Events.addOnGroupRTBInTenListener(self._groupName, self)
         Spearhead.Events.addOnGroupOnStationListener(self._groupName, self)
@@ -38,7 +35,6 @@ function AirGroup:New(groupName, groupType, config, logger)
     end
 end
 
-
 function AirGroup:GetState()
     return self._state
 end
@@ -48,6 +44,7 @@ function AirGroup:GetName()
 end
 
 function AirGroup:MarkRearmComplete()
+    self:Respawn(false)
     if self._state == "Rearming" then
         self:SetState("ReadyOnTheRamp")
     end
@@ -55,7 +52,6 @@ end
 
 ---@protected
 function AirGroup:SetMission(mission)
-
     self:SetState("InTransit")
 
     local group = Group.getByName(self._groupName)
@@ -78,7 +74,7 @@ function AirGroup:SetMission(mission)
         mission = mission
     }
 
-    timer.scheduleFunction(setMissionDelayed, data, timer.getTime() + 20)
+    timer.scheduleFunction(setMissionDelayed, data, timer.getTime() + 5)
 end
 
 function AirGroup:SetMissionPrivate(mission)
@@ -94,18 +90,39 @@ end
 function AirGroup:SendRTB(airbase)
     self._logger:debug("AirGroup:SendRTB called for group: " .. self._groupName)
     self:SetState("Rtb")
-    local mission = Spearhead.classes.capClasses.taskings.RTB.getAsMission(airbase, self._config)
     local group = Group.getByName(self._groupName)
     if group then
-        group:getController():setTask(mission)
-        self._logger:debug("AirGroup:SendRTB - Task set for group: " .. self._groupName)
+        ---@type Vec3
+        local location = nil
+        for _, unit in pairs(group:getUnits()) do
+            if unit and unit:isExist() == true and unit:inAir() == true then
+                location = unit:getPoint()
+                break
+            end
+        end
+        if location then
+            local mission = Spearhead.classes.capClasses.taskings.RTB.getAsMission(airbase, { x= location.x, y= location.z }, self._config)
+            group:getController():setTask(mission)
+            self._logger:debug("AirGroup:SendRTB - Task set for group: " .. self._groupName)
+        end
     end
 end
 
 function AirGroup:Spawn()
     if self._isSpawned then return end
+    self:SpawnInternal(false)
+end
 
-    local group, isStatic = Spearhead.DcsUtil.SpawnGroupTemplate(self._groupName, nil, nil, true)
+---@param force boolean
+---@param withoutLoadout boolean?
+---@protected
+function AirGroup:SpawnInternal(force, withoutLoadout)
+
+    if withoutLoadout == nil then withoutLoadout = false end
+
+    if self._isSpawned and force ~= true then return end
+
+    local group, isStatic = Spearhead.DcsUtil.SpawnGroupTemplate(self._groupName, nil, nil, true, nil, withoutLoadout)
     if isStatic == true then
         --- If For Some reaons someone tries to schedule static units as CAP classes
         self._state = "UnSpawned"
@@ -124,7 +141,7 @@ function AirGroup:Spawn()
     if self._state == "UnSpawned" then
         self:SetState("ReadyOnTheRamp")
     end
-    
+
     ---@param selfA AirGroup
     local function CheckLivenessTask(selfA, time)
         local interval = selfA:CheckLiveness()
@@ -139,21 +156,26 @@ function AirGroup:Spawn()
     self._checkLivenessNumber = timer.scheduleFunction(CheckLivenessTask, self, timer.getTime() + 5)
 end
 
+
+---@param withoutLoadout boolean?
+function AirGroup:Respawn(withoutLoadout)
+    self:SpawnInternal(true, withoutLoadout)
+end
+
 ---@protected
 ---@param state AirGroupState
 function AirGroup:SetState(state)
     if self._state == state then return end
     self._state = state
+    self._logger:debug("AirGroup:State changed for group: " .. self._groupName .. " to state: " .. state)
 end
-
 
 ---@return number? timeInterval
 function AirGroup:CheckLiveness()
-
     local isAlive = false
     local group = Group.getByName(self._groupName)
 
-    if group and group:isExist() == true  then
+    if group and group:isExist() == true then
         for _, unit in pairs(group:getUnits()) do
             if unit and unit:isExist() == true and unit:getLife() > (unit:getLife0() * 0.3) then
                 isAlive = true
@@ -172,26 +194,77 @@ end
 
 ---@protected
 function AirGroup:OnLastUnitLanded()
-
     --- Once landed monitor the units until it's at it's designated location (or died)
 
     -- Units
-    
 
-end
+    ---@class CheckGroupForRestartData
+    ---@field self AirGroup
+    ---@field lastLocations table<string,Vec3>
+    ---@field lastChangeTime number
 
-function AirGroup:OnLastUnitParked()
+    ---@param data CheckGroupForRestartData
+    ---@param time number
+    local checkGroupForRestart = function(data, time)
+        local group = Group.getByName(data.self:GetName())
+        if not group then
+            self:CheckStateAndStartRepairRearm()
+            return
+        end
 
+        for _, unit in pairs(group:getUnits()) do
+            if unit and unit:isExist() then
+                local pos = unit:getPoint()
+
+
+                if data.lastLocations[unit:getName()] == nil then
+                    data.lastLocations[unit:getName()] = pos
+                    return time + 5
+                end
+
+                if pos and Spearhead.Util.VectorDistance3d(pos, data.lastLocations[unit:getName()]) > 10 then
+                    data.lastChangeTime = time
+                end
+                data.lastLocations[unit:getName()] = pos
+            end
+        end
+
+        if data.lastChangeTime + 30 < time then
+            -- If no change in 30 seconds, assume all units are parked
+            local withoutLoadout = true
+            data.self:Respawn(withoutLoadout)
+            data.self:CheckStateAndStartRepairRearm()
+            return
+        end
+
+        return time + 5
+    end
+
+    ---@type CheckGroupForRestartData
+    local data = {
+        self = self,
+        lastLocations = {},
+        lastChangeTime = timer.getTime()
+    }
+
+    local group = Group.getByName(self._groupName)
+    if group then
+        for _, unit in pairs(group:getUnits()) do
+            data.lastLocations[unit:getName()] = unit:getPoint()
+        end
+    end
+    timer.scheduleFunction(checkGroupForRestart, data, timer.getTime() + 5)
+    self._logger:debug("AirGroup:OnLastUnitLanded - Monitoring group: " .. self._groupName)
 end
 
 function AirGroup:CheckStateAndStartRepairRearm()
-
+    self._logger:debug("AirGroup:CheckStateAndStartRepairRearm called for group: " .. self._groupName)
     local group = Group.getByName(self._groupName)
     local anyAlive = false
     local allAlive = true
 
     if group then
-        for _, unit in pairs(group) do
+        for _, unit in pairs(group:getUnits()) do
             if unit and unit:isExist() == true and unit:getLife() > (unit:getLife0() * 0.3) then
                 anyAlive = true
             else
@@ -214,18 +287,14 @@ function AirGroup:CheckStateAndStartRepairRearm()
 
     --- Reschedule  Spawn + Rearm
     self:StartRearm()
-
-
 end
 
 do --- RESPAWN FUNCTIONS
-
     --[[
         TODO: Checks to be added to the functions in case a group is destroyed while waiting for repair/rearm.
     ]]
 
     function AirGroup:StartRespawn()
-
         self:SetState("Dead")
 
         local respawnTask = function(selfA, time)
@@ -240,7 +309,6 @@ do --- RESPAWN FUNCTIONS
     end
 
     function AirGroup:StartRepair()
-
         self:SetState("Repairing")
 
         if self._isSpawned == false then
@@ -260,16 +328,20 @@ do --- RESPAWN FUNCTIONS
     end
 
     function AirGroup:StartRearm()
-
         self:SetState("Rearming")
+
+        if self._isSpawned == false then
+            self:Spawn()
+        end
 
         local rearmDelay = self._config:getRearmDelay()
         if rearmDelay < 2 then
             rearmDelay = 2
         end
 
+        ---@param selfA AirGroup
         local rearmTask = function(selfA, time)
-            self:MarkRearmComplete()
+            selfA:MarkRearmComplete()
         end
 
         -- Schedule Rearm Complete
@@ -279,7 +351,6 @@ end
 
 
 do --EVENT LISTENERS
-
     ---@param unit Unit
     function AirGroup:OnUnitLost(unit)
         self:CheckLiveness()
@@ -287,16 +358,21 @@ do --EVENT LISTENERS
 
     ---@param groupName string
     function AirGroup:OnGroupRTBInTen(groupName)
-        self:SetState("RtbInTen")
+        if self._groupName == groupName then
+            self._logger:debug("AirGroup:OnGroupRTBInTen called for group: " .. self._groupName)
+            self:SetState("RtbInTen")
+        end
     end
 
     ---@param groupName string
     function AirGroup:OnGroupRTB(groupName)
-        self:SetState("Rtb")
+        if self._groupName == groupName then
+            self._logger:debug("AirGroup:OnGroupRTB called for group: " .. self._groupName)
+            self:SetState("Rtb")
+        end
     end
-    
-    function AirGroup:OnUnitLanded(unit, airbase)
 
+    function AirGroup:OnUnitLanded(unit, airbase)
         local anyInAir = false
         local group = Group.getByName(self._groupName)
         if group then
@@ -318,7 +394,6 @@ do --EVENT LISTENERS
             self:SetState("OnStation")
         end
     end
-
 end
 
 function AirGroup:Destroy()

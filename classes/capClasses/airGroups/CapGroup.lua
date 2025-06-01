@@ -1,8 +1,8 @@
 
 ---@class CapGroup : AirGroup
----@field private _targetZoneIdPerStage table<string, number>
+---@field private _targetZoneIdPerStage table<string, string>
 ---@field private _isBackup boolean
----@field private _currentTargetZoneID number?
+---@field private _currentTargetZoneID string?
 local CapGroup = {}
 CapGroup.__index = CapGroup
 
@@ -29,19 +29,18 @@ function CapGroup:IsBackup()
     return self._isBackup
 end
 
----@return number?
+---@return string?
 function CapGroup:GetZoneIDWhenStageID(stageID)
-    local stageID = tostring(stageID)
     return self._targetZoneIdPerStage[stageID]
 end
 
----@return number?
+---@return string?
 function CapGroup:GetCurrentTargetZoneID()
     return self._currentTargetZoneID
 end
 
 ---@param zone SpearheadTriggerZone
----@param targetZoneID number
+---@param targetZoneID string
 ---@param airbase Airbase
 function CapGroup:SendToZone(zone, targetZoneID, airbase)
 
@@ -64,10 +63,9 @@ function CapGroup:SendToZone(zone, targetZoneID, airbase)
         return
     end
 
-    
     if isInAir == true then
-        -- local mission = Spearhead.classes.capClasses.taskings.CAP.getAsMission(self._groupName, airbase, zone, self._config)
-        -- self:SetMission(mission)
+        local mission = Spearhead.classes.capClasses.taskings.CAP.getAsMission(self._groupName, airbase, zone, self._config)
+        self:SetMission(mission)
     else
         local mission = Spearhead.classes.capClasses.taskings.CAP.getAsMissionFromAirbase(self._groupName, airbase, zone, self._config)
         if mission then
@@ -115,26 +113,28 @@ function CapGroup:InitWithName(groupName)
 
                             for i = from, till do
                                 if targetZone == "A" then
-                                    self._targetZoneIdPerStage[tostring(i)] = i
+                                    self._targetZoneIdPerStage[tostring(i)] = tostring(i)
                                 else
-                                    self._targetZoneIdPerStage[tostring(i)] = i
+                                    self._targetZoneIdPerStage[tostring(i)] = targetZone
                                 end
                             end
                         else
                             if targetZone == "A" then
-                                self._targetZoneIdPerStage[tostring(dashSeperated[1])] = tonumber(dashSeperated[1])
+                                self._targetZoneIdPerStage[tostring(dashSeperated[1])] = tostring(dashSeperated[1])
                             else
-                                self._targetZoneIdPerStage[tostring(dashSeperated[1])] = tonumber(dashSeperated[1])
+                                self._targetZoneIdPerStage[tostring(dashSeperated[1])] = targetZone
                             end
                         end
                     end
                 end
             end
+
+            env.info("Capgroup parsed with table: " .. Spearhead.Util.toString(self._targetZoneIdPerStage))
+
         else
             Spearhead.AddMissionEditorWarning("CAP Group with name: " .. groupName .. "should have at least 3 parts, but has " .. partCount)
             return nil
         end
-
 end
 
 if not Spearhead then Spearhead = {} end

@@ -36,15 +36,15 @@ do -- INIT UTIL
 
     ---@param orig table
     ---@return table copy
-    function UTIL.copyTable(orig)
+    function UTIL.deepCopyTable(orig)
         local orig_type = type(orig)
         local copy
         if orig_type == 'table' then
             copy = {}
             for orig_key, orig_value in next, orig, nil do
-                copy[UTIL.copyTable(orig_key)] = UTIL.copyTable(orig_value)
+                copy[UTIL.deepCopyTable(orig_key)] = UTIL.deepCopyTable(orig_value)
             end
-            setmetatable(copy, UTIL.copyTable(getmetatable(orig)))
+            setmetatable(copy, UTIL.deepCopyTable(getmetatable(orig)))
         else -- number, string, boolean, etc
             copy = orig
         end
@@ -1303,9 +1303,10 @@ do     -- INIT DCS_UTIL
     ---@param route table? route of the group. If nil wil be the default route.
     ---@param uncontrolled boolean? Sets the group to be uncontrolled on spawn
     ---@param countryId CountryID? Overwrites the country
+    ---@param emptyLoadouts boolean? If true, the group will spawn with empty loadouts
     ---@return table? new_group the Group class that was spawned
     ---@return boolean? isStatic whether the group is a static or not
-    function DCS_UTIL.SpawnGroupTemplate(groupName, location, route, uncontrolled, countryId)
+    function DCS_UTIL.SpawnGroupTemplate(groupName, location, route, uncontrolled, countryId, emptyLoadouts)
         if groupName == nil then
             return nil, nil
         end
@@ -1328,7 +1329,7 @@ do     -- INIT DCS_UTIL
                 return object, true
             end
         else
-            local spawn_template = template.group_template
+            local spawn_template = Spearhead.Util.deepCopyTable(template.group_template)
             if location ~= nil then
                 local x_offset
                 if location.x ~= nil then x_offset = spawn_template.x - location.x end
@@ -1346,18 +1347,25 @@ do     -- INIT DCS_UTIL
                 end
             end
 
-            -- TODO: Enable this again.
-            -- if spawn_template.units then
-            --     for _, unit in pairs(spawn_template.units) do
-            --         if unit["parking"] then
-            --             unit["parking_landing"] = unit["parking"]
-            --         end
+            if spawn_template.units then
+                for _, unit in pairs(spawn_template.units) do
+                    if unit["parking"] then
+                        unit["parking_landing"] = unit["parking"]
+                    end
 
-            --         if unit["parking_id"] then
-            --             unit["parking_landing_id"] = unit["parking_id"]
-            --         end
-            --     end
-            -- end
+                    if unit["parking_id"] then
+                        unit["parking_landing_id"] = unit["parking_id"]
+                    end
+                end
+
+                if emptyLoadouts == true then
+                    for _, unit in pairs(spawn_template.units) do
+                        if unit["payload"] and unit["payload"]["pylons"] then
+                            unit["payload"]["pylons"] = {}
+                        end
+                    end
+                end
+            end
 
             if route ~= nil then
                 spawn_template.route = route
@@ -1382,6 +1390,30 @@ do     -- INIT DCS_UTIL
         end
     end
 
+
+    function DCS_UTIL.NeedsRTBInTen(groupName, fuelOffset)
+
+        local isBingo = Spearhead.DcsUtil.IsBingoFuel(groupName, fuelOffset)
+        if isBingo then return true end
+
+        local aliveUnits = 0
+        local group = Group.getByName(groupName)
+        if group then
+            for _ , unit in pairs(group:getUnits()) do
+                if unit and unit:isExist() == true and unit:inAir() == true then
+                    aliveUnits = aliveUnits + 1
+                end
+            end
+
+            if aliveUnits / group:getInitialSize() <= 0.5 then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    ---@return boolean
     function DCS_UTIL.IsBingoFuel(groupName, offset)
         if offset == nil then offset = 0 end
         local bingoSetting = 0.20

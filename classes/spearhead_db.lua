@@ -364,25 +364,21 @@ function Database.New(Logger)
     self:loadMiscGroupsInStages()
 
 
-    for _, zoneData in pairs(self._tables.StageZones) do
-        local number = zoneData.StageIndex
+    for _, cap_route_zone in pairs(self._tables.CapRoutes) do
+        local split = Spearhead.Util.split_string(cap_route_zone, "_")
+        local zoneID = split[2]
 
-        for _, cap_route_zone in pairs(self._tables.CapRoutes) do
-            local split = Spearhead.Util.split_string(cap_route_zone, "_")
-            local zoneID = split[2]
+        if zoneID then
+            if tables.capZonesByCapZoneID[zoneID] == nil then
+                tables.capZonesByCapZoneID[zoneID] = {
+                    zones = {},
+                    current = 1
+                }
+            end
 
-            if zoneID and tonumber(zoneID) ~= nil then
-                if tables.capZonesByCapZoneID[number] == nil then
-                    tables.capZonesByCapZoneID[number] = {
-                        zones = {},
-                        current = 1
-                    }
-                end
-
-                local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
-                if zone then
-                    table.insert(tables.capZonesByCapZoneID[number].zones, zone)
-                end
+            local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
+            if zone then
+                table.insert(tables.capZonesByCapZoneID[zoneID].zones, zone)
             end
         end
     end
@@ -820,7 +816,7 @@ function Database:GetCapZoneForZoneID(zoneID)
 
         local count = Spearhead.Util.tableLength(capZonesForID.zones)
         if count == 0 then
-            self._logger:warn("Tried to get cap zone for zoneID: " .. zoneID .. " but no cap zones were empty for this ID")
+            self._logger:warn("Tried to get cap zone for zoneID: " .. zoneID .. " but cap zones were empty for this ID")
             return nil
         end
 

@@ -25,8 +25,8 @@ SpearheadConfig = {
 
         --Delay for aircraft from touchdown to off the chocks.
         -- unit: seconds
-        rearmDelay = 600, -- default 600
-
+        rearmDelay = 180, -- default 600
+        repairDelay = 600, -- default 600
         --Delay for aircraft from death to takeoff.
         --When the seconds remaining is the same at the rearmDelay it will be spawned on the ramp and follow the rearm logic.
         -- !! Can not be lower than rearmDelay
