@@ -1,39 +1,46 @@
 
 
 ---@class AirGroup : OnUnitLostListener
----@field private _groupName string
----@field private _groupType AirGroupType
----@field private _state GroupState
----@field private _isSpawned boolean
----@field private _config CapConfig
----@field private _checkLivenessNumber number
----@field private _onStateChangedListeners Array<OnAirGroupStateChangedListener>
+---@field protected _logger Logger
+---@field protected _groupName string
+---@field protected _groupType AirGroupType
+---@field protected _state AirGroupState
+---@field protected _isSpawned boolean
+---@field protected _config CapConfig
+---@field protected _checkLivenessNumber number
 local AirGroup = {}
 AirGroup.__index = AirGroup
 
+---@param logger Logger
 ---@param groupName string
 ---@param groupType AirGroupType
 ---@param config CapConfig
-function AirGroup:New(groupName, groupType, config)
-
-    setmetatable(self, AirGroup)
-
+function AirGroup:New(groupName, groupType, config, logger)
     self._groupName = groupName
     self._groupType = groupType
     self._isSpawned = false
     self._state = "UnSpawned" -- Default state
     self._config = config
-    self._onStateChangedListeners = {}
+    self._logger = logger
 
     local group = Group.getByName(self._groupName)
     if group then 
+
+        Spearhead.Events.addOnGroupRTBListener(self._groupName, self)
+        Spearhead.Events.addOnGroupRTBInTenListener(self._groupName, self)
+        Spearhead.Events.addOnGroupOnStationListener(self._groupName, self)
+
         for _, unit in pairs(group:getUnits()) do
             Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
-            Spearhead.Events.addOnGroupRTBInTenListener(self._groupName, self)
-            Spearhead.Events.addOnGroupRTBListener(self._groupName, self)
+            Spearhead.Events.addOnUnitLandEventListener(unit:getName(), self)
         end
-
+        Spearhead.DcsUtil.DestroyGroup(self._groupName)
     end
+end
+
+
+function AirGroup:GetState()
+    return self._state
 end
 
 function AirGroup:GetName()
@@ -42,7 +49,56 @@ end
 
 function AirGroup:MarkRearmComplete()
     if self._state == "Rearming" then
-        self:SetState("ReadOnTheRamp")
+        self:SetState("ReadyOnTheRamp")
+    end
+end
+
+---@protected
+function AirGroup:SetMission(mission)
+
+    self:SetState("InTransit")
+
+    local group = Group.getByName(self._groupName)
+    if group then
+        local controller = group:getController()
+        if controller then
+            controller:setCommand({
+                id = 'Start',
+                params = {}
+            })
+        end
+    end
+
+    local setMissionDelayed = function(data, time)
+        data.self:SetMissionPrivate(data.mission)
+    end
+
+    local data = {
+        self = self,
+        mission = mission
+    }
+
+    timer.scheduleFunction(setMissionDelayed, data, timer.getTime() + 20)
+end
+
+function AirGroup:SetMissionPrivate(mission)
+    self:SetState("InTransit")
+    local group = Group.getByName(self._groupName)
+    if group and mission then
+        group:getController():setTask(mission)
+        self._logger:debug("mission - Task set for group: " .. self._groupName)
+    end
+end
+
+---@param airbase Airbase
+function AirGroup:SendRTB(airbase)
+    self._logger:debug("AirGroup:SendRTB called for group: " .. self._groupName)
+    self:SetState("Rtb")
+    local mission = Spearhead.classes.capClasses.taskings.RTB.getAsMission(airbase, self._config)
+    local group = Group.getByName(self._groupName)
+    if group then
+        group:getController():setTask(mission)
+        self._logger:debug("AirGroup:SendRTB - Task set for group: " .. self._groupName)
     end
 end
 
@@ -62,11 +118,11 @@ function AirGroup:Spawn()
         self._initialSize = #group:getUnits()
         self._liveState = {}
     else
-        Spearhead.DcsUtil.LogError("Failed to spawn group: " .. self._groupName)
+        self._logger:error("Failed to spawn group: " .. self._groupName)
     end
 
     if self._state == "UnSpawned" then
-        self:SetState("ReadOnTheRamp")
+        self:SetState("ReadyOnTheRamp")
     end
     
     ---@param selfA AirGroup
@@ -83,32 +139,11 @@ function AirGroup:Spawn()
     self._checkLivenessNumber = timer.scheduleFunction(CheckLivenessTask, self, timer.getTime() + 5)
 end
 
----@class OnAirGroupStateChangedListener
----@field OnStateChanged fun(self:OnAirGroupStateChangedListener, groupName:string, state:GroupState)
-
-function AirGroup:AddOnStateChangedListener(listener)
-    if type(listener) == "table" and listener.OnStateChanged then
-        table.insert(self._onStateChangedListeners, listener)
-    else
-        Spearhead.DcsUtil.LogError("Invalid listener for AirGroup state change: " .. tostring(listener))
-    end
-end
-
-
 ---@protected
----@param state GroupState
+---@param state AirGroupState
 function AirGroup:SetState(state)
-
     if self._state == state then return end
     self._state = state
-
-    -- TODO: Notify State Change listeners
-    for _, listener in pairs(self._onStateChangedListeners) do
-        pcall(function()
-            listener:OnStateChanged(self._groupName, self._state)
-        end)
-    end
-
 end
 
 
@@ -278,9 +313,13 @@ do --EVENT LISTENERS
         end
     end
 
+    function AirGroup:OnGroupOnStation(groupName)
+        if self._groupName == groupName then
+            self:SetState("OnStation")
+        end
+    end
+
 end
-
-
 
 function AirGroup:Destroy()
     Spearhead.DcsUtil.DestroyGroup(self._groupName)
@@ -292,9 +331,9 @@ if not Spearhead.classes.capClasses then Spearhead.classes.capClasses = {} end
 if not Spearhead.classes.capClasses.airGroups then Spearhead.classes.capClasses.airGroups = {} end
 Spearhead.classes.capClasses.airGroups.AirGroup = AirGroup
 
----@alias GroupState
+---@alias AirGroupState
 ---| "UnSpawned"
----| "ReadOnTheRamp
+---| "ReadyOnTheRamp
 ---| "InTransit"
 ---| "OnStation"
 ---| "RtbInTen"

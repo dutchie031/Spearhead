@@ -8,7 +8,7 @@
 ---@field StageZonesByNumber table<string, Array<string>> Stage zones grouped by index number
 ---@field AllFarpZones Array<string>
 ---@field CapRoutes Array<string> All Cap route zone names
----@field CapDataPerStageNumber table<integer, CapData> table<StageNumber, table>
+---@field capZonesByCapZoneID table<string, CapRoute> table<StageNumber, table>
 ---@field CarrierRouteZones Array<string> All Carrier routes zones
 ---@field BlueSams Array<string> All blue sam zones
 ---@field SupplyHubZones Array<string> All supply hub zones
@@ -19,13 +19,10 @@
 ---@field FarpZoneData table<string,FarpZoneData>
 ---@field missionCodes table<string, boolean>
 
----@class CapData
----@field routes Array<CapRoute>
----@field current integer
 
 ---@class CapRoute
----@field point1 Vec3
----@field point2 Vec3?
+---@field zones Array<SpearheadTriggerZone>
+---@field current number
 
 ---@class MissionAnnotations
 ---@field description string?
@@ -82,7 +79,7 @@ function Database.New(Logger)
         AllZoneNames = {},
         BlueSams = {},
         CapRoutes = {},
-        CapDataPerStageNumber = {},
+        capZonesByCapZoneID = {},
         CarrierRouteZones = {},
         MissionZones = {},
         MissionZonesLocations = {},
@@ -371,50 +368,20 @@ function Database.New(Logger)
         local number = zoneData.StageIndex
 
         for _, cap_route_zone in pairs(self._tables.CapRoutes) do
-            if Spearhead.DcsUtil.isZoneInZone(cap_route_zone, zoneData.StageZoneName) == true then
+            local split = Spearhead.Util.split_string(cap_route_zone, "_")
+            local zoneID = split[2]
+
+            if zoneID and tonumber(zoneID) ~= nil then
+                if tables.capZonesByCapZoneID[number] == nil then
+                    tables.capZonesByCapZoneID[number] = {
+                        zones = {},
+                        current = 1
+                    }
+                end
+
                 local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
                 if zone then
-                    ---@type CapData
-                    local capData = self._tables.CapDataPerStageNumber[number]
-                    if capData == nil then
-                        capData = {
-                            routes = {},
-                            current = 0
-                        }
-                        self._tables.CapDataPerStageNumber[number] = capData
-                    end
-
-
-                    if zone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                        table.insert(capData.routes,
-                            { point1 = { x = zone.location.x, z = zone.location.y, y = 0 }, point2 = nil })
-                    else
-                        local biggest = nil
-                        local biggestA = nil
-                        local biggestB = nil
-
-                        for i = 1, 3 do
-                            for ii = i + 1, 4 do
-                                local a = zone.verts[i]
-                                local b = zone.verts[ii]
-                                local dist = Spearhead.Util.VectorDistance2d(a, b)
-
-                                if biggest == nil or dist > biggest then
-                                    biggestA = a
-                                    biggestB = b
-                                    biggest = dist
-                                end
-                            end
-                        end
-
-                        if biggestA and biggestB then
-                            table.insert(capData.routes,
-                                {
-                                    point1 = { x = biggestA.x, z = biggestA.y },
-                                    point2 = { x = biggestB.x, z = biggestB.y }
-                                })
-                        end
-                    end
+                    table.insert(tables.capZonesByCapZoneID[number].zones, zone)
                 end
             end
         end
@@ -842,66 +809,31 @@ function Database:GetLocationForMissionZone(missionZoneName)
     return self._tables.MissionZonesLocations[missionZoneName]
 end
 
----comment
----@param stageNumber string
----@param baseName string
----@return table?
-function Database:getCapRouteInZone(stageNumber, baseName)
-    local stageNumber = tostring(stageNumber) or "nothing"
-    local routeData = self._tables.CapDataPerStageNumber[stageNumber]
-    if routeData then
-        local count = Spearhead.Util.tableLength(routeData.routes)
-        if count > 0 then
-            routeData.current = routeData.current + 1
-            if count < routeData.current then
-                routeData.current = 1
-            end
-            return routeData.routes[routeData.current]
-        end
-    end
-    do
-        local function GetClosestPointOnCircle(pC, radius, p)
-            local vX = p.x - pC.x;
-            local vY = p.z - pC.z;
-            local magV = math.sqrt(vX * vX + vY * vY);
-            local aX = pC.x + vX / magV * radius;
-            local aY = pC.z + vY / magV * radius;
-            return { x = aX, z = aY }
-        end
-        local stageZoneName = Spearhead.Util.randomFromList(self._tables.StageZonesByNumber[stageNumber]) or "none"
-        local stagezone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
-        if stagezone then
-            ---@type Airbase?
-            local base = Airbase.getByName(baseName)
-            if base then
-                local closest = nil
-                if stagezone.zone_type == Spearhead.DcsUtil.ZoneType.Cilinder then
-                    closest = GetClosestPointOnCircle({ x = stagezone.location.x, z = stagezone.location.y },
-                        stagezone.radius,
-                        base:getPoint())
-                else
-                    local closestDistance = -1
-                    for _, vert in pairs(stagezone.verts) do
-                        local pos = base:getPoint()
-                        local vec2 = { x = pos.x, y = pos.z }
-                        local distance = Spearhead.Util.VectorDistance2d(vert, vec2)
-                        if closestDistance == -1 or distance < closestDistance then
-                            closestDistance = distance
-                            closest = vert
-                        end
-                    end
-                end
+---@param zoneID string
+---@return SpearheadTriggerZone?
+function Database:GetCapZoneForZoneID(zoneID)
+    zoneID = tostring(zoneID) or "nothing"
 
-                if math.random(1, 2) % 2 == 0 then
-                    return { point1 = closest, point2 = { x = stagezone.location.x, z = stagezone.location.y } }
-                else
-                    return { point1 = { x = stagezone.location.x, z = stagezone.location.y }, point2 = closest }
-                end
-            end
+    local capZonesForID = self._tables.capZonesByCapZoneID[zoneID]
+
+    if capZonesForID and capZonesForID.zones then
+
+        local count = Spearhead.Util.tableLength(capZonesForID.zones)
+        if count == 0 then
+            self._logger:warn("Tried to get cap zone for zoneID: " .. zoneID .. " but no cap zones were empty for this ID")
+            return nil
         end
 
-        return nil
+        capZonesForID.current = capZonesForID.current + 1
+        if Spearhead.Util.tableLength(capZonesForID.zones) < capZonesForID.current then
+            capZonesForID.current = 1
+        end
+        return capZonesForID.zones[capZonesForID.current]
+    else
+        self._logger:warn("Tried to get cap zone for zoneID: " .. zoneID .. " but no cap zones were found for this ID")
     end
+
+    return nil
 end
 
 ---@return Array<string> result a  list of stage zone names

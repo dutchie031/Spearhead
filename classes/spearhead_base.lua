@@ -88,15 +88,15 @@ do -- INIT UTIL
                 table.insert(sb, string.rep(" ", indent)) -- indent it
                 if type(value) == "table" and not done[value] then
                     done[value] = true
-                    table.insert(sb, key .. " = {\n");
+                    table.insert(sb, "[\"" ..key .. "\"]" .. " = {\n");
                     table.insert(sb, table_print(value, indent + 2, done))
                     table.insert(sb, string.rep(" ", indent)) -- indent it
-                    table.insert(sb, "}\n");
+                    table.insert(sb, "},\n");
                 elseif "number" == type(key) then
-                    table.insert(sb, string.format("\"%s\"\n", tostring(value)))
+                    table.insert(sb, string.format("\"%s\",\n", tostring(value)))
                 else
                     table.insert(sb, string.format(
-                        "%s = \"%s\"\n", tostring(key), tostring(value)))
+                        "[\"%s\"] = \"%s\",\n", tostring(key), tostring(value)))
                 end
             end
             return table.concat(sb)
@@ -170,6 +170,54 @@ do -- INIT UTIL
     ---@return number
     function UTIL.vectorMagnitude(vec)
         return (vec.x ^ 2 + vec.y ^ 2 + vec.z ^ 2) ^ 0.5
+    end
+
+    ---@param vec Vec3
+    ---@return Vec3
+    function UTIL.vectorNormalize(vec)
+        local magnitude = UTIL.vectorMagnitude(vec)
+        if magnitude == 0 then
+            return { x = 0, y = 0, z = 0 }
+        end
+        return { x = vec.x / magnitude, y = vec.y / magnitude, z = vec.z / magnitude }
+    end
+
+    ---@param vec Vec2
+    ---@param direction number @in degrees
+    ---@param distance number
+    ---@return Vec2
+    function UTIL.vectorMove(vec, direction, distance)
+        local rad = math.rad(direction)
+        local x = vec.x + (math.cos(rad) * distance)
+        local y = vec.y + (math.sin(rad) * distance)
+
+        return { x = x, y = y}
+    end
+
+    ---comment
+    ---@param vec1 Vec2
+    ---@param vec2 Vec2
+    ---@return number in degrees
+    function UTIL.vectorHeadingFromTo(vec1, vec2)
+        local dx = vec2.x - vec1.x
+        local dy = vec2.y - vec1.y
+        local heading = math.deg(math.atan2(dy, dx))
+        if heading < 0 then
+            heading = heading + 360
+        end
+        return heading
+    end
+
+
+
+    ---@param vec1 Vec3
+    ---@param vec2 Vec3
+    ---@return number alignment a number in range [-1,1]. > 0 same direction. < 0 opposite direction
+    function UTIL.vectorAlignment(vec1, vec2)
+        local vec1Norm = UTIL.vectorNormalize(vec1)
+        local vec2Norm = UTIL.vectorNormalize(vec2)
+
+        return ((vec1Norm.x * vec2Norm.x) + (vec1Norm.y * vec2Norm.y) + (vec1Norm.z * vec2Norm.z))
     end
 
     local function isInComplexPolygon(polygon, x, y)
@@ -706,7 +754,7 @@ do     -- INIT DCS_UTIL
     ---@param groupName string
     function DCS_UTIL.IsGroupStatic(groupName)
         if DCS_UTIL.__miz_groups[groupName] then
-            return DCS_UTIL.__miz_groups[groupName].category == DCS_UTIL.GroupCategory.STATIC;
+            return DCS_UTIL.__miz_groups[groupName].category == DCS_UTIL.GroupCategory.STATIC
         end
 
         return StaticObject.getByName(groupName) ~= nil
@@ -1298,6 +1346,19 @@ do     -- INIT DCS_UTIL
                 end
             end
 
+            -- TODO: Enable this again.
+            -- if spawn_template.units then
+            --     for _, unit in pairs(spawn_template.units) do
+            --         if unit["parking"] then
+            --             unit["parking_landing"] = unit["parking"]
+            --         end
+
+            --         if unit["parking_id"] then
+            --             unit["parking_landing_id"] = unit["parking_id"]
+            --         end
+            --     end
+            -- end
+
             if route ~= nil then
                 spawn_template.route = route
             end
@@ -1305,6 +1366,7 @@ do     -- INIT DCS_UTIL
             if uncontrolled ~= nil then
                 spawn_template.uncontrolled = uncontrolled
             end
+
             local country = countryId or template.country_id
             local new_group = coalition.addGroup(country, template.category, spawn_template)
             return new_group, false

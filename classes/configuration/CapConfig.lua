@@ -16,7 +16,6 @@ CapConfig.__index = CapConfig
 
 ---@return CapConfig
 function CapConfig.new()
-    local o = {}
     local self = setmetatable({}, CapConfig)
 
     if SpearheadConfig == nil then SpearheadConfig = {} end
@@ -40,7 +39,7 @@ function CapConfig.new()
     self._repairDelay = tonumber(SpearheadConfig.CapConfig.repairDelay) or 600
     self._deathDelay = tonumber(SpearheadConfig.CapConfig.deathDelay) or 1800
 
-    return o;
+    return self;
 end
 
 function CapConfig:isEnabled()

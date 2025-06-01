@@ -135,8 +135,6 @@ function BattleManager:LetUnitsShoot(groups, targetGroups)
                             self:DrawDebugLine(point, unit)
                         end
 
-                        self._logger:debug("Red unit " .. unit:getName() .. " will shoot " .. qty .. " rounds at point: " .. tostring(point))
-
                         local controller = unit:getController()
                         if controller then
                             controller:setTask(shootTask)

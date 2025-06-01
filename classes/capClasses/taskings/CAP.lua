@@ -1,4 +1,4 @@
----@class CAPTasking : Tasking
+---@class CAPTasking
 local CAP = {}
 
 ---@param attackHelos boolean
@@ -15,11 +15,193 @@ local function GetCAPTargetTypes(attackHelos)
     return targetTypes
 end
 
-function CAP.getAsMission()
-    
+---@class CapTaskingOptions
+---@field point Vec2
+---@field legLength number
+---@field width number
+---@field hotLegDir number
+
+
+---@param capZone SpearheadTriggerZone
+---@param airBase Airbase
+---@return CapTaskingOptions
+local function GetCAPPointFromTriggerZone(airBase, capZone)
+    local furthestA = nil
+    local furthestB = nil
+
+    local furthestFromBase = nil
+    local furthestFromBaseDistance = 0
+
+    local furthestDistance = 0
+
+    for indexA, pointA in ipairs(capZone.verts) do
+        for indexB, pointB in ipairs(capZone.verts) do
+            if pointA ~= pointB then
+                local distance = Spearhead.Util.VectorDistance2d(pointA, pointB)
+                if distance > furthestDistance then
+                    furthestDistance = distance
+                    furthestA = indexA
+                    furthestB = indexB
+                end
+            end
+        end
+    end
+
+    local baseVec3 = airBase:getPoint()
+
+    ---@type Vec2
+    local baseVec2 = { x = baseVec3.x, y = baseVec3.z }
+
+    local pointA = capZone.verts[furthestA]
+    local pointB = capZone.verts[furthestB]
+    local furthest = pointA
+
+    local heading = Spearhead.Util.vectorHeadingFromTo(pointA, pointB)
+
+    if Spearhead.Util.VectorDistance2d(baseVec2, pointB) > Spearhead.Util.VectorDistance2d(baseVec2, pointA) then
+        furthest = pointB
+        heading = Spearhead.Util.vectorHeadingFromTo(pointB, pointA)
+    end
+
+    local distance = furthestDistance
+    if distance > 15000 then
+        distance = distance - 10000
+    end
+
+    return {
+        width = 10000,
+        point = furthest,
+        legLength = distance,
+        hotLegDir = math.rad(heading)
+    }
 end
 
-function CAP.getAsTasking(groupName, position, altitude, speed, duration, engageHelos, deviationdistance, pattern)
+---@param airbase Airbase
+---@param capZone SpearheadTriggerZone
+---@param capConfig CapConfig
+local GetOutboundTask = function(airbase, capZone, capConfig)
+    local airbaseVec3 = airbase:getPoint()
+    local airbaseVec2 = { x = airbaseVec3.x, y = airbaseVec3.z }
+    local heading = Spearhead.Util.vectorHeadingFromTo(airbaseVec2, capZone.location)
+    local point = Spearhead.Util.vectorMove(airbaseVec2, heading, 18520 * 10)
+
+
+    return {
+        ["alt"] = 2000,
+        ["action"] = "Turning Point",
+        ["alt_type"] = "BARO",
+        ["speed"] = 138.88888888889,
+        ["task"] = 
+        {
+            ["id"] = "ComboTask",
+            ["params"] = 
+            {
+                ["tasks"] = {},
+            }, -- end of ["params"]
+        }, -- end of ["task"]
+        ["type"] = "Turning Point",
+        ["ETA"] = 543.52051876058,
+        ["ETA_locked"] = false,
+        ["y"] = 494100,
+        ["x"] = -274394,
+        ["speed_locked"] = true,
+        ["formation_template"] = "",
+    }
+
+
+    -- return {
+    --     alt = 2000,
+    --     action = "Fly Over Point",
+    --     alt_type = "BARO",
+    --     speed = capConfig:getMinSpeed(),
+    --     ETA = 0,
+    --     ETA_locked = false,
+    --     x = point.x,
+    --     y = point.y,
+    --     speed_locked = false,
+    --     formation_template = "",
+    --     task = {
+    --         id = "ComboTask",
+    --         params = {
+    --             tasks = {
+    --                 -- [1] = {
+    --                 --     id = 'EngageTargets',
+    --                 --     params = {
+    --                 --         maxDist = capConfig:getMaxDeviationRange(),
+    --                 --         maxDistEnabled = capConfig:getMaxDeviationRange() >= 0,     -- required to check maxDist
+    --                 --         targetTypes = GetCAPTargetTypes(false),
+    --                 --         priority = 0
+    --                 --     }
+    --                 -- },
+    --             }
+    --         }
+    --     }
+    -- }
+end
+
+---@param groupName string
+---@param airbase Airbase
+---@param capZone SpearheadTriggerZone
+---@param capConfig CapConfig
+function CAP.getAsMissionFromAirbase(groupName, airbase, capZone, capConfig)
+    local points = {
+        [1] = GetOutboundTask(airbase, capZone, capConfig)
+    }
+
+    -- [2] = CAP.getAsTasking(groupName, airbase, capZone, capConfig),
+    -- [3] = Spearhead.classes.capClasses.taskings.RTB.getApproachPoint(airbase, capConfig),
+    -- [4] = Spearhead.classes.capClasses.taskings.RTB.getInitialPoint(airbase),
+    -- [5] = Spearhead.classes.capClasses.taskings.RTB.getLandingPoint(airbase)
+
+    local mission = {
+        id = 'Mission',
+        params = {
+            airborne = true,
+            route = {
+                points = points
+            }
+        }
+    }
+
+    -- local result = Spearhead.Util.toString(mission)
+    -- env.info("CAP.getAsMissionFromAirbase: " .. result)
+
+    return mission
+end
+
+---@param groupName string
+---@param airbase Airbase
+---@param capZone SpearheadTriggerZone
+---@param capConfig CapConfig
+function CAP.getAsMission(groupName, airbase, capZone, capConfig)
+    local mission = {
+        id = "Mission",
+        params = {
+            airborne = true,
+            route = {
+                points = {
+                    [1] = CAP.getAsTasking(groupName, airbase, capZone, capConfig),
+                    [2] = Spearhead.classes.capClasses.taskings.RTB.getApproachPoint(airbase, capConfig),
+                    [3] = Spearhead.classes.capClasses.taskings.RTB.getInitialPoint(airbase),
+                    [4] = Spearhead.classes.capClasses.taskings.RTB.getLandingPoint(airbase)
+                }
+            }
+        }
+    }
+
+    return mission
+end
+
+---@private
+---@param groupName string
+---@param airbase Airbase
+---@param capZone SpearheadTriggerZone
+---@param capConfig CapConfig
+function CAP.getAsTasking(groupName, airbase, capZone, capConfig)
+    local duration = math.random(capConfig:getMinDurationOnStation(), capConfig:getMaxDurationOnStation()) or 1500
+
+    local capTaskingOptions = GetCAPPointFromTriggerZone(airbase, capZone)
+
     local durationBefore10 = duration - 600
     if durationBefore10 < 0 then durationBefore10 = 0 end
     local durationAfter10 = 600
@@ -27,15 +209,18 @@ function CAP.getAsTasking(groupName, position, altitude, speed, duration, engage
         durationAfter10 = duration
     end
 
+    local alt = math.random(capConfig:getMinAlt(), capConfig:getMaxAlt())
+    local speed = math.random(capConfig:getMinSpeed(), capConfig:getMaxSpeed())
+
     return {
-        alt = altitude,
+        alt = alt,
         action = "Turning Point",
         alt_type = "BARO",
         speed = speed,
         ETA = 0,
         ETA_locked = false,
-        x = position.x,
-        y = position.z,
+        x = capTaskingOptions.point.x,
+        y = capTaskingOptions.point.y,
         speed_locked = true,
         formation_template = "",
         task = {
@@ -60,9 +245,9 @@ function CAP.getAsTasking(groupName, position, altitude, speed, duration, engage
                     [2] = {
                         id = 'EngageTargets',
                         params = {
-                            maxDist = deviationdistance,
-                            maxDistEnabled = deviationdistance >= 0,     -- required to check maxDist
-                            targetTypes = GetCAPTargetTypes(engageHelos),
+                            maxDist = capConfig:getMaxDeviationRange(),
+                            maxDistEnabled = capConfig:getMaxDeviationRange() >= 0, -- required to check maxDist
+                            targetTypes = GetCAPTargetTypes(false),
                             priority = 0
                         }
                     },
@@ -75,9 +260,14 @@ function CAP.getAsTasking(groupName, position, altitude, speed, duration, engage
                             task = {
                                 id = "Orbit",
                                 params = {
-                                    altitude = altitude,
-                                    pattern = pattern,
+                                    altitude = alt,
+                                    pattern = "Anchored",
                                     speed = speed,
+                                    speedEdited = true,
+                                    clockWise = false,
+                                    hotLegDir = capTaskingOptions.hotLegDir,
+                                    legLength = capTaskingOptions.legLength,
+                                    width = capTaskingOptions.width,
                                 }
                             },
                             stopCondition = {
@@ -109,9 +299,14 @@ function CAP.getAsTasking(groupName, position, altitude, speed, duration, engage
                             task = {
                                 id = "Orbit",
                                 params = {
-                                    altitude = altitude,
-                                    pattern = pattern,
+                                    altitude = alt,
+                                    pattern = "Anchored",
                                     speed = speed,
+                                    speedEdited = true,
+                                    clockWise = false,
+                                    hotLegDir = capTaskingOptions.hotLegDir,
+                                    legLength = capTaskingOptions.legLength,
+                                    width = capTaskingOptions.width,
                                 }
                             },
                             stopCondition = {
@@ -139,7 +334,6 @@ function CAP.getAsTasking(groupName, position, altitude, speed, duration, engage
         }
     }
 end
-
 
 if not Spearhead then Spearhead = {} end
 if not Spearhead.classes then Spearhead.classes = {} end
