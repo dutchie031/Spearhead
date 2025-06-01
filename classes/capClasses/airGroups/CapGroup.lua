@@ -98,6 +98,8 @@ function CapGroup:InitWithName(groupName)
                 return
             end
 
+            
+
             local subsplit = Spearhead.Util.split_string(configPart, "|")
             if subsplit then
                 for key, value in pairs(subsplit) do
@@ -112,15 +114,15 @@ function CapGroup:InitWithName(groupName)
                             local till = tonumber(dashSeperated[2])
 
                             for i = from, till do
-                                if targetZone == "A" then
-                                    self._targetZoneIdPerStage[tostring(i)] = tostring(i)
+                                if Spearhead.Util.strContains(targetZone, "A") == true then
+                                    self._targetZoneIdPerStage[tostring(i)] = string.gsub(targetZone, "A", tostring(i))
                                 else
                                     self._targetZoneIdPerStage[tostring(i)] = targetZone
                                 end
                             end
                         else
                             if targetZone == "A" then
-                                self._targetZoneIdPerStage[tostring(dashSeperated[1])] = tostring(dashSeperated[1])
+                                self._targetZoneIdPerStage[tostring(dashSeperated[1])] = string.gsub(targetZone, "A", tostring(dashSeperated[1]))
                             else
                                 self._targetZoneIdPerStage[tostring(dashSeperated[1])] = targetZone
                             end
