@@ -205,6 +205,10 @@ function CapBase:CheckAndScheduleCAP()
                         countPerStage[supposedZone] = 0
                     end
 
+                    if requiredPerStage[supposedZone] == nil then
+                        requiredPerStage[supposedZone] = 0
+                    end
+
                     if countPerStage[supposedZone] < requiredPerStage[supposedZone] then
                         local triggerZone = self.database:GetCapZoneForZoneID(supposedZone)
                         if triggerZone then
