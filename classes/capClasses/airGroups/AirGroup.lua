@@ -297,8 +297,9 @@ do --- RESPAWN FUNCTIONS
     function AirGroup:StartRespawn()
         self:SetState("Dead")
 
+        ---@param selfA AirGroup
         local respawnTask = function(selfA, time)
-            selfA:RepairDelayed()
+            selfA:StartRepair()
         end
 
         local delay = self._config:getDeathDelay()
@@ -315,6 +316,8 @@ do --- RESPAWN FUNCTIONS
             self:Spawn()
         end
 
+        ---comment
+        ---@param selfA AirGroup
         local rearmTask = function(selfA, time)
             self:StartRearm()
         end
