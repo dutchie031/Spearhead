@@ -139,15 +139,16 @@ do
     ---@param dir string @BaseDirectory
     ---@return string
     local getLastFileOrDefault = function(dir, startsWith, default)
-        local latestFile, latestTime = default, 0
+        local latestFile, lastNumber = default, 0
         for file in lfs.dir(dir) do
             local split = Spearhead.Util.split_string(file, ".")
             local doesStartWith = Spearhead.Util.startswith(file, startsWith, true)
-            if split and #split > 0 and split[#split] == EXTENSION then
+            if split and #split > 0 and split[#split] == EXTENSION and doesStartWith == true then
                 local fullPath = dir .. "/" .. file
-                local attr = lfs.attributes(fullPath)
-                if attr and attr.modification > latestTime then
-                    latestTime = attr.modification
+                local numberString = split[#split-1]
+                local number = tonumber(numberString)
+                if number ~= nil and number > lastNumber then
+                    lastNumber = number
                     latestFile = fullPath
                 end
             end
