@@ -11,8 +11,13 @@
 local CapBase = {}
 
 
+---comment
+---@param self CapBase
+---@param time number
+---@return number?
 local CheckStateContinuous = function(self, time)
     self:CheckAndScheduleCAP()
+    self:CheckAndScheduleSweep()
     return time + 15
 end
 
