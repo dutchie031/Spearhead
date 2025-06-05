@@ -6,6 +6,7 @@
 ---@field protected _isSpawned boolean
 ---@field protected _config CapConfig
 ---@field protected _checkLivenessNumber number
+---@field protected _spawnManager SpawnManager
 local AirGroup = {}
 AirGroup.__index = AirGroup
 
@@ -13,13 +14,15 @@ AirGroup.__index = AirGroup
 ---@param groupName string
 ---@param groupType AirGroupType
 ---@param config CapConfig
-function AirGroup:New(groupName, groupType, config, logger)
+---@param spawnManager SpawnManager
+function AirGroup:New(groupName, groupType, config, logger, spawnManager)
     self._groupName = groupName
     self._groupType = groupType
     self._isSpawned = false
     self._state = "UnSpawned" -- Default state
     self._config = config
     self._logger = logger
+    self._spawnManager = spawnManager
 
     local group = Group.getByName(self._groupName)
     if group then
@@ -31,7 +34,8 @@ function AirGroup:New(groupName, groupType, config, logger)
             Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
             Spearhead.Events.addOnUnitLandEventListener(unit:getName(), self)
         end
-        Spearhead.DcsUtil.DestroyGroup(self._groupName)
+
+        spawnManager:DestroyGroup(groupName)
     end
 end
 
@@ -122,13 +126,19 @@ function AirGroup:SpawnInternal(force, withoutLoadout)
 
     if self._isSpawned and force ~= true then return end
 
-    local group, isStatic = Spearhead.DcsUtil.SpawnGroupTemplate(self._groupName, nil, nil, true, nil, withoutLoadout)
+    ---@type SpawnOverrides
+    local overrides = {
+        emptyLoadouts = withoutLoadout,
+        uncontrolled = true
+    }
+
+    local group, isStatic = self._spawnManager:SpawnGroup(self._groupName, overrides, false)
     if isStatic == true then
         --- If For Some reaons someone tries to schedule static units as CAP classes
         self._state = "UnSpawned"
         return
     end
-
+    group = group --[[@as Group]]
     if group then
         self._group = group
         self._isSpawned = true

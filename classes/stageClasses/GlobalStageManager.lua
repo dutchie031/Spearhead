@@ -20,8 +20,9 @@ GlobalStageManager = {}
 ---@param database Database
 ---@param stageConfig StageConfig
 ---@param logLevel LogLevel
+---@param spawnManager SpawnManager
 ---@return nil
-function GlobalStageManager:NewAndStart(database, stageConfig, logLevel)
+function GlobalStageManager:NewAndStart(database, stageConfig, logLevel, spawnManager)
     local logger = Spearhead.LoggerTemplate.new("StageManager", logLevel)
     logger:info("Using Stage Log Level: " .. logLevel)
     local o = {}
@@ -134,13 +135,13 @@ function GlobalStageManager:NewAndStart(database, stageConfig, logLevel)
                 }
 
                 if isSideStage == true then
-                    local stage = Spearhead.classes.stageClasses.Stages.ExtraStage.New(database, stageConfig, stagelogger, initData)
+                    local stage = Spearhead.classes.stageClasses.Stages.ExtraStage.New(database, stageConfig, stagelogger, initData, spawnManager)
                     stage:AddStageCompleteListener(OnStageCompleteListener)
 
                     if SideStageByIndex[tostring(orderNumber)] == nil then SideStageByIndex[tostring(orderNumber)] = {} end
                     table.insert(SideStageByIndex[tostring(orderNumber)], stage) 
                 else 
-                    local stage = Spearhead.classes.stageClasses.Stages.PrimaryStage.New(database, stageConfig, stagelogger, initData)
+                    local stage = Spearhead.classes.stageClasses.Stages.PrimaryStage.New(database, stageConfig, stagelogger, initData, spawnManager)
                     stage:AddStageCompleteListener(OnStageCompleteListener)
                     
                     if StagesByIndex[tostring(orderNumber)] == nil then StagesByIndex[tostring(orderNumber)] = {} end
@@ -185,7 +186,7 @@ function GlobalStageManager:NewAndStart(database, stageConfig, logLevel)
                         stageZoneName = stageName,
                         waitingSeconds = waitingSeconds --[[@as integer]]
                     }
-                    local waitingStage = Spearhead.classes.stageClasses.Stages.WaitingStage.New(database, stageConfig, stagelogger, initData)
+                    local waitingStage = Spearhead.classes.stageClasses.Stages.WaitingStage.New(database, stageConfig, stagelogger, initData, spawnManager)
 
                     if WaitingStagesByIndex[tostring(stageIndex)] == nil then
                         WaitingStagesByIndex[tostring(stageIndex)] = {}

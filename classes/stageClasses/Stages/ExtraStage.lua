@@ -9,14 +9,15 @@ ExtraStage.__index = ExtraStage
 ---@param stageConfig StageConfig
 ---@param logger any
 ---@param initData StageInitData
+---@param spawnManager SpawnManager
 ---@return ExtraStage
-function ExtraStage.New(database, stageConfig, logger, initData)
+function ExtraStage.New(database, stageConfig, logger, initData, spawnManager)
 
     local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
     setmetatable(ExtraStage, Stage)
 
     local self = setmetatable({}, { __index = ExtraStage }) --[[@as ExtraStage]]
-    self:superNew(database, stageConfig, logger, initData, "secondary")
+    self:superNew(database, stageConfig, logger, initData, "secondary", spawnManager)
 
     self.OnPostBlueActivated = function (selfStage)
         

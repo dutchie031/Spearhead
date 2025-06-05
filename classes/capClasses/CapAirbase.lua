@@ -22,8 +22,9 @@ end
 ---@param capConfig table
 ---@param stageConfig table
 ---@param runwayBombingTracker RunwayBombingTracker
+---@param spawnManager SpawnManager
 ---@return CapBase
-function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runwayBombingTracker)
+function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runwayBombingTracker, spawnManager)
     CapBase.__index = CapBase
     local self = setmetatable({}, { __index = CapBase }) --[[@as CapBase]]
 
@@ -40,7 +41,7 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
     local baseData = database:getAirbaseDataForZone(airbaseName)
     if baseData and baseData.CapGroups then
         for key, name in pairs(baseData.CapGroups) do
-            local capGroup = Spearhead.classes.capClasses.airGroups.CapGroup.New(name, capConfig, logger)
+            local capGroup = Spearhead.classes.capClasses.airGroups.CapGroup.New(name, capConfig, logger, spawnManager)
             if capGroup then
                 self.capGroupsByName[name] = capGroup
             end

@@ -2,20 +2,35 @@
 
 
 ---@class SpearheadGroup : OnUnitLostListener
----@field groupName string
+---@field private _groupName string
 ---@field private _isStatic boolean
 ---@field private _isSpawned boolean
+---@field private _spawnManager SpawnManager
+---@field private _isPersistent boolean
 local SpearheadGroup = {}
 SpearheadGroup.__index = SpearheadGroup
 
-function SpearheadGroup.New(groupName)
+---comment
+---@param groupName string
+---@param spawnManager SpawnManager
+---@param isPersistent boolean?
+---@return SpearheadGroup
+function SpearheadGroup.New(groupName, spawnManager, isPersistent)
     local self = setmetatable({}, SpearheadGroup)
 
+    if isPersistent == nil then isPersistent = false end
+
+    self._spawnManager = spawnManager
     self._isStatic = Spearhead.DcsUtil.IsGroupStatic(groupName) == true
-    self.groupName = groupName
+    self._groupName = groupName
     self._isSpawned = false
 
     return self
+end
+
+
+function SpearheadGroup:GetName()
+    return self._groupName
 end
 
 function SpearheadGroup:IsSpawned()
@@ -25,27 +40,8 @@ end
 function SpearheadGroup:SpawnCorpsesOnly()
 
     if self._isSpawned == true then return end
-
-    local group, isStatic = Spearhead.DcsUtil.SpawnGroupTemplate(self.groupName)
-    if isStatic == true then
-        self._isStatic = true
-        local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(self.groupName)
-        if deathState and deathState.isDead == true then
-            Spearhead.DcsUtil.DestroyGroup(self.groupName)
-            Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, self.groupName, deathState.type, deathState.pos, deathState.heading)
-        end
-    else
-        if group then
-            for _, unit in pairs(group:getUnits()) do
-                local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
-                Spearhead.DcsUtil.DestroyUnit(unit:getName())
-                if deathState and deathState.isDead == true then
-                    Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
-                end
-            end
-        end
-    end
-
+    
+    self._spawnManager:SpawnCorpsesOnly(self._groupName)
     self._isSpawned = true
 
 end
@@ -55,52 +51,19 @@ function SpearheadGroup:Spawn(lateStart)
 
     if self._isSpawned == true then return end
 
-    local spawned, isStatic = Spearhead.DcsUtil.SpawnGroupTemplate(self.groupName, nil, nil, lateStart)
-    if spawned and isStatic == false then
-        for _, unit in pairs(spawned:getUnits()) do
-            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unit:getName())
+    ---@type SpawnOverrides
+    local overrides = {
+        uncontrolled = lateStart or false,
+    }
 
-            if deathState and deathState.isDead == true then
-                Spearhead.DcsUtil.DestroyUnit(self.groupName, unit:getName())
-                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unit:getName(), deathState.type, deathState.pos, deathState.heading)
-            else
-                Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
-            end
-
-            Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
-        end
-    elseif spawned and isStatic == true then
-        if spawned then
-            Spearhead.Events.addOnUnitLostEventListener(spawned:getName(), self)
-        end
-    else
-        Spearhead.LoggerTemplate.new("SPEARHEADGROUP", "ERROR"):error("Failed to spawn group: " .. self.groupName)
-    end
-
+    local spawnedObject, isStatic = self._spawnManager:SpawnGroup(self._groupName, overrides, self._isPersistent)
+    self._isStatic = isStatic
     self._isSpawned = true
-end
-
-function SpearheadGroup:Activate()
-    
-    if self._isStatic == true then return end
-
-    local group = Group.getByName(self.groupName)
-    if group then 
-        group:activate()
-        
-        local controller = group:getController()
-        if controller then
-            controller:setCommand({
-                id = 'Start',
-                params = {}
-            })
-        end
-    end
 end
 
 function SpearheadGroup:Destroy()
     self._isSpawned = false
-    Spearhead.DcsUtil.DestroyGroup(self.groupName)
+    self._spawnManager:DestroyGroup(self._groupName)
 end
 
 ---@return boolean
@@ -112,28 +75,18 @@ end
 ---@return integer
 function SpearheadGroup:GetCoalition()
     if self._isStatic == true then
-        local object = StaticObject.getByName(self.groupName)
+        local object = StaticObject.getByName(self._groupName)
         if object == nil then
             return 0
         end
         return object:getCoalition()
     else
-        local group = Group.getByName(self.groupName)
+        local group = Group.getByName(self._groupName)
         if group == nil then
             return 0
         end
         return group:getCoalition()
     end
-end
-
-function SpearheadGroup:OnUnitLost(object)
-    local name = object:getName()
-    local pos = object:getPoint()
-    local type = object:getDesc().typeName
-    local position = object:getPosition()
-    local heading = math.atan2(position.x.z, position.x.x)
-    local country_id = object:getCountry()
-    Spearhead.classes.persistence.Persistence.UnitKilled(name, pos, heading, type, country_id)
 end
 
 ---comment
@@ -142,12 +95,12 @@ function SpearheadGroup:GetObjects()
 
     local result = {}
     if self._isStatic == true then
-        local staticObject = StaticObject.getByName(self.groupName)
+        local staticObject = StaticObject.getByName(self._groupName)
         if staticObject then 
             table.insert(result, staticObject)
         end
     else
-        local group = Group.getByName(self.groupName)
+        local group = Group.getByName(self._groupName)
         if not group then return {} end
         for _, unit in pairs(group:getUnits()) do
             table.insert(result, unit)
@@ -165,7 +118,7 @@ function SpearheadGroup:GetAsUnits()
     end
 
     local result = {}
-    local group = Group.getByName(self.groupName)
+    local group = Group.getByName(self._groupName)
     if not group then return {} end
     for _, unit in pairs(group:getUnits()) do
         table.insert(result, unit)
@@ -178,12 +131,12 @@ function SpearheadGroup:GetAllUnitPositions()
 
      local result = {}
     if self._isStatic == true then
-        local staticObject = StaticObject.getByName(self.groupName)
+        local staticObject = StaticObject.getByName(self._groupName)
         if staticObject then 
             table.insert(result, staticObject:getPoint())
         end
     else
-        local group = Group.getByName(self.groupName)
+        local group = Group.getByName(self._groupName)
         if not group then return {} end
         for _, unit in pairs(group:getUnits()) do
             table.insert(result, unit:getPoint())
@@ -196,9 +149,17 @@ function SpearheadGroup:SetInvisible()
 
     if self._isStatic == true then
         local country = Spearhead.DcsUtil.GetNeutralCountry()
-        Spearhead.DcsUtil.SpawnGroupTemplate(self.groupName, nil, nil, nil, country)
+
+        ---@type SpawnOverrides
+        local overrides = {
+            countryID = country
+        }
+
+        self._spawnManager:SpawnGroup(self._groupName, overrides)
+
+        Spearhead.DcsUtil.SpawnGroupTemplate(self._groupName, nil, nil, nil, country)
     else
-        local group = Group.getByName(self.groupName)
+        local group = Group.getByName(self._groupName)
         if group then
             local setInvisible = {
                 id = 'SetInvisible',
@@ -215,7 +176,7 @@ end
 
 function SpearheadGroup:SetVisible()
 
-    local group = Group.getByName(self.groupName)
+    local group = Group.getByName(self._groupName)
     if group then
         local setInvisible = {
             id = 'SetInvisible',
