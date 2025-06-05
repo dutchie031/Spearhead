@@ -5,6 +5,7 @@
 ---@field private activeStage number
 ---@field private capConfig table
 ---@field private capGroupsByName table<string, CapGroup>
+---@field private sweepGroupsByName table<string, SweepGroup>
 ---@field private runwayBombingTracker RunwayBombingTracker
 ---@field private runwayStrikeMissions table<string, RunwayStrikeMission>
 local CapBase = {}
@@ -47,8 +48,16 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
         end
     end
 
-    logger:info("Airbase with name '" ..
-    airbaseName .. "' has a total of " .. Spearhead.Util.tableLength(self.capGroupsByName) .. " cap flights registered")
+    if baseData and baseData.SweepGroups then
+        for key, name in pairs(baseData.SweepGroups) do
+            local sweepGroup = Spearhead.classes.capClasses.airGroups.SweepGroup.New(name, capConfig, logger)
+            if sweepGroup then
+                self.sweepGroupsByName[name] = sweepGroup
+            end
+        end
+    end
+
+    logger:info("Airbase with name '" .. airbaseName .. "' has a total of " .. Spearhead.Util.tableLength(self.capGroupsByName) .. " cap flights registered")
 
     self:CreateRunwayStrikeMission(database)
 
@@ -89,6 +98,14 @@ function CapBase:SpawnIfApplicable()
 
         if targetStage ~= nil and capGroup:GetState() == "UnSpawned" then
             capGroup:Spawn()
+        end
+    end
+
+    for groupName, sweepGroup in pairs(self.sweepGroupsByName) do
+        local targetStage = sweepGroup:GetZoneIDWhenStageID(tostring(self.activeStage))
+
+        if targetStage ~= nil and sweepGroup:GetState() == "UnSpawned" then
+            sweepGroup:Spawn()
         end
     end
 end
@@ -218,6 +235,32 @@ function CapBase:CheckAndScheduleCAP()
                         countPerStage[supposedZone] = countPerStage[supposedZone] + 1
                     end
                 end
+            end
+        end
+    end
+end
+
+function CapBase:CheckAndScheduleSweep()
+    self.logger:debug("Check sweep taskings for airbase " .. self.airbaseName)
+
+    local airbase = Airbase.getByName(self.airbaseName)
+    if not airbase then
+        return nil
+    end
+
+    local activeStageID = tostring(self.activeStage)
+
+    for _, group in pairs(self.sweepGroupsByName) do
+        local targetZoneID = group:GetZoneIDWhenStageID(activeStageID)
+        if targetZoneID then
+            local triggerZone = self.database:GetCapZoneForZoneID(targetZoneID)
+            if triggerZone then
+                if group:GetState() == "ReadyOnTheRamp" then
+                    group:SendToZone(triggerZone, targetZoneID, airbase)
+                end
+            else
+                self.logger:debug("SweepGroup " .. group:GetName() .. " has no trigger zone for stage " .. activeStageID)
+                group:SendRTB(airbase)
             end
         end
     end

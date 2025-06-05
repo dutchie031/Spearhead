@@ -43,6 +43,7 @@
 
 ---@class AirbaseData
 ---@field CapGroups Array<string>
+---@field SweepGroups Array<string>
 ---@field RedGroups Array<string>
 ---@field BlueGroups Array<string>
 ---@field supplyHubNames Array<string>
@@ -525,6 +526,7 @@ function Database:getOrCreateAirbaseData(baseName)
     if baseData == nil then
         baseData = {
             CapGroups = {},
+            SweepGroups = {},
             RedGroups = {},
             BlueGroups = {},
             supplyHubNames = {}
@@ -591,7 +593,12 @@ function Database:loadCapUnits()
         local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
         for _, groupName in pairs(groups) do
             is_group_taken[groupName] = true
-            table.insert(baseData.CapGroups, groupName)
+
+            if Spearhead.Util.startswith(groupName, "CAP_A", true) or Spearhead.Util.startswith(groupName, "CAP_B", true) then
+                table.insert(baseData.CapGroups, groupName)
+            elseif Spearhead.Util.startswith(groupName, "CAP_S", true) then
+                table.insert(baseData.SweepGroups, groupName)
+            end
         end
 
         self._tables.AirbaseDataPerAirfield[airbase:getName()] = baseData
