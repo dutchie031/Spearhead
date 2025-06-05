@@ -37,6 +37,7 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
     self.capConfig = capConfig
     self.database = database
     self.capGroupsByName = {}
+    self.sweepGroupsByName = {}
 
     local baseData = database:getAirbaseDataForZone(airbaseName)
     if baseData and baseData.CapGroups then
