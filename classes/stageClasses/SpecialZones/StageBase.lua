@@ -1,4 +1,4 @@
----@class StageBase : OnCrateDroppedListener, MissionCompleteListener
+---@class StageBase : BuildableZone
 ---@field private _database Database
 ---@field private _logger Logger
 ---@field private _red_groups Array<SpearheadGroup>
@@ -17,8 +17,9 @@ local StageBase = {}
 ---@param databaseManager Database
 ---@param logger table
 ---@param airbaseName string
+---@param spawnManager SpawnManager
 ---@return StageBase?
-function StageBase.New(databaseManager, logger, airbaseName)
+function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
     StageBase.__index = StageBase
     local self = setmetatable({}, StageBase)
 
@@ -47,7 +48,7 @@ function StageBase.New(databaseManager, logger, airbaseName)
         local blueUnitsPos = {}
 
         for _, groupName in pairs(airbaseData.RedGroups) do
-            local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
+            local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName, spawnManager, true)
             table.insert(self._red_groups, shGroup)
 
             for _, unit in pairs(shGroup:GetObjects()) do
@@ -58,7 +59,7 @@ function StageBase.New(databaseManager, logger, airbaseName)
         end
 
         for _, groupName in pairs(airbaseData.BlueGroups) do
-            local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
+            local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName, spawnManager, true)
             table.insert(self._blue_groups, shGroup)
 
             for _, unit in pairs(shGroup:GetObjects()) do
@@ -92,22 +93,9 @@ function StageBase.New(databaseManager, logger, airbaseName)
             end
         end
 
-        if airbaseData.buildingKilos ~= nil and airbaseData.buildingKilos > 0 then
-            self._logger:debug("Airbase " .. airbaseName .. " requires " .. tostring(airbaseData.buildingKilos) .. " kilos to be dropped off")
-            self._requiredBuildingKilos = airbaseData.buildingKilos
-            self._receivedBuildingKilos = 0
-            self._groupsPerKilo = Spearhead.Util.tableLength(self._blue_groups) / self._requiredBuildingKilos
-            local zone = Spearhead.DcsUtil.getAirbaseZoneByName(airbaseName)
-            if zone then
-                self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(databaseManager, logger, zone, self:GetNoLandingZone(), self._requiredBuildingKilos, "AIRBASE_CRATE")
-            end
-
-                
-            if self._buildableMission then
-                self._buildableMission:AddOnCrateDroppedOfListener(self)
-            else
-                self._logger:error("Failed to create buildable mission for airbase: " .. airbaseName)
-            end
+        local zone = Spearhead.DcsUtil.getAirbaseZoneByName(airbaseName)
+        if zone then
+            Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone.New(self, zone, airbaseData.buildingKilos or 0, "AIRBASE_CRATE", self._blue_groups, logger, databaseManager)
         end
     end
 
@@ -172,11 +160,12 @@ function StageBase:ActivateBlueStage()
 
     self:CleanRedUnits()
 
-    if self._buildableMission and self._buildableMission:getState() ~= "COMPLETED" then
-        self._buildableMission:SpawnActive()
-        return
+    if self._buildableMission then
+        self:StartBuildable()
+    else
+        self:FinaliseBlueStage()
     end
-    self:FinaliseBlueStage()
+    
 end
 
 function StageBase:FinaliseBlueStage()
@@ -192,119 +181,9 @@ function StageBase:FinaliseBlueStage()
     end
 end
 
-do ---Building parts
-    ---@class UnpackAirbaseCrateParam
-    ---@field self StageBase
-    ---@field kilos number
-    ---@field groupsPerKilo number
-    ---@field kilosPerSecond number
-    ---@field unpackedItems number
-    ---@field unpackedKilos number
 
-    ---@param params UnpackAirbaseCrateParam
-    ---@param time number
-    local startUnpackingCrate = function(params, time)
-        local unpacked = params.unpackedKilos + (params.kilosPerSecond * 2)
-        local alreadySpawned = params.unpackedItems / params.groupsPerKilo
-        local diff = unpacked - alreadySpawned
-
-        local amount = math.floor(diff * params.groupsPerKilo)
-        local spawned = params.self:SpawnAmount(amount)
-
-        params.unpackedItems = params.unpackedItems + amount
-        params.unpackedKilos = unpacked
-        if params.unpackedKilos >= params.kilos or spawned == false then
-            params.self:FinaliseCrate(params.kilos)
-            return
-        end
-
-        return time + 2
-    end
-
-    ---comment
-    ---@param amount number
-    ---@return boolean
-    function StageBase:SpawnAmount(amount)
-        local function spawnOne()
-            for _, group in pairs(self._blue_groups) do
-                if group:IsSpawned() == false then
-                    group:Spawn()
-                    return true
-                end
-            end
-            return nil
-        end
-
-        for i = 1, amount do
-            local spawned = spawnOne()
-            if spawned ~= true then
-                self._logger:debug("No more groups to spawn at base: " .. self._airbase:getName())
-                return false
-            end
-        end
-
-        return true
-    end
-
-    ---@param buildableMission BuildableMission
-    function StageBase:OnCrateDroppedOff(buildableMission, kilos)
-        self._logger:debug("Crate dropped off at base: " .. self._airbase:getName())
-
-        local timeToUnpack = (kilos / 500) * 30
-
-        ---@type UnpackAirbaseCrateParam
-        local params = {
-            self = self,
-            groupsPerKilo = self._groupsPerKilo,
-            unpackedItems = 0,
-            kilosPerSecond = kilos / timeToUnpack,
-            unpackedKilos = 0,
-            kilos = kilos
-        }
-
-        timer.scheduleFunction(startUnpackingCrate, params, timer.getTime() + 2)
-    end
-
-    ---@private
-    ---@return SpearheadTriggerZone?
-    function StageBase:GetNoLandingZone()
-        ---@type Array<Vec2>
-        local points = {}
-
-        for _, group in pairs(self._blue_groups) do
-            for _, unitPos in pairs(group:GetAllUnitPositions()) do
-                table.insert(points, { x = unitPos.x, y = unitPos.z })
-            end
-        end
-
-        local vecs = Spearhead.Util.getConvexHull(points)
-
-        local pos = self._airbase:getPoint()
-        local location = {
-            x = pos.x,
-            y = pos.z
-        }
-
-        ---@type SpearheadTriggerZone
-        local spearheadZone = {
-            name = self._airbase:getName() .. "_noland",
-            location = location,
-            verts = vecs,
-            radius = 0,
-            zone_type = "Polygon"
-        }
-
-        return spearheadZone
-    end
-
-    
-    ---@param kilos number
-    function StageBase:FinaliseCrate(kilos)
-        self._receivedBuildingKilos = self._receivedBuildingKilos + kilos
-        if self._receivedBuildingKilos >= self._requiredBuildingKilos then
-            self:FinaliseBlueStage()
-        end
-    end
+function StageBase:OnBuildingComplete()
+    self:FinaliseBlueStage()
 end
 
 

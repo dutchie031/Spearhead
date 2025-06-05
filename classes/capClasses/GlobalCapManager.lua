@@ -11,8 +11,9 @@ do
     ---@param database Database
     ---@param capConfig table
     ---@param stageConfig StageConfig
+    ---@param spawnManager SpawnManager
     ---@param logLevel LogLevel
-    function GlobalCapManager.start(database, capConfig, stageConfig, logLevel)
+    function GlobalCapManager.start(database, capConfig, stageConfig, logLevel, spawnManager)
         if initiated == true then return end
 
         local logger = Spearhead.LoggerTemplate.new("AirbaseManager", logLevel)
@@ -31,7 +32,7 @@ do
                     for _, airbaseName in pairs(airbaseNames) do
                         if airbaseName then
                             local airbaseSpecificLogger = Spearhead.LoggerTemplate.new("CAP_" .. airbaseName, logLevel)
-                            local airbase = Spearhead.classes.capClasses.CapAirbase.new(airbaseName, database, airbaseSpecificLogger, capConfig, stageConfig, runwayBombingTracker)
+                            local airbase = Spearhead.classes.capClasses.CapAirbase.new(airbaseName, database, airbaseSpecificLogger, capConfig, stageConfig, runwayBombingTracker, spawnManager)
                             if airbase then
                                 table.insert(airbasesPerStage[stageName], airbase)
                                 allAirbasesByName[airbaseName] = airbase

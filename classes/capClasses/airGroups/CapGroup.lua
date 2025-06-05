@@ -10,12 +10,13 @@ CapGroup.__index = CapGroup
 ---@param groupName string
 ---@param config CapConfig
 ---@param logger Logger
+---@param spawnManager SpawnManager
 ---@return CapGroup
-function CapGroup.New(groupName, config, logger)
+function CapGroup.New(groupName, config, logger, spawnManager)
 
     setmetatable(CapGroup, Spearhead.classes.capClasses.airGroups.AirGroup)
     local self = setmetatable({}, CapGroup) --[[@as CapGroup]]
-    Spearhead.classes.capClasses.airGroups.AirGroup.New(self, groupName, "CAP", config, logger)
+    Spearhead.classes.capClasses.airGroups.AirGroup.New(self, groupName, "CAP", config, logger, spawnManager)
 
     self._targetZoneIdPerStage = {}
 

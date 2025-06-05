@@ -63,8 +63,9 @@ Stage.StageColors = {
 ---@param logger Logger
 ---@param initData StageInitData
 ---@param missionPriority MissionPriority
+---@param spawnManager SpawnManager
 ---@return Stage
-function Stage:superNew(database, stageConfig, logger, initData, missionPriority)
+function Stage:superNew(database, stageConfig, logger, initData, missionPriority, spawnManager)
 
     logger:debug("[BaseStage] Initiating stage with name: " .. initData.stageZoneName)
 
@@ -109,7 +110,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
 
     local farpNames = database:getFarpNamesInStage(self.zoneName)
     for _, farpName in pairs(farpNames) do
-        local farp = Spearhead.classes.stageClasses.SpecialZones.FarpZone.New(database, logger, farpName)
+        local farp = Spearhead.classes.stageClasses.SpecialZones.FarpZone.New(database, logger, farpName, spawnManager)
         table.insert(self._db.farps, farp)
     end
 
@@ -141,7 +142,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         self._logger:debug("Found " .. Spearhead.Util.tableLength(missionZones) .. " mission zones for stage: " .. self.zoneName)
         for _, missionZone in pairs(missionZones) do
             
-            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZone, self._missionPriority, database, logger, self)
+            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZone, self._missionPriority, database, logger, self, spawnManager)
             if mission then
                 self._db.missionsByCode[mission.code] = mission
 
@@ -164,7 +165,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         ---@type table<string, Array<Mission>>
         local randomMissionByName = {}
         for _, missionZoneName in pairs(randomMissionNames) do
-            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZoneName, self._missionPriority, database, logger, self)
+            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZoneName, self._missionPriority, database, logger, self, spawnManager)
             if mission then
                 if randomMissionByName[mission.name] == nil then
                     randomMissionByName[mission.name] = {}
@@ -217,19 +218,19 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         local airbaseNames = database:getAirbaseNamesInStage(self.zoneName)
         if airbaseNames ~= nil and type(airbaseNames) == "table" then
             for _, airbaseName in pairs(airbaseNames) do
-                local airbase = Spearhead.classes.stageClasses.SpecialZones.StageBase.New(database, logger, airbaseName)
+                local airbase = Spearhead.classes.stageClasses.SpecialZones.StageBase.New(database, logger, airbaseName, spawnManager)
                 table.insert(self._db.airbases, airbase)
             end
         end
 
         for _, samZoneName in pairs(database:getBlueSamsInStage(self.zoneName)) do
-            local blueSam =  Spearhead.classes.stageClasses.SpecialZones.BlueSam.New(database, logger, samZoneName)
+            local blueSam =  Spearhead.classes.stageClasses.SpecialZones.BlueSam.New(database, logger, samZoneName, spawnManager)
             table.insert(self._db.blueSams, blueSam)
         end
 
         local miscGroups = database:getMiscGroupsAtStage(self.zoneName)
         for _, groupName in pairs(miscGroups) do
-            local miscGroup = SpearheadGroup.New(groupName)
+            local miscGroup = SpearheadGroup.New(groupName, spawnManager, true)
 
             table.insert(self._db.miscGroups, miscGroup)
             Spearhead.DcsUtil.DestroyGroup(groupName)

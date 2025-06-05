@@ -15,14 +15,15 @@ local WaitingStageInitData = {}
 ---@param stageConfig StageConfig
 ---@param logger any
 ---@param initData WaitingStageInitData
+---@param spawnManager SpawnManager
 ---@return WaitingStage
-function WaitingStage.New(database, stageConfig, logger, initData)
+function WaitingStage.New(database, stageConfig, logger, initData, spawnManager)
 
     local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
     setmetatable(WaitingStage, Stage)
 
     local self = setmetatable({}, { __index = WaitingStage }) --[[@as WaitingStage]]
-    self:superNew(database, stageConfig, logger, initData, "none")
+    self:superNew(database, stageConfig, logger, initData, "none", spawnManager)
 
     self._waitTimeSeconds = 5
     if initData.waitingSeconds and initData.waitingSeconds > 5 then self._waitTimeSeconds  = initData.waitingSeconds end
