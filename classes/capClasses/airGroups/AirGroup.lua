@@ -424,6 +424,7 @@ Spearhead.classes.capClasses.airGroups.AirGroup = AirGroup
 ---@alias AirGroupType
 ---| "CAP"
 ---| "SWEEP"
+---| "INTERCEPT"
 
 ---| "CAS"
 ---| "SEAD"
