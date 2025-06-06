@@ -288,6 +288,8 @@ function CapBase:CheckAndScheduleIntercept()
 
     local interceptZoneIDs = {}
 
+    local zoneIDPerGroup = {}
+
     local airbase = Airbase.getByName(self.airbaseName)
     if not airbase then
         return nil
@@ -297,6 +299,7 @@ function CapBase:CheckAndScheduleIntercept()
         local targetZoneID = group:GetZoneIDWhenStageID(tostring(self.activeStage))
         if targetZoneID then
            interceptZoneIDs[targetZoneID] = true
+           zoneIDPerGroup[group:GetName()] = targetZoneID
         end
     end
 
@@ -346,7 +349,7 @@ function CapBase:CheckAndScheduleIntercept()
         if total < required then
             for _, group in pairs(self.interceptGroupsByName) do
                 local zoneID = group:GetZoneIDWhenStageID(tostring(self.activeStage))
-                if group:GetState() == "ReadyOnTheRamp" and zoneID ~= nil then
+                if group:GetState() == "ReadyOnTheRamp" and zoneID ~= zoneIDPerGroup[group:GetName()] then
                     group:SendToInterceptUnits(targets, name, airbase)
                 end
             end
