@@ -2,10 +2,12 @@
 ---@field private airbaseName string
 ---@field private logger table
 ---@field private database Database
+---@field private detectionManager DetectionManager
 ---@field private activeStage number
 ---@field private capConfig table
 ---@field private capGroupsByName table<string, CapGroup>
 ---@field private sweepGroupsByName table<string, SweepGroup>
+---@field private interceptGroupsByName table<string, InterceptGroup>
 ---@field private runwayBombingTracker RunwayBombingTracker
 ---@field private runwayStrikeMissions table<string, RunwayStrikeMission>
 local CapBase = {}
@@ -29,7 +31,7 @@ end
 ---@param stageConfig table
 ---@param runwayBombingTracker RunwayBombingTracker
 ---@return CapBase
-function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runwayBombingTracker)
+function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runwayBombingTracker, detectionManager)
     CapBase.__index = CapBase
     local self = setmetatable({}, { __index = CapBase }) --[[@as CapBase]]
 
@@ -43,6 +45,7 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
     self.database = database
     self.capGroupsByName = {}
     self.sweepGroupsByName = {}
+    self.detectionManager = detectionManager
 
     local baseData = database:getAirbaseDataForZone(airbaseName)
     if baseData and baseData.CapGroups then
@@ -59,6 +62,15 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
             local sweepGroup = Spearhead.classes.capClasses.airGroups.SweepGroup.New(name, capConfig, logger)
             if sweepGroup then
                 self.sweepGroupsByName[name] = sweepGroup
+            end
+        end
+    end
+
+    if baseData and baseData.InterceptGroups then
+        for key, name in pairs(baseData.InterceptGroups) do
+            local interceptGroup = Spearhead.classes.capClasses.airGroups.InterceptGroup.New(name, capConfig, logger, detectionManager)
+            if interceptGroup then
+                self.interceptGroupsByName[name] = interceptGroup
             end
         end
     end
@@ -272,6 +284,76 @@ function CapBase:CheckAndScheduleSweep()
     end
 end
 
+function CapBase:CheckAndScheduleIntercept()
+
+    local interceptZoneIDs = {}
+
+    local airbase = Airbase.getByName(self.airbaseName)
+    if not airbase then
+        return nil
+    end
+
+    for name, group in pairs(self.interceptGroupsByName) do
+        local targetZoneID = group:GetZoneIDWhenStageID(tostring(self.activeStage))
+        if targetZoneID then
+           interceptZoneIDs[targetZoneID] = true
+        end
+    end
+
+    ---@type table<string, Array<string>>
+    local unitsToInterceptPerZone = {}
+
+    local detectedUnits = self.detectionManager:GetDetectedUnitsBy(coalition.side.RED)
+    for targetZoneID, _ in pairs(interceptZoneIDs) do
+        local zones = self.database:GetInterceptZonesForZoneID(targetZoneID)
+        if zones then
+            for _, zone in pairs(zones) do
+                for _, unitName in pairs(detectedUnits) do
+                    local unit = Unit.getByName(unitName)
+                    if unit and unit:isExist() then
+                        local unitPos = unit:getPoint()
+                        if Spearhead.Util.is3dPointInZone(unitPos, zone) == true then
+                            if not unitsToInterceptPerZone[zone.name] then
+                                unitsToInterceptPerZone[zone.name] = {}
+                            end
+
+                            table.insert(unitsToInterceptPerZone[zone.name], unitName)
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    ---RATIO. Amount of enemy fighters required per zone before another group gets added.
+    local ratio = 4 -- Ratio of units to intercept per zone, can be adjusted
+
+    for name, targets in pairs(unitsToInterceptPerZone) do
+
+        local required = 0
+        if targets and #targets > 0 then
+            required = math.ceil(#targets / ratio)
+        end
+
+        local total = 0
+        for _, group in pairs(self.interceptGroupsByName) do
+            if group:GetState() == "OnStation" and group:GetCurrentTargetZone() == name then
+                group:SetTargetUnits(targets)
+                total = total + 1
+            end
+        end
+
+        if total < required then
+            for _, group in pairs(self.interceptGroupsByName) do
+                local zoneID = group:GetZoneIDWhenStageID(tostring(self.activeStage))
+                if group:GetState() == "ReadyOnTheRamp" and zoneID ~= nil then
+                    group:SendToInterceptUnits(targets, name, airbase)
+                end
+            end
+        end
+    end
+
+end
 function CapBase:OnStageNumberChanged(number)
     self.activeStage = number
 

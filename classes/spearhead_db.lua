@@ -7,8 +7,10 @@
 ---@field MissionZonesLocations table<string, Vec2> All Mission Zone Locations
 ---@field StageZonesByNumber table<string, Array<string>> Stage zones grouped by index number
 ---@field AllFarpZones Array<string>
----@field CapRoutes Array<string> All Cap route zone names
----@field capZonesByCapZoneID table<string, CapRoute> table<StageNumber, table>
+---@field AllCapRoutes Array<string> All Cap route zone names
+---@field AllInterceptZones Array<string> All intercept zones
+---@field capZonesByCapZoneID table<string, CapRoute>
+---@field interceptZonesByZoneID table<string, Array<SpearheadTriggerZone>>
 ---@field CarrierRouteZones Array<string> All Carrier routes zones
 ---@field BlueSams Array<string> All blue sam zones
 ---@field SupplyHubZones Array<string> All supply hub zones
@@ -44,6 +46,7 @@
 ---@class AirbaseData
 ---@field CapGroups Array<string>
 ---@field SweepGroups Array<string>
+---@field InterceptGroups Array<string>
 ---@field RedGroups Array<string>
 ---@field BlueGroups Array<string>
 ---@field supplyHubNames Array<string>
@@ -79,8 +82,10 @@ function Database.New(Logger)
     local tables = {
         AllZoneNames = {},
         BlueSams = {},
-        CapRoutes = {},
+        AllCapRoutes = {},
         capZonesByCapZoneID = {},
+        AllInterceptZones = {},
+        interceptZonesByZoneID = {},
         CarrierRouteZones = {},
         MissionZones = {},
         MissionZonesLocations = {},
@@ -142,37 +147,43 @@ function Database.New(Logger)
                 end
             end
 
-            if string.lower(split_string[1]) == "waitingstage" then
+            local lowered = string.lower(split_string[1])
+
+            if lowered == "waitingstage" then
                 table.insert(self._tables.StageZoneNames, zone_name)
             end
 
-            if string.lower(split_string[1]) == "mission" then
+            if lowered == "mission" then
                 table.insert(self._tables.MissionZones, zone_name)
                 self._tables.MissionZonesLocations[zone_name] = zoneLocation
             end
 
-            if string.lower(split_string[1]) == "randommission" then
+            if lowered == "randommission" then
                 table.insert(self._tables.RandomMissionZones, zone_name)
                 self._tables.MissionZonesLocations[zone_name] = zoneLocation
             end
 
-            if string.lower(split_string[1]) == "farp" then
+            if lowered == "farp" then
                 table.insert(self._tables.AllFarpZones, zone_name)
             end
 
-            if string.lower(split_string[1]) == "caproute" then
-                table.insert(self._tables.CapRoutes, zone_name)
+            if lowered == "caproute" then
+                table.insert(self._tables.AllCapRoutes, zone_name)
             end
 
-            if string.lower(split_string[1]) == "carrierroute" then
+            if lowered == "interceptzone" then
+                table.insert(self._tables.AllInterceptZones, zone_name)
+            end
+
+            if lowered == "carrierroute" then
                 table.insert(self._tables.CarrierRouteZones, zone_name)
             end
 
-            if string.lower(split_string[1]) == "bluesam" then
+            if lowered == "bluesam" then
                 table.insert(self._tables.BlueSams, zone_name)
             end
 
-            if string.lower(split_string[1]) == "supplyhub" then
+            if lowered == "supplyhub" then
                 table.insert(self._tables.SupplyHubZones, zone_name)
             end
         end
@@ -365,7 +376,7 @@ function Database.New(Logger)
     self:loadMiscGroupsInStages()
 
 
-    for _, cap_route_zone in pairs(self._tables.CapRoutes) do
+    for _, cap_route_zone in pairs(self._tables.AllCapRoutes) do
         local split = Spearhead.Util.split_string(cap_route_zone, "_")
         local zoneID = split[2]
 
@@ -380,6 +391,22 @@ function Database.New(Logger)
             local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
             if zone then
                 table.insert(tables.capZonesByCapZoneID[zoneID].zones, zone)
+            end
+        end
+    end
+
+    for _, interceptZone in pairs(self._tables.AllCapRoutes) do
+        local split = Spearhead.Util.split_string(interceptZone, "_")
+        local zoneID = split[2]
+
+        if zoneID then
+            if tables.interceptZonesByZoneID[zoneID] == nil then
+                tables.interceptZonesByZoneID[zoneID] = {}
+            end
+
+            local zone = Spearhead.DcsUtil.getZoneByName(interceptZone)
+            if zone then
+                table.insert(tables.interceptZonesByZoneID[zoneID], zone)
             end
         end
     end
@@ -526,6 +553,7 @@ function Database:getOrCreateAirbaseData(baseName)
     if baseData == nil then
         baseData = {
             CapGroups = {},
+            InterceptGroups = {},
             SweepGroups = {},
             RedGroups = {},
             BlueGroups = {},
@@ -596,6 +624,8 @@ function Database:loadCapUnits()
 
             if Spearhead.Util.startswith(groupName, "CAP_A", true) or Spearhead.Util.startswith(groupName, "CAP_B", true) then
                 table.insert(baseData.CapGroups, groupName)
+            elseif Spearhead.Util.startswith(groupName, "CAP_I", true) then
+                table.insert(baseData.InterceptGroups, groupName)
             elseif Spearhead.Util.startswith(groupName, "CAP_S", true) then
                 table.insert(baseData.SweepGroups, groupName)
             end
@@ -837,6 +867,18 @@ function Database:GetCapZoneForZoneID(zoneID)
     end
 
     return nil
+end
+
+function Database:GetInterceptZonesForZoneID(zoneID)
+    zoneID = tostring(zoneID) or "nothing"
+
+    local interceptZonesForID = self._tables.interceptZonesByZoneID[zoneID]
+
+    if not interceptZonesForID then
+        return {}
+    end
+
+    return interceptZonesForID
 end
 
 ---@return Array<string> result a  list of stage zone names
