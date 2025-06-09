@@ -93,3 +93,9 @@ function SweepGroup:InitWithName(groupName)
             groupName .. "should have at least 3 parts, but has " .. partCount)
     end
 end
+
+if not Spearhead then Spearhead = {} end
+if not Spearhead.classes then Spearhead.classes = {} end
+if not Spearhead.classes.capClasses then Spearhead.classes.capClasses = {} end
+if not Spearhead.classes.capClasses.airGroups then Spearhead.classes.capClasses.airGroups = {} end
+Spearhead.classes.capClasses.airGroups.SweepGroup = SweepGroup
