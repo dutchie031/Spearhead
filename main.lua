@@ -77,8 +77,3 @@ Spearhead.internal.GlobalStageManager:printFullOverview()
 --     trigger.action.lineToAll(-1 , 56+i , { x= a.x, y = 0, z = a.z } ,  { x = b.x, y = 0, z = b.z } , color , 1, true)
 
 -- end
-
-
-local unit = Unit.getByName("CAP_B[1-2]10A_sochi-2-1")
-local desc = unit:getDesc()
-env.info("Blaat desc: " .. Spearhead.Util.toString(desc))
