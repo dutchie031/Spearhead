@@ -20,6 +20,7 @@ local CapBase = {}
 local CheckStateContinuous = function(self, time)
     self:CheckAndScheduleCAP()
     self:CheckAndScheduleSweep()
+    self:CheckAndScheduleIntercept()
     return time + 15
 end
 
@@ -30,6 +31,7 @@ end
 ---@param capConfig table
 ---@param stageConfig table
 ---@param runwayBombingTracker RunwayBombingTracker
+---@param detectionManager DetectionManager
 ---@return CapBase
 function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runwayBombingTracker, detectionManager)
     CapBase.__index = CapBase
@@ -45,6 +47,7 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
     self.database = database
     self.capGroupsByName = {}
     self.sweepGroupsByName = {}
+    self.interceptGroupsByName = {}
     self.detectionManager = detectionManager
 
     local baseData = database:getAirbaseDataForZone(airbaseName)
@@ -75,13 +78,18 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
         end
     end
 
-    logger:info("Airbase with name '" .. airbaseName .. "' has a total of " .. Spearhead.Util.tableLength(self.capGroupsByName) .. " cap flights registered")
+    local capFlights = Spearhead.Util.tableLength(self.capGroupsByName)
+    local sweepFlights = Spearhead.Util.tableLength(self.sweepGroupsByName)
+    local interceptFlights = Spearhead.Util.tableLength(self.interceptGroupsByName)
+
+    logger:info(airbaseName .. " : " .. capFlights .." CAP | " .. sweepFlights .. " SWEEP | " .. interceptFlights .. " INTERCEPT")
 
     self:CreateRunwayStrikeMission(database)
 
     Spearhead.Events.AddStageNumberChangedListener(self)
 
     timer.scheduleFunction(CheckStateContinuous, self, timer.getTime() + 15)
+    
 
     return self
 end
@@ -124,6 +132,14 @@ function CapBase:SpawnIfApplicable()
 
         if targetStage ~= nil and sweepGroup:GetState() == "UnSpawned" then
             sweepGroup:Spawn()
+        end
+    end
+
+    for groupName, interceptGroup in pairs(self.interceptGroupsByName) do
+        local targetStage = interceptGroup:GetZoneIDWhenStageID(tostring(self.activeStage))
+
+        if targetStage ~= nil and interceptGroup:GetState() == "UnSpawned" then
+            interceptGroup:Spawn()
         end
     end
 end
@@ -286,9 +302,9 @@ end
 
 function CapBase:CheckAndScheduleIntercept()
 
-    local interceptZoneIDs = {}
+    self.logger:debug("Check intercept taskings for airbase " .. self.airbaseName)
 
-    local zoneIDPerGroup = {}
+    local interceptZoneIDs = {}
 
     local airbase = Airbase.getByName(self.airbaseName)
     if not airbase then
@@ -299,7 +315,6 @@ function CapBase:CheckAndScheduleIntercept()
         local targetZoneID = group:GetZoneIDWhenStageID(tostring(self.activeStage))
         if targetZoneID then
            interceptZoneIDs[targetZoneID] = true
-           zoneIDPerGroup[group:GetName()] = targetZoneID
         end
     end
 
@@ -311,7 +326,12 @@ function CapBase:CheckAndScheduleIntercept()
         local zones = self.database:GetInterceptZonesForZoneID(targetZoneID)
         if zones then
             for _, zone in pairs(zones) do
+
+                self.logger:debug("Check intercept zone " .. zone.name .. " for airbase " .. self.airbaseName)
+
                 for _, unitName in pairs(detectedUnits) do
+                    self.logger:debug("Check unit " .. unitName .. " for intercept in zone " .. zone.name)
+
                     local unit = Unit.getByName(unitName)
                     if unit and unit:isExist() then
                         local unitPos = unit:getPoint()
@@ -332,10 +352,10 @@ function CapBase:CheckAndScheduleIntercept()
     local ratio = 4 -- Ratio of units to intercept per zone, can be adjusted
 
     for name, targets in pairs(unitsToInterceptPerZone) do
-
         local required = 0
-        if targets and #targets > 0 then
-            required = math.ceil(#targets / ratio)
+        local nrTargets = Spearhead.Util.tableLength(targets)
+        if targets and nrTargets > 0 then
+            required = math.ceil(nrTargets / ratio)
         end
 
         local total = 0
@@ -348,9 +368,16 @@ function CapBase:CheckAndScheduleIntercept()
 
         if total < required then
             for _, group in pairs(self.interceptGroupsByName) do
-                local zoneID = group:GetZoneIDWhenStageID(tostring(self.activeStage))
-                if group:GetState() == "ReadyOnTheRamp" and zoneID ~= zoneIDPerGroup[group:GetName()] then
-                    group:SendToInterceptUnits(targets, name, airbase)
+                if total < required then
+                    local zoneID = group:GetZoneIDWhenStageID(tostring(self.activeStage))
+                    if group:GetState() == "ReadyOnTheRamp" then
+                        group:SendToInterceptUnits(targets, name, airbase)
+                        total = total + 1
+
+                        self.logger:debug("Intercept group " .. group:GetName() .. " sent to intercept zone " .. name )
+                    elseif group:GetState() == "InTransit" or group:GetState() == "OnStation" then
+                        group:SetTargetUnits(targets)
+                    end
                 end
             end
         end
@@ -374,6 +401,20 @@ function CapBase:IsBaseActiveWhenStageIsActive(stageNumber)
     for _, group in pairs(self.capGroupsByName) do
         local target = group:GetZoneIDWhenStageID(tostring(stageNumber))
         if group:IsBackup() == false and target ~= nil then
+            return true
+        end
+    end
+
+    for _, group in pairs(self.sweepGroupsByName) do
+        local target = group:GetZoneIDWhenStageID(tostring(stageNumber))
+        if target ~= nil then
+            return true
+        end
+    end
+
+    for _, group in pairs(self.interceptGroupsByName) do
+        local target = group:GetZoneIDWhenStageID(tostring(stageNumber))
+        if target ~= nil then
             return true
         end
     end

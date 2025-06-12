@@ -4,9 +4,11 @@
 ---@field private _detectionManager DetectionManager
 ---@field private _coalitionSide CoalitionSide
 ---@field private _lastKnownTargetAt number
+---@field private _currentTargetName string?
 ---@field private _targetZoneIdPerStage table<string, string>
 ---@field private _config CapConfig
 ---@field private _airbase Airbase
+---@field private _maxSpeed number?
 ---@field private _updateTaskID number|nil
 local InterceptGroup = {}
 InterceptGroup.__index = InterceptGroup
@@ -28,11 +30,23 @@ function InterceptGroup.New(groupName, config, logger, detectionManager)
         logger:error("InterceptGroup: Group " .. groupName .. " does not exist")
         return nil
     end
+
+    local unit = group:getUnit(1)
+    if unit then
+        local desc = unit:getDesc()
+        if desc["speedMax10K"] then
+            self._maxSpeed = desc["speedMax10K"] * 0.75
+            self._logger:debug("InterceptGroup: Max speed for group " .. groupName .. " is set to " .. self._maxSpeed .. " m/s")
+        end
+    end
+
     self._coalitionSide = group:getCoalition()
     self._detectionManager = detectionManager
     self._config = config
     self._targetNames = {}
     self._targetZoneIdPerStage = {}
+
+    self:InitWithName(groupName)
 
     return self
 end
@@ -93,23 +107,68 @@ function InterceptGroup:RemoveTargetUnit(unit)
     end
 end
 
+---@private
+---@return Unit?
+---@return Vec3? groupPoint
+function InterceptGroup:GetClosestTarget()
+
+    local group = Group.getByName(self._groupName)
+    if not group then return nil end
+
+    local groupPoint = nil
+    for _, unit in pairs(group:getUnits()) do
+        if unit and unit:isExist() then
+            groupPoint = unit:getPoint()
+            break
+        end
+    end
+
+    if not groupPoint then return nil end
+
+    local closestUnit = nil
+    local closestDistance = math.huge
+
+    for _, targetName in pairs(self._targetNames) do
+        local targetUnit = Unit.getByName(targetName)
+        if targetUnit and targetUnit:isExist() then
+            local pos = targetUnit:getPoint()
+            local distance = Spearhead.Util.VectorDistance3d(groupPoint, pos)
+            if distance < closestDistance then
+                closestDistance = distance
+                closestUnit = targetUnit
+            end
+        end
+    end
+
+    return closestUnit, groupPoint
+end
+
 ---@return number? @interval or null if no retry required
 function InterceptGroup:UpdateTask()
     local group = Group.getByName(self._groupName)
     if not group then return end
+
+
+    local closestUnit, groupPoint = self:GetClosestTarget()
+    if not closestUnit then return 15 end
+    if not groupPoint then return 15 end
+
+    local closesUnitVec = closestUnit:getPoint()
+    local alt = closesUnitVec.y
+    if alt < 1000 then
+        alt = 1000 -- Ensure minimum altitude for intercept
+    end
 
     local selfDetected = false
     for _, unit in pairs(group:getUnits()) do
         if unit and unit:isExist() then
             local controller = unit:getController()
             if controller then
-                for _, detected in pairs(controller:getDetectedTargets()) do
-                    if detected and detected.object then
-                        for _, targetName in pairs(self._targetNames) do
-                            if detected.object:getName() == targetName then
-                                selfDetected = true
-                                break
-                            end
+                for _, detected in pairs(controller:getDetectedTargets(Controller.Detection.VISUAL, Controller.Detection.OPTIC, Controller.Detection.RADAR)) do
+                    if detected and detected.object and detected.distance == true then
+                        if detected.object:getName() == closestUnit:getName() then
+                            selfDetected = true
+                            break
                         end
                     end
                 end
@@ -122,41 +181,30 @@ function InterceptGroup:UpdateTask()
         self:SendRTB(self._airbase)
         return nil -- Return to base if bingo fuel
     end
-
-    if selfDetected then
-        --JUDY JUDY, no adjustments to be made
-        return 30 -- Just continue attacking the detected target
-    end
-
-    local groupPoint = nil
-    for _, unit in pairs(group:getUnits()) do
-        if unit and unit:isExist() then
-            groupPoint = unit:getPoint()
-            break
-        end
-    end
-
-    if groupPoint == nil then return end
-
-    local closestUnit = nil
-    local closestDistance = math.huge
-
-    -- if not self detected then check if the target it detected by the detection manager
-    for _, targetName in pairs(self._targetNames) do
-        if self._detectionManager:IsUnitDetectedBy(targetName, self._coalitionSide) then
-            local targetUnit = Unit.getByName(targetName)
-            if targetUnit and targetUnit:isExist() then
-                local pos = targetUnit:getPoint()
-                local distance = Spearhead.Util.VectorDistance3d(groupPoint, pos)
-                if distance < closestDistance then
-                    closestDistance = distance
-                    closestUnit = targetUnit
-                end
+    
+    if selfDetected and self:IsInAir() == true then
+        if self._currentTargetName and self._currentTargetName == closestUnit:getName() then
+            local distance = Spearhead.Util.VectorDistance3d(closestUnit:getPoint(), groupPoint)
+            if distance < 30 * 1852 then
+                -- If the target is within 10 nautical miles, continue attacking
+                self._logger:debug("InterceptGroup: " .. self._groupName .. " continues attacking target " .. closestUnit:getName())
+                return 15 -- Continue attacking the detected target
             end
         end
+
+        self._logger:debug("InterceptGroup: " .. self._groupName .. " has detected target " .. closestUnit:getName() .. ", creating intercept mission")
+        local vec3 = closestUnit:getPoint()
+        local vec2 = { x = vec3.x, y = vec3.z }
+        local groupPointVec2 = { x = groupPoint.x, y = groupPoint.z }
+        local mission = Spearhead.classes.capClasses.taskings.INTERCEPT.getUnitInterceptMissionFromAir(self._groupName, groupPointVec2, vec2, closestUnit, self._airbase, self._config, self._maxSpeed, alt)
+        self:SetMission(mission)
+        self._currentTargetName = closestUnit:getName()
+        return 15 -- Just continue attacking the detected target
+    else
+        self._currentTargetName = nil
     end
 
-    if closestUnit == nil then return 30 end
+    
 
     local speed = self._config:getMaxSpeed()
     local interceptPoint = self:GetInterceptPoint(groupPoint, speed, closestUnit)
@@ -165,30 +213,26 @@ function InterceptGroup:UpdateTask()
         return 30 -- Return to base if no intercept point could be calculated
     end
 
-    local isInAir = false
-    for _, unit in pairs(group:getUnits()) do
-        if unit and unit:isExist() and unit:inAir() then
-            isInAir = true
-            break
-        end
-    end
-
     local mission = nil
-    if isInAir == true then
+    if self:IsInAir() == true then
         -- If the group is in the air, create an intercept mission
         mission = Spearhead.classes.capClasses.taskings.INTERCEPT.getMissionFromInAir(
             self._groupName,
             { x = groupPoint.x, y = groupPoint.z },
             interceptPoint,
             self._airbase,
-            self._config
+            self._config,
+            self._maxSpeed,
+            alt
         )
     else
         mission = Spearhead.classes.capClasses.taskings.INTERCEPT.getMissionFromAirbase(
             self._groupName,
             interceptPoint,
             self._airbase,
-            self._config
+            self._config,
+            self._maxSpeed,
+            alt
         )
     end
 
@@ -199,7 +243,7 @@ function InterceptGroup:UpdateTask()
         return 30 -- Return to base if mission could not be created
     end
 
-    return 30
+    return 15
 end
 
 
@@ -299,7 +343,7 @@ function InterceptGroup:InitWithName(groupName)
             end
         end
 
-        env.info("Capgroup parsed with table: " .. Spearhead.Util.toString(self._targetZoneIdPerStage))
+        env.info("interceptGroup parsed with table: " .. Spearhead.Util.toString(self._targetZoneIdPerStage))
 
     else
         Spearhead.AddMissionEditorWarning("CAP Group with name: " .. groupName .. "should have at least 3 parts, but has " .. partCount)

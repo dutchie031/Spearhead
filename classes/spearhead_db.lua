@@ -395,7 +395,7 @@ function Database.New(Logger)
         end
     end
 
-    for _, interceptZone in pairs(self._tables.AllCapRoutes) do
+    for _, interceptZone in pairs(self._tables.AllInterceptZones) do
         local split = Spearhead.Util.split_string(interceptZone, "_")
         local zoneID = split[2]
 

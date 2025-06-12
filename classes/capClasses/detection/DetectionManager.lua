@@ -33,7 +33,7 @@ function DetectionManager.New(logger)
     ---@param selfA DetectionManager
     ---@param time number
     local updateDetected = function(selfA, time)
-        selfA:UpdateDetectingUnits()
+        selfA:UpdateDetectedUnits()
         return time + 10
     end
     timer.scheduleFunction(updateDetected, self, timer.getTime() + 130)
@@ -50,6 +50,10 @@ function DetectionManager:IsUnitDetectedBy(unitName, coalitionSide)
         return false
     end
 
+    if not self._detectedUnits[coalitionString][unitName] then
+        return false
+    end
+
     return timer.getTime() - self._detectedUnits[coalitionString][unitName] < 20
 end
 
@@ -62,7 +66,9 @@ function DetectionManager:GetDetectedUnitsBy(coalitionSide)
 
     local detectedUnits = {}
     for unitName, _ in pairs(self._detectedUnits[coalitionString]) do
-        table.insert(detectedUnits, unitName)
+        if self:IsUnitDetectedBy(unitName, coalitionSide) then
+            table.insert(detectedUnits, unitName)
+        end
     end
 
     return detectedUnits
@@ -71,20 +77,20 @@ end
 function DetectionManager:UpdateDetectingUnits()
     self:UpdateDetectingInCoalition(coalition.side.RED)
     self:UpdateDetectingInCoalition(coalition.side.BLUE)
-    self._logger:debug("DetectionManager: Updated detecting units")
+    self._logger:debug("Updated detecting units")
 end
 
 function DetectionManager:UpdateDetectedUnits()
     self:UpdateDetectedUnitsByCoalition(coalition.side.RED)
     self:UpdateDetectedUnitsByCoalition(coalition.side.BLUE)
-    self._logger:debug("DetectionManager: Updated detected units")
+    self._logger:debug("Updated detected units")
 end
 
 ---@private
 ---@param unit Unit
 ---@return boolean
 function DetectionManager:IsDetectingType(unit)
-    return unit:hasAttribute("EWR") or unit:hasAttribute("AWACS")
+    return unit:hasAttribute("EWR") or unit:hasAttribute("AWACS") or unit:hasAttribute("SAM SR")
 end
 
 ---@private
@@ -133,7 +139,10 @@ end
 function DetectionManager:UpdateDetectedUnitsByCoalition(coalitionSide)
 
     local coalitionString = tostring(coalitionSide)
-    if not coalitionSide[coalitionString] then return end
+    if not self._detectingUnits[coalitionString] then return end
+    if not self._detectedUnits[coalitionString] then
+        self._detectedUnits[coalitionString] = {}
+    end
 
     for _, detectingUnit in pairs(self._detectingUnits[coalitionString]) do
         if detectingUnit and detectingUnit:isExist() then
@@ -142,7 +151,9 @@ function DetectionManager:UpdateDetectedUnitsByCoalition(coalitionSide)
                 local targets = controller:getDetectedTargets(Controller.Detection.RADAR)
                 for _, target in pairs(targets) do
                     if target and target.object ~= nil and target.distance == true then
-                        self._detectedUnits[coalitionSide][target.object:getName()] = timer.getTime()
+                        local targetUnit = target.object
+                        local name = targetUnit:getName()
+                        self._detectedUnits[coalitionString][name] = timer.getTime()
                     end
                 end
             end
@@ -150,3 +161,8 @@ function DetectionManager:UpdateDetectedUnitsByCoalition(coalitionSide)
     end
 end
 
+if not Spearhead then Spearhead = {} end
+if not Spearhead.classes then Spearhead.classes = {} end
+if not Spearhead.classes.capClasses then Spearhead.classes.capClasses = {} end
+if not Spearhead.classes.capClasses.detection then Spearhead.classes.capClasses.detection = {} end
+Spearhead.classes.capClasses.detection.DetectionManager = DetectionManager
