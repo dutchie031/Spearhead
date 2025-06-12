@@ -306,7 +306,7 @@ function CapBase:CheckAndScheduleIntercept()
 
     local interceptZoneIDs = {}
 
-    local zoneIDPerGroup = {}
+    local interceptZoneIDs = {}
 
     local airbase = Airbase.getByName(self.airbaseName)
     if not airbase then
@@ -317,7 +317,6 @@ function CapBase:CheckAndScheduleIntercept()
         local targetZoneID = group:GetZoneIDWhenStageID(tostring(self.activeStage))
         if targetZoneID then
            interceptZoneIDs[targetZoneID] = true
-           zoneIDPerGroup[group:GetName()] = targetZoneID
         end
     end
 
