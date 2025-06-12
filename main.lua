@@ -32,11 +32,13 @@ if SpearheadConfig and SpearheadConfig.Persistence and SpearheadConfig.Persisten
 else
     standardLogger:info("Persistence disabled")
 end
-
 local spawnManager = Spearhead.classes.helpers.SpawnManager.new()
+local detectionLogger = Spearhead.LoggerTemplate.new("DetectionManager", defaultLogLevel)
+local detectionManager = Spearhead.classes.capClasses.detection.DetectionManager.New(detectionLogger)
 
-Spearhead.classes.capClasses.GlobalCapManager.start(databaseManager, capConfig, stageConfig, defaultLogLevel, spawnManager)
+Spearhead.classes.capClasses.GlobalCapManager.start(databaseManager, capConfig, detectionManager, stageConfig, defaultLogLevel, spawnManager)
 Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig, defaultLogLevel, spawnManager)
+
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 
 local SetStageDelayed = function(number, time)

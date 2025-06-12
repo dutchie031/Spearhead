@@ -117,6 +117,19 @@ function AirGroup:Spawn()
     self:SpawnInternal(false)
 end
 
+function AirGroup:IsInAir()
+    local group = Group.getByName(self._groupName)
+    if group then
+        local units = group:getUnits()
+        for _, unit in pairs(units) do
+            if unit:inAir() == true then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 ---@param force boolean
 ---@param withoutLoadout boolean?
 ---@protected
@@ -433,6 +446,8 @@ Spearhead.classes.capClasses.airGroups.AirGroup = AirGroup
 
 ---@alias AirGroupType
 ---| "CAP"
+---| "SWEEP"
+---| "INTERCEPT"
 
 ---| "CAS"
 ---| "SEAD"

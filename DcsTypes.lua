@@ -544,8 +544,24 @@ do -- Controller
     ---@class Controller
     ---@field setTask fun(self:Controller, task: Task) Sets the task of the controller to the passed task
     ---@field setCommand function
+    ---@field getDetectedTargets fun(self:Controller, type1: DetectionType?, type2: DetectionType?, type3: DetectionType?) : Array<DetectedObject> Returns a list of units that are detected by the controller. <br>Only works for unit controllers, not group controllers.
     Controller = Controller
 
+    ---@enum DetectionType
+    Controller.Detection = {
+        VISUAL = 1,
+        OPTIC  = 2,
+        RADAR  = 4,
+        IRST   = 8,
+        RWR    = 16,
+        DLINK  = 32
+    }
+
+    ---@class DetectedObject
+    ---@field object Object
+    ---@field visible boolean
+    ---@field type boolean
+    ---@field distance boolean
 
     ---@alias TaskType
     ---| "NoTask"
