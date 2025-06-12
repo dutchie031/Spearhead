@@ -30,8 +30,16 @@ function SweepGroup:GetCurrentTargetZoneID()
     return self._currentTargetZoneID
 end
 
+---@class SetTaskParams
+---@field task table
+---@field self SweepGroup
+
+---@param params SetTaskParams
+local setMissionDelayedTask = function(params, time)
+    params.self:SetMissionPrivate(params.task)
+end
+
 function SweepGroup:SendToZone(zone, targetZoneID, airbase)
-    
     self._logger:debug("Airgroup " .. self._groupName .. " called to zone: " .. zone.name)
 
     self._currentTargetZoneID = targetZoneID
@@ -40,10 +48,21 @@ function SweepGroup:SendToZone(zone, targetZoneID, airbase)
 
     local mission = Spearhead.classes.capClasses.taskings.SWEEP.getAsMissionFromAirbase(self._groupName, airbase, zone, self._config)
     if mission then
-        self:SetMission(mission)
+        ---@type SetTaskParams
+        local params = {
+            task = mission,
+            self = self
+        }
+        local delay = math.random(120, 600)
+        timer.scheduleFunction(setMissionDelayedTask, params, timer.getTime() + delay)
     else
         self._logger:error("SweepGroup:SendToZone - Mission could not be created for group: " .. self._groupName)
     end
+end
+
+function SweepGroup:SendToZoneInternal()
+
+
 end
 
 ---@private

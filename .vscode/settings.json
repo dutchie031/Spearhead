@@ -15,5 +15,6 @@
             "foldStartRegex": "[\\s]*--region[\\s]*(.*)", 
             "disableFolding": false 
         }
-    }
+    },
+    "livePreview.serverRoot": "/_docs"
 }
