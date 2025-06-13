@@ -86,9 +86,9 @@ SpearheadConfig = {
         --- enables or disables the persistence logic in spearhead
         enabled = false,
 
-        --- sets the directory where the persistence file is stored
-        --- if nil then lfs.writedir() will be used. 
-        --- which will 
+        --- sets the directory where the persistence file is stored <br>
+        --- if nil then lfs.writedir()/Data will be used. <br>
+        --- which will Result in <Saved Games>/<DCS Saved Games Folder>/Data/
         directory = nil ,
 
         --- the filename of the persistence file. Should end with .json for convention, but any text extension should do.

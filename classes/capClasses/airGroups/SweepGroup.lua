@@ -8,11 +8,12 @@ SweepGroup.__index = SweepGroup
 ---@param groupName string
 ---@param config CapConfig
 ---@param logger Logger
+---@param spawnManager SpawnManager
 ---@return SweepGroup
-function SweepGroup.New(groupName, config, logger)
+function SweepGroup.New(groupName, config, logger, spawnManager)
     setmetatable(SweepGroup, Spearhead.classes.capClasses.airGroups.AirGroup)
     local self = setmetatable({}, SweepGroup) --[[@as SweepGroup]]
-    Spearhead.classes.capClasses.airGroups.AirGroup.New(self, groupName, "SWEEP", config, logger)
+    Spearhead.classes.capClasses.airGroups.AirGroup.New(self, groupName, "SWEEP", config, logger, spawnManager)
 
     self._targetZoneIdPerStage = {}
     self:InitWithName(groupName)

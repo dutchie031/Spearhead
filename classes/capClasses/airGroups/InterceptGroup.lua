@@ -18,12 +18,13 @@ InterceptGroup.__index = InterceptGroup
 ---@param config CapConfig
 ---@param logger Logger
 ---@param detectionManager DetectionManager
+---@param spawnManager SpawnManager
 ---@return InterceptGroup?
-function InterceptGroup.New(groupName, config, logger, detectionManager)
+function InterceptGroup.New(groupName, config, logger, detectionManager, spawnManager)
 
     setmetatable(InterceptGroup, Spearhead.classes.capClasses.airGroups.AirGroup)
     local self = setmetatable({}, InterceptGroup)
-    Spearhead.classes.capClasses.airGroups.AirGroup.New(self, groupName, "INTERCEPT", config, logger)
+    Spearhead.classes.capClasses.airGroups.AirGroup.New(self, groupName, "INTERCEPT", config, logger, spawnManager)
 
     local group = Group.getByName(groupName)
     if not group then

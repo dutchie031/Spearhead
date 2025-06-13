@@ -155,7 +155,7 @@ function BuildableMission:SpawnActive()
     self._logger:debug("Spawning buildable mission: " .. self.code)
 
     if self._noLandingZone == nil then
-        self._logger:error("No no landing zone found for mission: " .. self.code)
+        self._logger:error("No nolanding zone found for mission: " .. self.code)
         return
     end
 
