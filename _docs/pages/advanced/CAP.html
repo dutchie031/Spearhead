@@ -4,8 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spearhead Persistence</title>
+    <title>Spearhead: Advanced CAP</title>
+    
+    <link rel="stylesheet" href="/style/prism.css">
     <link rel="stylesheet" href="/style/style.css">
+
+    <script src="/js/prism.js"></script>
     <script src="/js/site.js"></script>
     <style>
         .side-nav a.active {
@@ -26,10 +30,75 @@
 
             <div class="content-wrapper">
                 <h1>Advanced Tutorial: CAP</h1>
-                <p style="font-size: 24px;">
-                    <b>You're a little early! <br>
-                    We're still working on this tutorial, but it will be available soon.</b>
+                <p>
+                    Setting up CAP can be a challenge. Creating a dynamic environment for your players where enemy aircraft prove a challenge, but is still fun is something that requires some thought. <br>
+                    With Spearhead, we tried to make it as easy as possible, but to give you as much control as well. <br>
+                    Air combat is so much more than just aircraft flying around. There's intercepts, combat air patrol or maybe fighter sweeps. <br>
+                    Sometimes one of these is enough, sometimes creating a network of all three can make it feel like a very dynamic environment. <br>
+                    In this tutorial we'll explain how to set up each different type of CAP and we'll finish with some considerations on how to combine them and create an environment we think is fun to play in. <br>
                 </p>
+
+                <h2 id="quick-reference">Quick Reference</h2>
+                <p>
+                    Quickly noting down all the names, trigger zone conventions and other things worth mentioning before we get into the details. <br>
+
+                    <h3 id="cap-groups-ref">Cap Group Prefix</h3>
+                    <table class="table-no-style">
+                        <tbody>
+                            <tr>
+                                <td><code-inline>CAP_A</code-inline></td>
+                                <td>=></td>
+                                <td>Primary CAP group. First to go out and also important in defining how many active units can in a zone.</td>
+                            </tr>
+                            <tr>
+                                <td><code-inline>CAP_B</code-inline></td>
+                                <td>=></td>
+                                <td>Secondary CAP group. Will be reinforcing the primary CAP group.</td>
+                            </tr>
+                            <tr>
+                                <td><code-inline>CAP_S</code-inline></td>
+                                <td>=></td>
+                                <td>Sweep groups. These group will be used for fighter sweeps.</td>
+                            </tr>
+                            <tr>
+                                <td><code-inline>CAP_I</code-inline></td>
+                                <td>=></td>
+                                <td>Intercept groups. These groups will be used for intercepts.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+
+                    <note-box type="info" title="Combining Tasks">
+                        Currently a group can do 1 thing. Either be Primary, Seconday, Sweep or Intercept. <br>
+                        If you want to have different types during different stages, it's best to copy paste groups and rename them accordingly. <br>
+                    </note-box>
+                    
+                    <h3 id="cap-zones-ref">Zones</h3>
+                    <table class="table-no-style">
+                        <tbody>
+                            <tr>
+                                <td><code-inline>CAPROUTE_[ZoneID]_[NAME]</code-inline></td>
+                                <td>=></td>
+                                <td>A Cap ROUTE. The two most outer points are used to define the fly-over points.</td>
+                            </tr>
+                            <tr>
+                                <td><code-inline>INTERCEPTZONE_[ZoneID]_[NAME]</code-inline></td>
+                                <td>=></td>
+                                <td>An Intercept zone. This is where, when detected, Intercept flights will try and intercept an enemy units.</td>
+                            </tr>
+                        </tbody>
+                    </table> 
+
+
+                </p>
+
+                <h2>Combat Air Patrol</h2>
+                <p>
+                    With all 
+                </p>
+
+
             </div>
         </div>
         
