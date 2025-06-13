@@ -306,6 +306,8 @@ function CapBase:CheckAndScheduleIntercept()
 
     local interceptZoneIDs = {}
 
+    local interceptZoneIDs = {}
+
     local airbase = Airbase.getByName(self.airbaseName)
     if not airbase then
         return nil
