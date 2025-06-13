@@ -168,7 +168,7 @@ function BattleManager:getBestAmmo(unit)
     end
 
     local entry = Spearhead.Util.randomFromList(shells)
-    if entry.desc.warhead then
+    if entry and entry.desc and entry.desc.warhead then
         local caliber = entry.desc.warhead.caliber
         if caliber > 50 then
             return 258503344128, 1
