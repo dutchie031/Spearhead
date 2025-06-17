@@ -15,11 +15,11 @@ class Sidebar extends HTMLElement {
         // Clear existing nav items
         this.navItems = [];
         
-        // Find all h2 and h3 elements with IDs in the content area
+        // Find all h2, h3, and h4 elements with IDs in the content area
         const contentWrapper = document.querySelector('.content-wrapper');
         if (!contentWrapper) return;
 
-        const headers = contentWrapper.querySelectorAll('h2[id], h3[id]');
+        const headers = contentWrapper.querySelectorAll('h2[id], h3[id], h4[id]');
         
         headers.forEach(header => {
             const id = header.getAttribute('id');
@@ -45,6 +45,7 @@ class Sidebar extends HTMLElement {
         ul.innerHTML = '';
 
         let currentH2Li = null;
+        let currentH3Li = null;
 
         this.navItems.forEach(item => {
             if (item.level === 'h2') {
@@ -59,6 +60,7 @@ class Sidebar extends HTMLElement {
                 li.appendChild(a);
                 ul.appendChild(li);
                 currentH2Li = li;
+                currentH3Li = null;
             } else if (item.level === 'h3' && currentH2Li) {
                 // Create h3 item under current h2
                 let subUl = currentH2Li.querySelector('ul');
@@ -71,6 +73,24 @@ class Sidebar extends HTMLElement {
                 const a = document.createElement('a');
                 a.href = `#${item.id}`;
                 a.className = 'side-nav-h3';
+                a.textContent = item.text;
+                a.addEventListener('click', (e) => this.handleNavClick(e, item.id));
+                
+                li.appendChild(a);
+                subUl.appendChild(li);
+                currentH3Li = li;
+            } else if (item.level === 'h4' && currentH3Li) {
+                // Create h4 item under current h3
+                let subUl = currentH3Li.querySelector('ul');
+                if (!subUl) {
+                    subUl = document.createElement('ul');
+                    currentH3Li.appendChild(subUl);
+                }
+
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = `#${item.id}`;
+                a.className = 'side-nav-h4';
                 a.textContent = item.text;
                 a.addEventListener('click', (e) => this.handleNavClick(e, item.id));
                 
@@ -139,7 +159,7 @@ class Sidebar extends HTMLElement {
             link.classList.remove('active');
         });
 
-        if (activeId) {
+        if (activeId !== nil && activeId !== '') {
             const activeLink = this.querySelector(`a[href="#${activeId}"]`);
             if (activeLink) {
                 activeLink.classList.add('active');

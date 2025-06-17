@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spearhead: Advanced CAP</title>
-    
+
     <link rel="stylesheet" href="/style/prism.css">
     <link rel="stylesheet" href="/style/style.css">
 
@@ -31,77 +31,184 @@
             <div class="content-wrapper">
                 <h1>Advanced Tutorial: CAP</h1>
                 <p>
-                    Setting up CAP can be a challenge. Creating a dynamic environment for your players where enemy aircraft prove a challenge, but is still fun is something that requires some thought. <br>
-                    With Spearhead, we tried to make it as easy as possible, but to give you as much control as well. <br>
-                    Air combat is so much more than just aircraft flying around. There's intercepts, combat air patrol or maybe fighter sweeps. <br>
-                    Sometimes one of these is enough, sometimes creating a network of all three can make it feel like a very dynamic environment. <br>
-                    In this tutorial we'll explain how to set up each different type of CAP and we'll finish with some considerations on how to combine them and create an environment we think is fun to play in. <br>
+                    Setting up CAP can be a challenge. Creating a dynamic environment for your players where enemy
+                    aircraft prove a challenge, but is still fun is something that requires some thought. <br>
+                    With Spearhead, we tried to make it as easy as possible, but to give you as much control as well.
+                    <br>
+                    Air combat is so much more than just aircraft flying around. There's intercepts, combat air patrol
+                    or maybe fighter sweeps. <br>
+                    Sometimes one of these is enough, sometimes creating a network of all three can make it feel like a
+                    very dynamic environment. <br>
+                    In this tutorial we'll explain how to set up each different type of CAP and we'll finish with some
+                    considerations on how to combine them and create an environment we think is fun to play in. <br>
                 </p>
 
                 <h2 id="quick-reference">Quick Reference</h2>
                 <p>
-                    Quickly noting down all the names, trigger zone conventions and other things worth mentioning before we get into the details. <br>
+                    Quickly noting down all the names, trigger zone conventions and other things worth mentioning before
+                    we get into the details. <br>
 
-                    <h3 id="cap-groups-ref">Cap Group Prefix</h3>
-                    <table class="table-no-style">
-                        <tbody>
-                            <tr>
-                                <td><code-inline>CAP_A</code-inline></td>
-                                <td>=></td>
-                                <td>Primary CAP group. First to go out and also important in defining how many active units can in a zone.</td>
-                            </tr>
-                            <tr>
-                                <td><code-inline>CAP_B</code-inline></td>
-                                <td>=></td>
-                                <td>Secondary CAP group. Will be reinforcing the primary CAP group.</td>
-                            </tr>
-                            <tr>
-                                <td><code-inline>CAP_S</code-inline></td>
-                                <td>=></td>
-                                <td>Sweep groups. These group will be used for fighter sweeps.</td>
-                            </tr>
-                            <tr>
-                                <td><code-inline>CAP_I</code-inline></td>
-                                <td>=></td>
-                                <td>Intercept groups. These groups will be used for intercepts.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <h3 id="cap-groups-ref">Cap Group Prefix</h3>
+                <table class="table-no-style">
+                    <tbody>
+                        <tr>
+                            <td><code-inline>CAP_A</code-inline></td>
+                            <td>=></td>
+                            <td>Primary CAP group. First to go out and also important in defining how many active units
+                                can in a zone.</td>
+                        </tr>
+                        <tr>
+                            <td><code-inline>CAP_B</code-inline></td>
+                            <td>=></td>
+                            <td>Secondary CAP group. Will be reinforcing the primary CAP group.</td>
+                        </tr>
+                        <tr>
+                            <td><code-inline>CAP_S</code-inline></td>
+                            <td>=></td>
+                            <td>Sweep groups. These group will be used for fighter sweeps.</td>
+                        </tr>
+                        <tr>
+                            <td><code-inline>CAP_I</code-inline></td>
+                            <td>=></td>
+                            <td>Intercept groups. These groups will be used for intercepts.</td>
+                        </tr>
+                    </tbody>
+                </table>
 
 
-                    <note-box type="info" title="Combining Tasks">
-                        Currently a group can do 1 thing. Either be Primary, Seconday, Sweep or Intercept. <br>
-                        If you want to have different types during different stages, it's best to copy paste groups and rename them accordingly. <br>
-                    </note-box>
+                <note-box type="info" title="Combining Tasks">
+                    Currently a group can do 1 thing. Either be Primary, Seconday, Sweep or Intercept. <br>
+                    If you want to have different types during different stages, it's best to copy paste groups and
+                    rename them accordingly. <br>
+                </note-box>
+
+                <note-box type="info" title="Airfield Defenses">
                     
-                    <h3 id="cap-zones-ref">Zones</h3>
-                    <table class="table-no-style">
-                        <tbody>
-                            <tr>
-                                <td><code-inline>CAPROUTE_[ZoneID]_[NAME]</code-inline></td>
-                                <td>=></td>
-                                <td>A Cap ROUTE. The two most outer points are used to define the fly-over points.</td>
-                            </tr>
-                            <tr>
-                                <td><code-inline>INTERCEPTZONE_[ZoneID]_[NAME]</code-inline></td>
-                                <td>=></td>
-                                <td>An Intercept zone. This is where, when detected, Intercept flights will try and intercept an enemy units.</td>
-                            </tr>
-                        </tbody>
-                    </table> 
+                </note-box>
+
+                <h3 id="cap-zones-ref">Zones</h3>
+                <table class="table-no-style">
+                    <tbody>
+                        <tr>
+                            <td><code-inline>CAPROUTE_[ZoneID]_[NAME]</code-inline></td>
+                            <td>=></td>
+                            <td>A Cap ROUTE. The two most outer points are used to define the fly-over points.</td>
+                        </tr>
+                        <tr>
+                            <td><code-inline>INTERCEPTZONE_[ZoneID]_[NAME]</code-inline></td>
+                            <td>=></td>
+                            <td>An Intercept zone. This is where, when detected, Intercept flights will try and
+                                intercept an enemy units.</td>
+                        </tr>
+                    </tbody>
+                </table>
 
 
                 </p>
-
-                <h2>Combat Air Patrol</h2>
+                <h2 id="setup">Setting up groups</h2>
+                
+                <h3 id="types-explained">Types explained</h3>
                 <p>
-                    With all 
+                    Before we go into depth on each type it's best to first look at the types briefly and what we
+                    mean.<br>
+                    All groups that fly CAP, intercept or sweep missions are prefixed with
+                    <code-inline>CAP_</code-inline> and then a letter to indicate the type of group. <br>
+                    <br>
+                    <code-inline>CAP_A</code-inline> and <code-inline>CAP_B</code-inline> are CAP groups as most often
+                    seen in missions. <br>
+                    They will fly out, patrol a certain route and engage any enemy fighter that gets too close. <br>
+                    <br>
+                    <code-inline>CAP_S</code-inline> groups are Sweep groups. <br>
+                    These will fly out, fly a pre-designated route and engage enemy fighters they come across. <br>
+                    They, however, will not stick around and orbit, but will fly back home once their sweep is complete.
+                    <br>
+                    These are very nice for older scenarios or where Air Superiority is not maintained by either side.
+                    <br>
+                    <br>
+                    <code-inline>CAP_I</code-inline> groups are Intercept groups. <br>
+                    These groups will remain on high alert and will be triggered when enemy aircraft are detected in a
+                    certain zone. <br>
+                    <br>
+                    NOT IMPLMENTED YET: <br>
+                    <code-inline>CAP_E</code-inline> are escort groups. <br>
+                    These units will be dedicated to escorting CAS, SEAD and Strike flights. <br>
+                    The ground attack units mentioned are not in yet and thus escort groups are not either. <br>
+
+                    <note-box type="warning" title="Overriding Taskings">
+                        Each tasking has very specific waypoints, both for departure, arrical and ofcourse all point in between. <br>
+                        Overriding the "tasking" will break part of the cap flow as "RTBInTen" and RTB events are triggered by waypoints. <br>
+                        Overriding these waypoints and taskings will break the management by Spearhead.
+                    </note-box>
+
+                <h3 id="combat-air-patrol">Combat Air Patrol</h3>
+
+                <h4 id="zone-setup-cap">Zone Setup</h4>
+                <p>
+                    Combat Air Patrol groups use <code-inline>CAPROUTE_</code-inline> zones to know where to go.<br>
+                    These are trigger zones that need to be <code-inline>quad zones</code-inline>.
+                    The way the trigger zone is mapped to a route is as follows: <br>
+                    <br>
+                    The 2 points that are furthest apart from each other are chosen as the "leg" of the route. <br>
+                    The other 2 points are discarded. <br>
+                    <br>
+                    The Orbit route is then created with an "Anchored" task. With the closest point being the starting
+                    point with an outbound leg to the furthest point. <br>
+                </p>
+                <h4 id="group-setup-cap">Group Setup</h4>
+                <p>
+                    Now you've defined where the CAP group will fly, it's time to set up the group itself. <br>
+                    The groups are used directly and will not be renamed, duplicated or anything else. <br>
+                    However, please note, again, that if you manually take over controll of the groups by giving them waypoints it will break the management by Spearhead. <br>
+                    They will ofcourse be despawned, respawned and tracked by Spearhead as needed. <br>
+
+                    Add an aircraft unit and set it to "spawn from parking cold". <br>
+                    Name the group (unit names are not regarded) <br>
+                    
+                    
+
+                    <note-box type="info" title="Cloning">
+                        Adding the lead first, then editing the loadout, livery etc. and only then adding flight members will automatically copy the leads loadout and other settings. 
+                    </note-box>
+
                 </p>
 
+                <h4 id="what-it-does-cap">What it does</h4>
+                <p>
+                    
+                </p>
+
+                <h3 id="sweep">Sweep</h3>
+                <p>
+
+                </p>
+
+
+                <h3 id="intercept">Intercept</h3>
+                <p>
+
+                </p>
+
+                <h2 id="balancing">Balancing & Scaling</h2>
+                <p>
+                    We are fully aware that balancing and scaling of the Air Threats is something you need to do. <br>
+                    We are still designing how to make this as easy as possible for you, the mission creators. <br>
+
+                    The idea is to have thresholds. (If x number of players are in the mission, then add certain groups.) <br/>
+                    Most importantly it should be easy to use and easy to estimate before play testing. <br>
+                    <br>
+
+                    Things we need to think about are (but not exclusively) whether or not we only want to scale based on CAP capable aircraft. <br>
+                    eg. if you have 10 apaches, should it bring up twice as much CAP? <br>
+                    Ofcourse we also need to think about the downscaling and about how later it can integrate with supplies. <br> 
+                    
+                    
+                    Please bear with us, as we are definitely working on this and making sure that you can scale for to 100 players without much trouble. <br>
+                    
+                </p>
+                
 
             </div>
         </div>
-        
     </main>
     <footer>
         <p>&copy; 2025 Spearhead Project</p>
