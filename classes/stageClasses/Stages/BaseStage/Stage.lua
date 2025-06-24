@@ -233,7 +233,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
             local miscGroup = SpearheadGroup.New(groupName, spawnManager, true)
 
             table.insert(self._db.miscGroups, miscGroup)
-            Spearhead.DcsUtil.DestroyGroup(groupName)
+            miscGroup:Destroy()
         end
     end
 

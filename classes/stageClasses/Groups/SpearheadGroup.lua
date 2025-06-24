@@ -21,9 +21,10 @@ function SpearheadGroup.New(groupName, spawnManager, isPersistent)
     if isPersistent == nil then isPersistent = false end
 
     self._spawnManager = spawnManager
-    self._isStatic = Spearhead.DcsUtil.IsGroupStatic(groupName) == true
+    self._isStatic = spawnManager:IsGroupStatic(groupName) == true
     self._groupName = groupName
     self._isSpawned = false
+    self._isPersistent = isPersistent
 
     return self
 end
@@ -155,9 +156,7 @@ function SpearheadGroup:SetInvisible()
             countryID = country
         }
 
-        self._spawnManager:SpawnGroup(self._groupName, overrides)
-
-        Spearhead.DcsUtil.SpawnGroupTemplate(self._groupName, nil, nil, nil, country)
+        self._spawnManager:SpawnGroup(self._groupName, overrides, self._isPersistent)
     else
         local group = Group.getByName(self._groupName)
         if group then

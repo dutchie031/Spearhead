@@ -1,14 +1,8 @@
 ---@class SpawnManager : OnUnitLostListener
----@field private _spawnTemplates table<string,SpawnData>
 ---@field private _persistedUnits table<string,boolean>
+---@field private _logger Logger
 local SpawnManager = {}
 SpawnManager.__index = SpawnManager
-
----@class SpawnData
----@field groupTemplate table
----@field isStatic boolean
----@field category number
----@field country number
 
 ---@class SpawnOverrides
 ---@field countryID number?
@@ -16,14 +10,13 @@ SpawnManager.__index = SpawnManager
 ---@field route table? route of the group. If nil will be the default route.
 ---@field uncontrolled boolean? Sets the group to be uncontrolled on spawn
 
-
-function SpawnManager.new()
+---@param logger Logger
+function SpawnManager.new(logger)
     local self = setmetatable({}, SpawnManager)
 
-    self._spawnTemplates = {} -- Stores spawn templates by name
-    self._persistedUnits = {} -- Stores units that should be persisted by name
+    self._logger = logger
 
-    self:LoadAllSpawnTemplatesFromMiz()
+    self._persistedUnits = {} -- Stores units that should be persisted by name
 
     return self
 end
@@ -35,47 +28,49 @@ end
 ---@return StaticObject|Group|nil spawned
 ---@return boolean isStatic
 function SpawnManager:SpawnGroup(groupName, overrides, isGroupPersistant)
-    local template = self._spawnTemplates[groupName]
+    
+    local spawnData = Spearhead.classes.helpers.MizGroupsManager.getSpawnTemplateData(groupName)
 
-    if template == nil then
+    if spawnData == nil then
         env.error("SpawnManager:SpawnGroup - No spawn template found for group: " .. groupName)
         return nil, false
     end
 
-    if template.isStatic == true then
-        local spawn_template = template.groupTemplate
-        return self:SpawnStaticInternal(groupName, spawn_template, overrides, isGroupPersistant), true
+    if spawnData.isStatic == true then
+        return self:SpawnStaticInternal(groupName, spawnData, overrides, isGroupPersistant), true
     else
-        local spawn_template = template.groupTemplate
-        return self:SpawnGroupInternal(groupName, spawn_template, overrides, isGroupPersistant), false
+        return self:SpawnGroupInternal(groupName, spawnData, overrides, isGroupPersistant), false
     end
 end
 
 function SpawnManager:DestroyGroup(groupName)
-    if self:IsGroupStatic(groupName) then
+    if groupName == nil then return end
+    
+    if self:IsGroupStatic(groupName) == true then
         local object = StaticObject.getByName(groupName)
         if object ~= nil then
             object:destroy()
+        else
+            env.error("SpawnManager:DestroyGroup - Static object not found: " .. groupName)
         end
     else
         local group = Group.getByName(groupName)
         if group and group:isExist() then
             group:destroy()
+        else
+            env.error("SpawnManager:DestroyGroup - Group not found or does not exist: " .. groupName)
         end
     end
 end
 
+---comment
+---@param groupName string
+---@return boolean
 function SpawnManager:IsGroupStatic(groupName)
-    local template = self._spawnTemplates[groupName]
-    if template == nil then
-        local object = StaticObject.getByName(groupName)
-        return object ~= nil
-    end
+    local isStatic = Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName)
+    if isStatic ~= nil then return isStatic end
 
-    if template then
-        return template.isStatic
-    end
-    return false
+    return StaticObject.getByName(groupName) ~= nil
 end
 
 
@@ -87,7 +82,7 @@ function SpawnManager:OnUnitLost(object)
         local heading = 0
         local pos = object:getPosition()
         if pos then
-            local heading = math.atan2(pos.x.z, pos.x.x)
+            heading = math.atan2(pos.x.z, pos.x.x)
             if heading < 0 then
 				heading = heading + 2*math.pi
 			end
@@ -116,7 +111,7 @@ do --- privates
     ---@param isPersistent boolean?
     ---@return Group|nil
     function SpawnManager:SpawnGroupInternal(groupName, spawnData, override, isPersistent)
-        
+
         if not spawnData then return end
 
         local country = spawnData.country
@@ -133,7 +128,7 @@ do --- privates
         ]]
 
         if spawnTemplate and spawnTemplate["units"] then
-            for _, unit in pairs(spawnTemplate["units]"]) do
+            for _, unit in pairs(spawnTemplate["units"]) do
                 local name = unit["name"]
 
                 Spearhead.Events.addOnUnitLostEventListener(name, self)
@@ -169,8 +164,13 @@ do --- privates
 
             local group = coalition.addGroup(country, spawnData.category, spawnTemplate)
 
-            for _, unitName in pairs(removeableUnitNames) do
-                self:ReplaceUnitWithDeadStatic(unitName)
+
+            for _, unit in pairs(group:getUnits()) do
+                self:CheckUnitAndReplaceIfPersistentDead(unit)
+                if isPersistent == true then
+                    self._persistedUnits[unit:getName()] = true
+                end
+                Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
             end
 
             return group
@@ -232,70 +232,27 @@ do --- privates
         return object
     end
 
-    function SpawnManager:ReplaceUnitWithDeadStatic(unitName)
-        local unit = Unit.getByName(unitName)
+    ---@private
+    ---@param unit Unit
+    function SpawnManager:CheckUnitAndReplaceIfPersistentDead(unit)
 
-        if unit then
-            local point = unit:getPoint()
-            local country = unit:getCountry()
-            unit:destroy()
+        if not unit then return end
+
+        local deadState = Spearhead.classes.persistence.Persistence.UnitState(unit:getName())
+        if deadState and deadState.isDead == true then
+            unit:destroy() -- Destroy the unit if it is dead
             local staticObject = {
-                ["heading"] = 0,
-                ["type"] = unit:getTypeName(),
-                ["name"] = unitName .. "_dead",
-                ["y"] = point.x,
-                ["x"] = point.z,
+                ["heading"] = deadState.heading or 0,
+                ["type"] = deadState.type or unit:getTypeName(),
+                ["name"] = unit:getName() .. "_dead",
+                ["x"] = deadState.pos.x,
+                ["y"] = deadState.pos.z,
                 ["dead"] = true,
             }
-            coalition.addStaticObject(country, staticObject)
+            coalition.addStaticObject(unit:getCountry(), staticObject)
         end
     end
 
-    --- Loads all spawn templates from the mission file (miz).
-    ---@private
-    function SpawnManager:LoadAllSpawnTemplatesFromMiz()
-        for coalition_name, coalition_data in pairs(env.mission.coalition) do
-            local coalition_nr = Spearhead.DcsUtil.stringToCoalition(coalition_name)
-            if coalition_data.country then
-                for country_index, country_data in pairs(coalition_data.country) do
-                    for category_name, categorydata in pairs(country_data) do
-                        local category_id = Spearhead.DcsUtil.stringToGroupCategory(category_name)
-                        if category_id ~= nil and type(categorydata) == "table" and categorydata.group ~= nil and type(categorydata.group) == "table" then
-                            for group_index, group in pairs(categorydata.group) do
-                                local name = group.name
-                                local skippable = false
-                                local isStatic = false
-                                if category_id == Spearhead.DcsUtil.GroupCategory.STATIC then
-                                    isStatic = true
-                                    local unit = group.units[1]
-                                    if unit and unit.category == "Heliports" then
-                                        skippable = true
-                                    elseif unit and unit.name then
-                                        -- set the unit name the same as groupname
-                                        -- this may break if someone cross-names groups and units, but is highly unlikely and not doing this causes more complex code and logic.
-                                        unit.name = name
-                                    else
-                                        env.error("Group " .. name .. " has no units, skipping it.")
-                                        skippable = true
-                                    end
-                                end
-
-                                if skippable == false then
-                                    self._spawnTemplates[name] =
-                                    {
-                                        isStatic = isStatic,
-                                        country = country_data.id,
-                                        category = category_id,
-                                        groupTemplate = group
-                                    }
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
 end
 
 if not Spearhead then Spearhead = {} end

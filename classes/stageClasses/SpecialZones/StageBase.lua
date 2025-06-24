@@ -12,6 +12,7 @@
 ---@field private _receivedBuildingKilos number
 ---@field private _buildableMission BuildableMission?
 local StageBase = {}
+StageBase.__index = StageBase
 
 ---comment
 ---@param databaseManager Database
@@ -20,7 +21,7 @@ local StageBase = {}
 ---@param spawnManager SpawnManager
 ---@return StageBase?
 function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
-    StageBase.__index = StageBase
+    setmetatable(StageBase, Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone)
     local self = setmetatable({}, StageBase)
 
     self._database = databaseManager

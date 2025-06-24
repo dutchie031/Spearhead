@@ -22,7 +22,7 @@ function BuildableZone:New(targetZone, kilosRequired, crateType,  buildableGroup
     self._requiredKilos = kilosRequired or 0
     self._buildableGroups = buildableGroups or {}
     self._buildableLogger = logger
-    local totalGroups = Spearhead.Util.getTableLength(self._buildableGroups)
+    local totalGroups = Spearhead.Util.tableLength(self._buildableGroups)
     self._groupsPerKilo = totalGroups / self._requiredKilos
 
     self._receivedBuildingKilos = 0
@@ -30,19 +30,36 @@ function BuildableZone:New(targetZone, kilosRequired, crateType,  buildableGroup
     if persistedKilos and persistedKilos > 0 then
         self._receivedBuildingKilos = persistedKilos
 
-        local spawnAlreadyBuiltTask = function(params)
-            ---@type BuildableZone
-            local selfA = params.self
-            local alreadySpawned = params.kilos
-            selfA:OnCrateDroppedOff(nil, alreadySpawned)
+        ---@param params UnpackCrateParam
+        ---@param time number
+        local startUnpackingCrate = function(params, time)
+            local unpacked = params.unpackedKilos + (params.kilosPerSecond * 2)
+            local alreadySpawned = params.unpackedItems / params.groupsPerKilo
+            local diff = unpacked - alreadySpawned
+
+            local amount = math.floor(diff * params.groupsPerKilo)
+            local spawned = params.self:SpawnAmount(amount)
+
+            params.unpackedItems = params.unpackedItems + amount
+            params.unpackedKilos = unpacked
+            if params.unpackedKilos >= params.kilos or spawned == false then
+                return
+            end
+        
+            return time + 0.5
         end
 
+        ---@type UnpackCrateParam
         local params = {
             self = self,
+            groupsPerKilo = self._groupsPerKilo,
+            unpackedItems = 0,
+            kilosPerSecond = persistedKilos/30,
+            unpackedKilos = 0,
             kilos = persistedKilos
         }
 
-        timer.scheduleFunction(spawnAlreadyBuiltTask, params, timer.getTime() + 5)
+        timer.scheduleFunction(startUnpackingCrate, params, timer.getTime() + 5)
         kilosRequired = kilosRequired - persistedKilos
     end
 

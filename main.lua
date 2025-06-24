@@ -32,7 +32,9 @@ if SpearheadConfig and SpearheadConfig.Persistence and SpearheadConfig.Persisten
 else
     standardLogger:info("Persistence disabled")
 end
-local spawnManager = Spearhead.classes.helpers.SpawnManager.new()
+
+local spawnLogger = Spearhead.LoggerTemplate.new("SpawnManager", defaultLogLevel)
+local spawnManager = Spearhead.classes.helpers.SpawnManager.new(spawnLogger)
 local detectionLogger = Spearhead.LoggerTemplate.new("DetectionManager", defaultLogLevel)
 local detectionManager = Spearhead.classes.capClasses.detection.DetectionManager.New(detectionLogger)
 

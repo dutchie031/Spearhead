@@ -355,17 +355,17 @@ do
         local AI_GROUPS = {}
 
         local function CheckAndTriggerSpawnAsync(unit, time)
+            
             local function isPlayer(unit)
                 if unit == nil then return false, "unit is nil" end
                 if unit.getGroup == nil then return false, 'no get group function in unit object, most likely static' end
+                if Object.getCategory(unit) ~= Object.Category.UNIT then
+                    return false, "object is not a unit"
+                end
 
                 if unit:isExist() ~= true then return false, "unit does not exist" end
                 local group = unit:getGroup()
                 if group ~= nil then
-                    if Spearhead.DcsUtil.IsGroupStatic(group:getName()) == true then
-                        return false
-                    end
-
                     if AI_GROUPS[group:getName()] == true then
                         return false
                     end

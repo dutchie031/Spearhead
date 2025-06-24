@@ -64,7 +64,7 @@ SpearheadConfig = {
         --- io and lfs cannot be sanitized in the MissionScripting.lua
         
         --- enables or disables the persistence logic in spearhead
-        enabled = false,
+        enabled = true,
 
         --- sets the directory where the persistence file is stored
         --- if nil then lfs.writedir() will be used. 
@@ -72,7 +72,7 @@ SpearheadConfig = {
         directory = nil ,
 
         --- the filename of the persistence file. Should end with .json for convention, but any text extension should do.
-        fileName = "Spearhead_Persistence_Dev.json"
+        fileName = "Spearhead_Persistence_Dev"
 
     }
 }

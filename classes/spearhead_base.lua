@@ -516,7 +516,6 @@ do     -- INIT DCS_UTIL
             }
         ]] --
 
-        DCS_UTIL.__groupNames = {}
         --[[
             zone = {
                 name,
@@ -577,35 +576,6 @@ do     -- INIT DCS_UTIL
     function DCS_UTIL.__INIT()
         do     -- INITS ALL TABLES WITH DATA THAT's from the MIZ environment
 
-            do -- group names
-                for coalition_name, coalition_data in pairs(env.mission.coalition) do
-                    local coalition_nr = Spearhead.DcsUtil.stringToCoalition(coalition_name)
-                    if coalition_data.country then
-                        for country_index, country_data in pairs(coalition_data.country) do
-                            for category_name, categorydata in pairs(country_data) do
-                                local category_id = Spearhead.DcsUtil.stringToGroupCategory(category_name)
-                                if category_id ~= nil and type(categorydata) == "table" and categorydata.group ~= nil and type(categorydata.group) == "table" then
-                                    for group_index, group in pairs(categorydata.group) do
-                                        local skippable = false
-                                        if group and category_id == Spearhead.DcsUtil.GroupCategory.STATIC and group.units and #group.units > 0 then
-                                            for _, unit in pairs(group.units) do
-                                                if unit and unit.category == "Heliports" then
-                                                    skippable = true
-                                                end
-                                            end
-                                        end
-                                        
-                                        if group and skippable == false and group.name then
-                                            table.insert(DCS_UTIL.__groupNames, group.name)
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        
             do --init trigger zones
                 for i, trigger_zone in pairs(env.mission.triggers.zones) do
                     -- reorder verts as they are not ordered correctly in the ME
@@ -1210,7 +1180,7 @@ do     -- INIT DCS_UTIL
 
     function DCS_UTIL.NeedsRTBInTen(groupName, fuelOffset)
 
-        local isBingo = Spearhead.DcsUtil.IsBingoFuel(groupName, fuelOffset)
+        local isBingo = DCS_UTIL.IsBingoFuel(groupName, fuelOffset)
         if isBingo then return true end
 
         local aliveUnits = 0
