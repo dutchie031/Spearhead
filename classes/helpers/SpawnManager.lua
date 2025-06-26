@@ -124,10 +124,13 @@ do --- privates
         local removeableUnitNames = {}
         --[[
             TODO: Spawn units at "current"/LastKnown position with them going to the next waypoint. 
-            ONLY when perstable data is found.
+            ONLY when persitable data is found.
         ]]
 
         if spawnTemplate and spawnTemplate["units"] then
+
+            local firstAlive = nil
+
             for _, unit in pairs(spawnTemplate["units"]) do
                 local name = unit["name"]
 
@@ -136,7 +139,17 @@ do --- privates
                 if state then
                     if state.isDead == true then
                         removeableUnitNames[#removeableUnitNames+1] = name
+                    else
+                        if state.pos then
+                            unit["x"] = state.pos.x
+                            unit["y"] = state.pos.z
+                            unit["heading"] = state.heading or 0
+                        end
+                        firstAlive = unit
+
                     end
+                else
+                   firstAlive = unit
                 end
 
                 if override and override.emptyLoadouts == true then
@@ -173,11 +186,107 @@ do --- privates
                 Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
             end
 
+            if self:HasMovingRoute(groupName) == true then
+                local number = self:GetClosestWaypointNumber(spawnTemplate, firstAlive)
+                if number then
+                    self:SendGroupToWaypointDelayed(groupName, number)
+                end
+            end
+
             return group
         end
 
         
         return nil
+    end
+
+    ---@private 
+    ---@param groupName string
+    ---@return boolean
+    function SpawnManager:HasMovingRoute(groupName)
+        local spawnData = Spearhead.classes.helpers.MizGroupsManager.getSpawnTemplateData(groupName)
+        if spawnData and spawnData.groupTemplate and spawnData.groupTemplate.route and spawnData.groupTemplate.route.points then
+            if Spearhead.Util.tableLength(spawnData.groupTemplate.route.points) > 1 then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    ---@private 
+    ---@param spawnTemplate table 
+    ---@return number?
+    function SpawnManager:GetClosestWaypointNumber(spawnTemplate, aliveLead)
+
+        if not spawnTemplate or not spawnTemplate.route or not spawnTemplate.route.points then
+            return 1
+        end
+
+        local points = spawnTemplate.route.points
+        local posX = aliveLead.x
+        local posY = aliveLead.y
+
+        -- Find the segment (between two waypoints) closest to the unit's position
+        local closestSegIdx = 1
+        local closestDist = math.huge
+        for i = 1, #points - 1 do
+            local x1, y1 = points[i].x, points[i].y
+            local x2, y2 = points[i+1].x, points[i+1].y
+            -- Project aliveLead onto the segment
+            local dx, dy = x2 - x1, y2 - y1
+            local segLen2 = dx*dx + dy*dy
+            local t = 0
+            if segLen2 > 0 then
+                t = ((posX - x1) * dx + (posY - y1) * dy) / segLen2
+                t = math.max(0, math.min(1, t))
+            end
+            local projX = x1 + t * dx
+            local projY = y1 + t * dy
+            local dist = (projX - posX)^2 + (projY - posY)^2
+            if dist < closestDist then
+                closestDist = dist
+                closestSegIdx = i
+            end
+        end
+        -- Return the next waypoint index (the end of the closest segment)
+        return math.min(closestSegIdx + 1, #points)
+    end
+
+    function SpawnManager:SendGroupToWaypointDelayed(groupName, waypointNumber)
+        
+        ---@class SendGroupToWaypointParams
+        ---@field groupName string
+        ---@field waypointNumber number
+
+        ---@type SendGroupToWaypointParams
+        local params = {
+            groupName = groupName,
+            waypointNumber = waypointNumber
+        }
+
+        ---comment
+        ---@param params SendGroupToWaypointParams
+        local sendGroupToWaypoint = function(params)
+
+            local group = Group.getByName(params.groupName)
+            if group and group:isExist() then
+                local goToWaypoint= { 
+                id = 'goToWaypoint', 
+                    params = {
+                        fromWaypointIndex = params.waypointNumber - 1,
+                        goToWaypointIndex = params.waypointNumber,
+                    }
+                }
+
+                local controller = group:getController()
+                if controller then
+                    controller:setCommand(goToWaypoint)
+                end
+            end
+        end
+
+        timer.scheduleFunction(sendGroupToWaypoint, params, timer.getTime() + 2)
     end
 
     ---@private
