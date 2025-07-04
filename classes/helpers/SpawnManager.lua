@@ -1,5 +1,6 @@
 ---@class SpawnManager : OnUnitLostListener
 ---@field private _persistedUnits table<string,boolean>
+---@field private _persistedMovingGroups table<string,boolean>
 ---@field private _logger Logger
 local SpawnManager = {}
 SpawnManager.__index = SpawnManager
@@ -17,6 +18,9 @@ function SpawnManager.new(logger)
     self._logger = logger
 
     self._persistedUnits = {} -- Stores units that should be persisted by name
+    self._persistedMovingGroups = {} -- Stores moving units that should be persisted by name
+
+    self:StartUpdatingPersistedMovingUnits()
 
     return self
 end
@@ -167,8 +171,22 @@ do --- privates
                 end
             end
 
+
             if override and override.route ~= nil then
                 spawnTemplate["route"] = override.route
+            end
+
+            if firstAlive then
+                spawnTemplate["x"] = firstAlive.x or spawnTemplate["x"] or 0
+                spawnTemplate["y"] = firstAlive.y or spawnTemplate["y"] or 0
+
+                if spawnTemplate["route"] and spawnTemplate["route"]["points"] then
+                    local first = spawnTemplate["route"]["point"][1]
+                    if first then
+                        first["x"] = firstAlive.x or spawnTemplate["x"] or 0
+                        first["y"] = firstAlive.y or spawnTemplate["y"] or 0
+                    end
+                end
             end
 
             if override and override.uncontrolled ~= nil then
@@ -190,6 +208,10 @@ do --- privates
                 local number = self:GetClosestWaypointNumber(spawnTemplate, firstAlive)
                 if number then
                     self:SendGroupToWaypointDelayed(groupName, number)
+                end
+
+                if isPersistent == true then
+                    self._persistedMovingGroups[groupName] = true
                 end
             end
 
@@ -253,6 +275,46 @@ do --- privates
         return math.min(closestSegIdx + 1, #points)
     end
 
+    function SpawnManager:StartUpdatingPersistedMovingUnits()
+
+        ---@class UpdateMovingUnitsParams
+        ---@field self SpawnManager
+
+        ---@type UpdateMovingUnitsParams
+        local params = {
+            self = self
+        }
+
+        ---@param params UpdateMovingUnitsParams
+        local updateMovingUnitsTask = function(params, time)
+            params.self:UpdatePersistedMovingUnits()
+            return time + 60
+        end
+
+        timer.scheduleFunction(updateMovingUnitsTask, params, timer.getTime() + 60)
+    end
+
+    function SpawnManager:UpdatePersistedMovingUnits()
+
+        for groupName, check in pairs(self._persistedMovingGroups) do
+
+            if check == true then 
+                local group = Group.getByName(groupName)
+
+                if group and group:isExist() then
+                    
+                else
+                    self._persistedMovingGroups[groupName] = nil
+                end
+
+            end
+
+            
+
+        end
+
+    end
+
     function SpawnManager:SendGroupToWaypointDelayed(groupName, waypointNumber)
         
         ---@class SendGroupToWaypointParams
@@ -274,7 +336,7 @@ do --- privates
                 local goToWaypoint= { 
                 id = 'goToWaypoint', 
                     params = {
-                        fromWaypointIndex = params.waypointNumber - 1,
+                        fromWaypointIndex = 0, -- Start from the first waypoint
                         goToWaypointIndex = params.waypointNumber,
                     }
                 }
