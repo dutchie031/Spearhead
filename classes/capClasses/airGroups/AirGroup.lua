@@ -163,7 +163,10 @@ function AirGroup:SpawnInternal(force, withoutLoadout)
     end
 
     if self._checkLivenessNumber then
-        timer.removeFunction(self._checkLivenessNumber)
+        --try remove. Throws Error when number does not exist anymore, hence the pcall
+        pcall(function()
+            timer.removeFunction(self._checkLivenessNumber)
+        end)
     end
 
     self._checkLivenessNumber = timer.scheduleFunction(CheckLivenessTask, self, timer.getTime() + 5)
