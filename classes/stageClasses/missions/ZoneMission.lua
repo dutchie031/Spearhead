@@ -65,8 +65,9 @@ MINIMAL_UNITS_ALIVE_RATIO = 0.21
 ---@param database Database
 ---@param logger Logger
 ---@param parentStage Stage
+---@param spawnManager SpawnManager
 ---@return ZoneMission?
-function ZoneMission.new(zoneName, priority, database, logger, parentStage)
+function ZoneMission.new(zoneName, priority, database, logger, parentStage, spawnManager)
     local Mission = Spearhead.classes.stageClasses.missions.baseMissions.Mission
     ZoneMission.__index = ZoneMission
     setmetatable(ZoneMission, Mission)
@@ -128,7 +129,7 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
     if not missionData then return end
 
     for _, groupName in pairs(missionData.BlueGroups) do
-        local spearheadGroup = SpearheadGroup.New(groupName)
+        local spearheadGroup = SpearheadGroup.New(groupName, spawnManager, true)
         if spearheadGroup then
             table.insert(self._missionGroups.blueGroups, spearheadGroup)
         end
@@ -136,7 +137,7 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage)
     end
 
     for _, groupName in pairs(missionData.RedGroups) do
-        local spearheadGroup = SpearheadGroup.New(groupName)
+        local spearheadGroup = SpearheadGroup.New(groupName, spawnManager, true)
         table.insert(self._missionGroups.redGroups, spearheadGroup)
 
         local isGroupTarget = Spearhead.Util.startswith(string.lower(groupName), "tgt_")

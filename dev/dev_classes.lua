@@ -16,6 +16,9 @@ assert(loadfile(classPath .. "spearhead_db.lua"))()
 assert(loadfile(classPath .. "fleetClasses\\FleetGroup.lua"))()
 assert(loadfile(classPath .. "fleetClasses\\GlobalFleetManager.lua"))()
 
+assert(loadfile(classPath .. "helpers\\MizGroupsManager.lua"))()
+assert(loadfile(classPath .. "helpers\\SpawnManager.lua"))()
+
 assert(loadfile(classPath .. "configuration\\CapConfig.lua"))()
 assert(loadfile(classPath .. "configuration\\StageConfig.lua"))()
 
@@ -39,6 +42,7 @@ assert(loadfile(classPath .. "stageClasses\\helpers\\SupplyConfig.lua"))()
 assert(loadfile(classPath .. "stageClasses\\helpers\\SupplyUnitsTracker.lua"))()
 assert(loadfile(classPath .. "stageClasses\\helpers\\BattleManager.lua"))()
 
+assert(loadfile(classPath .. "stageClasses\\SpecialZones\\abstract\\BuildableZone.lua"))()
 assert(loadfile(classPath .. "stageClasses\\SpecialZones\\StageBase.lua"))()
 assert(loadfile(classPath .. "stageClasses\\SpecialZones\\BlueSam.lua"))()
 assert(loadfile(classPath .. "stageClasses\\SpecialZones\\FarpZone.lua"))()

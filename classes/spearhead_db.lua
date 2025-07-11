@@ -470,7 +470,7 @@ end
 ---@private
 function Database:initAvailableUnits()
     do
-        local all_groups = Spearhead.DcsUtil.getAllGroupNames()
+        local all_groups = Spearhead.classes.helpers.MizGroupsManager.getAllGroupNames()
         for _, value in pairs(all_groups) do
             is_group_taken[value] = false
         end
@@ -637,7 +637,7 @@ end
 
 ---@private
 function Database:loadBlueSamUnits()
-    local all_groups = Spearhead.DcsUtil.getAllGroupNames()
+    local all_groups = Spearhead.classes.helpers.MizGroupsManager.getAllGroupNames()
     for _, blueSamZone in pairs(self._tables.BlueSams) do
         local samData = self:getOrCreateBlueSamDataForZone(blueSamZone)
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
@@ -659,7 +659,7 @@ function Database:loadMissionzoneUnits()
 
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
         for _, groupName in pairs(groups) do
-            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+            if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
                 local object = StaticObject.getByName(groupName)
                 
                 if object and object:getCoalition() == coalition.side.RED then
@@ -691,7 +691,7 @@ function Database:loadRandomMissionzoneUnits()
         }
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
         for _, groupName in pairs(groups) do
-            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+            if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
                 local object = StaticObject.getByName(groupName)
                 
                 if object and object:getCoalition() == coalition.side.RED then
@@ -752,7 +752,7 @@ function Database:loadAirbaseGroups()
                 if airbaseZone and base:getDesc().category == Airbase.Category.AIRDROME then
                     local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
                     for _, groupName in pairs(groups) do
-                        if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+                        if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
                             local object = StaticObject.getByName(groupName)
                             if object then
                                 if object:getCoalition() == coalition.side.RED then
@@ -790,7 +790,7 @@ function Database:loadMiscGroupsInStages()
 
         local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stageZone.StageZoneName)
         for _, groupName in pairs(groups) do
-            if Spearhead.DcsUtil.IsGroupStatic(groupName) == true then
+            if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
                 local object = StaticObject.getByName(groupName)
                 if object and object:getCoalition() ~= coalition.side.NEUTRAL then
                     is_group_taken[groupName] = true

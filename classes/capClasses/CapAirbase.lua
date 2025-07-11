@@ -32,8 +32,9 @@ end
 ---@param stageConfig table
 ---@param runwayBombingTracker RunwayBombingTracker
 ---@param detectionManager DetectionManager
+---@param spawnManager SpawnManager
 ---@return CapBase
-function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runwayBombingTracker, detectionManager)
+function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runwayBombingTracker, detectionManager, spawnManager)
     CapBase.__index = CapBase
     local self = setmetatable({}, { __index = CapBase }) --[[@as CapBase]]
 
@@ -53,7 +54,7 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
     local baseData = database:getAirbaseDataForZone(airbaseName)
     if baseData and baseData.CapGroups then
         for key, name in pairs(baseData.CapGroups) do
-            local capGroup = Spearhead.classes.capClasses.airGroups.CapGroup.New(name, capConfig, logger)
+            local capGroup = Spearhead.classes.capClasses.airGroups.CapGroup.New(name, capConfig, logger, spawnManager)
             if capGroup then
                 self.capGroupsByName[name] = capGroup
             end
@@ -62,7 +63,7 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
 
     if baseData and baseData.SweepGroups then
         for key, name in pairs(baseData.SweepGroups) do
-            local sweepGroup = Spearhead.classes.capClasses.airGroups.SweepGroup.New(name, capConfig, logger)
+            local sweepGroup = Spearhead.classes.capClasses.airGroups.SweepGroup.New(name, capConfig, logger, spawnManager)
             if sweepGroup then
                 self.sweepGroupsByName[name] = sweepGroup
             end
@@ -71,7 +72,7 @@ function CapBase.new(airbaseName, database, logger, capConfig, stageConfig, runw
 
     if baseData and baseData.InterceptGroups then
         for key, name in pairs(baseData.InterceptGroups) do
-            local interceptGroup = Spearhead.classes.capClasses.airGroups.InterceptGroup.New(name, capConfig, logger, detectionManager)
+            local interceptGroup = Spearhead.classes.capClasses.airGroups.InterceptGroup.New(name, capConfig, logger, detectionManager, spawnManager)
             if interceptGroup then
                 self.interceptGroupsByName[name] = interceptGroup
             end

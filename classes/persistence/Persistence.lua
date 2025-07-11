@@ -1,43 +1,54 @@
 
+---@class Perstistence
+---@field private _path string
+---@field private _updateRequired boolean
 local Persistence = {}
 do
+    local EXTENSION = "spearhead"
+
     ---@class PersistentData
-    ---@field dead_units table<string, DeathState>
+    ---@field version string
+    ---@field unitsStates table<string, UnitState>
     ---@field random_missions table<string, MissionState>
+    ---@field deliveredKilos table<string, number>
     ---@field activeStage integer|nil
 
-    ---@class DeathState 
+    ---@class UnitState 
     ---@field isDead boolean
-    ---@field pos Vec3
-    ---@field heading number
-    ---@field type string
-    ---@field country_id integer
+    ---@field pos Vec3?
+    ---@field heading number?
+    ---@field type string?
 
 
     local persistanceWriteIntervalSeconds = 15
     local enabled = false
 
+    local version = "1.0.0"
+
     ---@type PersistentData
     local tables = {
-        dead_units = {},
+        version = version,
+        unitsStates = {},
         random_missions = {},
+        deliveredKilos = {},
         activeStage = nil
     }
 
-    
     local logger = {}
 
     if SpearheadConfig == nil then SpearheadConfig = {} end
     if SpearheadConfig.Persistence == nil then SpearheadConfig.Persistence = {} end
 
-    local path  = nil
-    local updateRequired = false
 
-    local createFileIfNotExists = function()
-        if not path then return end
+    local createFileIfNotExists = function(path)
+        if not path or path == "" then
+            logger:error("Persistence file path is not set, cannot create file")
+            return
+        end
 
         local f = io.open(path, "r")
         if f == nil then
+            logger:info("Persistence file does not exist, creating new one at: " .. path)
             f = io.open(path, "w+")
             if f == nil then
                 logger:error("Could not create a file")
@@ -45,53 +56,42 @@ do
                 f:write("{}")
                 f:close()
             end
+            logger:info("Created new persistence file at: " .. path)
         else
             f:close()
         end
     end
 
-    local loadTablesFromFile = function()
+    ---@param path string
+    local loadTablesFromFile = function(path)
         if not path then return end
 
         logger:info("Loading data from persistance file...")
         local f  = io.open(path, "r")
         if f == nil then
+            logger:error("Could not open persistence file for reading: " .. path)
             return
         end
 
         local json = f:read("*a")
         f:close()
 
+        logger:debug("Loaded persistence file content: " .. json)
         local lua = net.json2lua(json) --[[@as PersistentData]]
 
-        if lua.activeStage then
-            logger:info("Found active stage from save: " .. lua.activeStage)
-            tables.activeStage = lua.activeStage
+        if lua then
+            tables = lua
+            logger:debug("Loaded persistence data: " .. Spearhead.Util.toString(lua))
+        else
+            logger:error("Could not load persistence file, using default tables")
         end
-
-        if lua.dead_units then
-            logger:debug("Found saved dead units")
-            for name, deadState in pairs(lua.dead_units) do
-                logger:debug("Found saved dead unit: " .. name)
-
-                if type(deadState) == "table" then
-                    tables.dead_units[name] = {
-                        isDead = deadState.isDead == true,
-                        pos = deadState.pos,
-                        heading = deadState.heading,
-                        type = deadState.type,
-                        country_id = deadState.country_id
-                    }
-                end
-            end
-        end
-
         
+        if tables.version == nil then tables.version = version end
     end
 
     local writeToFile = function()
-        if not path then return end
-
+        if not Persistence._path then return end
+        local path = Persistence._path
         local f = io.open(path, "w+")
         if f == nil then
             error("Could not open file for writing")
@@ -104,11 +104,13 @@ do
         if f ~= nil then
             f:close()
         end
+        Persistence._updateRequired = false
+        logger:info("Wrote persistence data to file")
     end
 
     local UpdateContinuous = function(null, time)
-
-        if updateRequired then 
+        env.info("[Spearhead][Persistence] Checking up on persistence state...")
+        if Persistence._updateRequired == true then 
             local status, result = pcall(writeToFile)
             if status == false then
                 env.error("[Spearhead][Persistence] Could not write state to file: " .. result)
@@ -129,33 +131,107 @@ do
     end
 
 
+    local warnForNonPersistenceContinous = function(null, time)
+        trigger.action.outText("Persistence was enabeld, however, io and lfs are not available and no persistence will be done. Make sure to either disable persistence or fix the issues before continuing.", 10)
+        return time + 9
+    end
+
+    ---@param dir string @BaseDirectory
+    ---@return string
+    local getLastFileOrDefault = function(dir, startsWith, default)
+
+        local latestFile, lastNumber = default, 0
+        for file in lfs.dir(dir) do
+
+            local split = Spearhead.Util.split_string(file, ".")
+            local doesStartWith = Spearhead.Util.startswith(file, startsWith, true)
+            if split and #split > 0 and split[#split] == EXTENSION and doesStartWith == true then
+                local numberString = split[#split-1]
+                local number = tonumber(numberString)
+                if number ~= nil and number > lastNumber then
+                    lastNumber = number
+                    latestFile = file
+                end
+            end
+        end
+        return latestFile
+    end
+
     ---comment
     ---@param persistenceLogger Logger
     Persistence.Init = function(persistenceLogger)
         logger = persistenceLogger
 
         logger:info("Initiating Persistence Manager")
+        logger:debug("Initiating Persistence Manager")
 
         if lfs == nil or io == nil then
             logger:error("lfs and io seem to be sanitized. Persistence is skipped and disabled")
+            enabled = false
+            timer.scheduleFunction(warnForNonPersistenceContinous, nil, timer.getTime() + 10)
             return
         end
 
-        path = (SpearheadConfig.Persistence.directory or (lfs.writedir() .. "\\Data" )) .. "\\" .. (SpearheadConfig.Persistence.fileName or "Spearhead_Persistence.json")
+        ---@type string
+        local dir = lfs.writedir() .. "\\Data"
+        local fileName = "Spearhead_Persistence.0.spearhead"
+        if SpearheadConfig and SpearheadConfig.Persistence then
+            if SpearheadConfig.Persistence.fileName then
 
-        logger:info("Persistence file path: " .. path)
+                local userFileName = SpearheadConfig.Persistence.fileName
+                local split = Spearhead.Util.split_string(userFileName, ".")
 
-        createFileIfNotExists()
-        loadTablesFromFile()
+                if not split and #split < 3 then
+                    split[#split+1] = "0"
+                    split[#split+1] = "spearhead"
+                end
+
+                if tonumber(split[#split-1]) == nil then
+                    split[#split+1] = "0"
+                    split[#split+1] = "spearhead"
+                end
+                
+                fileName = table.concat(split, ".")
+            end
+
+            if SpearheadConfig.Persistence.directory ~= nil then
+                dir = SpearheadConfig.Persistence.directory
+            end
+        end
+
+        local split = Spearhead.Util.split_string(fileName, ".")
+        local matchingPart = table.concat(Spearhead.Util.sublist(split, 1, #split-2), ".")
+
+        local lastFile = getLastFileOrDefault(dir--[[@as string]], matchingPart, fileName)
+
+        local fileSplit = Spearhead.Util.split_string(lastFile, ".")
+        fileSplit[#fileSplit-1] = tostring(tonumber(fileSplit[#fileSplit-1]) + 1)
+        fileName = table.concat(fileSplit, ".")
+
+        if lastFile ~= fileName then
+            logger:info("Found last persistence file: " .. lastFile)
+        else
+            logger:info("No previous persistence file found, using default: " .. fileName)
+        end
+
+        
+        logger:info("New Persistence file name: " .. tostring(fileName))
+        local lastPath = dir .. "\\" .. lastFile
+        local path = dir .. "\\" .. fileName
+        Persistence._path = path
+        
+        createFileIfNotExists(path)
+        loadTablesFromFile(lastPath)
         timer.scheduleFunction(UpdateContinuous, nil, timer.getTime() + 120)
         enabled = true
+        Persistence.UpdateNow()
     end
 
     ---Sets the stage in the persistence table
     ---@param stageNumber number 
     Persistence.SetActiveStage = function(stageNumber)
         tables.activeStage = stageNumber
-        updateRequired = true
+        Persistence._updateRequired = true
     end
 
     ---comment
@@ -166,7 +242,7 @@ do
 
         if tables.random_missions == nil then tables.random_missions = {} end
         tables.random_missions[string.lower(missionName)] = pickedZone
-        updateRequired = true
+        Persistence._updateRequired = true
     end
 
     ---Get the picked random mission from the persistence file
@@ -186,19 +262,49 @@ do
         return nil
     end
 
-    ---Check if the unit was dead during the last save. Nil if persitance not enabled
+    ---comment
+    ---@param zoneName string
+    ---@param kilos number
+    Persistence.SetZoneDeliveredKilos = function(zoneName, kilos)
+        if enabled == false then return end
+
+        if tables.deliveredKilos == nil then
+            tables.deliveredKilos = {}
+        end
+
+        tables.deliveredKilos[zoneName] = kilos
+        Persistence._updateRequired = true
+    end
+
+    Persistence.GetZoneDeliveredKilos = function(zoneName)
+        if enabled == false then return 0 end
+
+        if tables.deliveredKilos == nil then
+            tables.deliveredKilos = {}
+        end
+
+        return tables.deliveredKilos[zoneName] or 0
+    end
+
+
+
+    ---Check if the unit was dead during the last save. Nil if persitance not enabled or no state is found
     ---@param unitName string name
-    ---@return DeathState|nil { isDead, pos = {x,y,z}, heading, type, country_id } 
-    Persistence.UnitDeadState = function(unitName)
+    ---@return UnitState|nil { isDead, pos = {x,y,z}, heading, type, country_id } 
+    Persistence.UnitState = function(unitName)
         if Persistence.isEnabled() == false then
             return nil
         end
 
-        local entry =  tables.dead_units[unitName]
+        local entry =  tables.unitsStates[unitName]
         if entry then
             return entry
         else
-            return { isDead = false }
+            ---@type UnitState
+            local state = {
+                isDead = false
+            }
+            return state
         end
     end
 
@@ -207,19 +313,19 @@ do
     ---@param position Vec3 { x, y ,z } 
     ---@param heading number
     ---@param type string 
-    ---@param country_id number
-    Persistence.UnitKilled = function (name, position, heading, type, country_id)
+    Persistence.UnitKilled = function (name, position, heading, type)
         if enabled == false then return end
 
-        tables.dead_units[name] = { 
-            isDead = true, 
-            pos = position, 
-            heading = heading, 
-            type = type, 
-            country_id = country_id,
+        logger:debug("Unit killed: " .. name .. ".. =>  persistenting")
+
+        tables.unitsStates[name] = {
+            isDead = true,
+            pos = position,
+            heading = heading,
+            type = type,
             isCleaned = false
          }
-        updateRequired = true
+        Persistence._updateRequired = true
     end
 end
 

@@ -1,5 +1,5 @@
 
----@class BlueSam : OnCrateDroppedListener, MissionCompleteListener
+---@class BlueSam : BuildableZone
 ---@field Activate fun(self: BlueSam)
 ---@field private _database Database
 ---@field private _logger Logger
@@ -11,13 +11,16 @@
 ---@field private _unitsPerCrate number?
 ---@field private _buildableMission BuildableMission?
 local BlueSam = {}
+BlueSam.__index = BlueSam
 
 ---@param database Database
 ---@param logger Logger
 ---@param zoneName string
+---@param spawnManager SpawnManager
 ---@return BlueSam?
-function BlueSam.New(database, logger, zoneName)
-    BlueSam.__index = BlueSam
+function BlueSam.New(database, logger, zoneName, spawnManager)
+
+    setmetatable(BlueSam, Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone)
     local self = setmetatable({}, BlueSam)
 
     self._database = database
@@ -44,14 +47,18 @@ function BlueSam.New(database, logger, zoneName)
     local redUnitsPos = {}
 
     
+    local buildable = false
+    if self._buildableCrateKilos and self._buildableCrateKilos > 0 then
+        buildable = true
+    end
+
     for _, groupName in pairs(blueSamData.groups) do
-        local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName)
+        local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName, spawnManager, true)
         if SpearheadGroup then
             
-            if SpearheadGroup:GetCoalition() == 2 then
+            if SpearheadGroup:GetCoalition() == 2 or SpearheadGroup:GetCoalition() == 0 then
                 table.insert(self._blueGroups, SpearheadGroup)
             end
-
 
             for _, unit in pairs(SpearheadGroup:GetObjects()) do
                 if SpearheadGroup:GetCoalition() == 1 then
@@ -76,20 +83,10 @@ function BlueSam.New(database, logger, zoneName)
         end
     end
 
-    if self._buildableCrateKilos ~= nil and self._buildableCrateKilos ~= 0 then
-        self._logger:debug("Buildable mission creating for zone: " .. zoneName .. " with crates: " .. self._buildableCrateKilos)
-
-        local noLandingZone = self:GetNoLandingZone()
-        local zone = Spearhead.DcsUtil.getZoneByName(zoneName)
-        if zone then
-            self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, zone, noLandingZone, self._buildableCrateKilos, "SAM_CRATE")
-            self._buildableMission:AddOnCrateDroppedOfListener(self)
-            self._buildableMission:AddMissionCompleteListener(self)
-        end
-       
+    local zone = Spearhead.DcsUtil.getZoneByName(zoneName)
+    if zone then
+        Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone.New(self, zone, self._buildableCrateKilos or 0, "SAM_CRATE", self._blueGroups, logger, database)
     end
-
-
 
     return self
 end
@@ -132,21 +129,14 @@ function BlueSam:Activate()
     if self._buildableMission == nil then
         self:SpawnGroups()
     else
-        self._buildableMission:SpawnActive()
+        self:StartBuildable()
     end
 
 end
 
 function BlueSam:SpawnGroups()
     for unitName, needsCleanup in pairs(self._cleanupUnits) do
-        if needsCleanup == true then
-            Spearhead.DcsUtil.DestroyUnit(unitName)
-        else
-            local deathState = Spearhead.classes.persistence.Persistence.UnitDeadState(unitName)
-            if deathState and deathState.isDead == true then
-                Spearhead.DcsUtil.SpawnCorpse(deathState.country_id, unitName, deathState.type, deathState.pos, deathState.heading)
-            end
-        end
+        Spearhead.DcsUtil.DestroyUnit(unitName)
     end
 
     for _, group in pairs(self._blueGroups) do
@@ -154,23 +144,10 @@ function BlueSam:SpawnGroups()
     end
 end
 
-
----@param buildableMission BuildableMission
----@param kilos number
-function BlueSam:OnCrateDroppedOff(buildableMission, kilos)
-
-    self._logger:debug("Crate dropped off in zone: " .. self._zoneName)
-    self._receivedKilos = self._receivedKilos + kilos
-
-end
-
----@param buildableMission Mission
-function BlueSam:OnMissionComplete(buildableMission)
-    self._logger:debug("Buildable mission complete for zone: " .. self._zoneName)
-
+function BlueSam:OnBuildingComplete()
     self:SpawnGroups()
-
 end
+
 
 
 if Spearhead == nil then Spearhead = {} end

@@ -67,6 +67,18 @@ do -- INIT UTIL
         return list[random]
     end
 
+    ---@param list Array 
+    ---@param start number start
+    ---@param n number length
+    ---@return Array
+    function UTIL.sublist(list, start, n)
+        local result = {}
+        for i = start, n do
+            result[#result + 1] = list[i]
+        end
+        return result
+    end
+
     ---@param str string
     ---@param find string
     ---@param replace string
@@ -504,17 +516,6 @@ do     -- INIT DCS_UTIL
             }
         ]] --
 
-        ---@class MizGroupData
-        ---@field category GroupCategory
-        ---@field country_id integer
-        ---@field group_template table
-
-        ---@type table<string, MizGroupData>
-        DCS_UTIL.__miz_groups = {}
-
-        DCS_UTIL.__groupNames = {}
-        DCS_UTIL.__blueGroupNames = {}
-        DCS_UTIL.__redGroupNames = {}
         --[[
             zone = {
                 name,
@@ -574,54 +575,6 @@ do     -- INIT DCS_UTIL
     DCS_UTIL.__warehouseStartingCoalition = {}
     function DCS_UTIL.__INIT()
         do     -- INITS ALL TABLES WITH DATA THAT's from the MIZ environment
-            do -- init group tables
-                for coalition_name, coalition_data in pairs(env.mission.coalition) do
-                    local coalition_nr = DCS_UTIL.stringToCoalition(coalition_name)
-                    if coalition_data.country then
-                        for country_index, country_data in pairs(coalition_data.country) do
-                            for category_name, categorydata in pairs(country_data) do
-                                local category_id = DCS_UTIL.stringToGroupCategory(category_name)
-                                if category_id ~= nil and type(categorydata) == "table" and categorydata.group ~= nil and type(categorydata.group) == "table" then
-                                    for group_index, group in pairs(categorydata.group) do
-                                        local name = group.name
-
-                                        local skippable = false
-
-                                        if category_id == DCS_UTIL.GroupCategory.STATIC then
-                                            local unit = group.units[1]
-
-                                            if unit and  unit.category == "Heliports" then
-                                                skippable = true
-                                            elseif unit then
-                                                name = unit.name
-                                            else
-                                                env.error("Group " .. name .. " has no units, skipping it.")
-                                                skippable = true
-                                            end
-                                        end
-
-                                        if skippable == false then
-                                            table.insert(DCS_UTIL.__groupNames, name)
-                                            DCS_UTIL.__miz_groups[name] =
-                                            {
-                                                category = category_id,
-                                                country_id = country_data.id,
-                                                group_template = group
-                                            }
-
-                                            if coalition_nr == 1 then
-                                                table.insert(DCS_UTIL.__redGroupNames, name)
-                                            elseif coalition_nr == 2 then
-                                                table.insert(DCS_UTIL.__blueGroupNames, name)
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
 
             do --init trigger zones
                 for i, trigger_zone in pairs(env.mission.triggers.zones) do
@@ -750,31 +703,6 @@ do     -- INIT DCS_UTIL
         return -1
     end
 
-    ---checks if the groupname is a static group
-    ---@param groupName string
-    function DCS_UTIL.IsGroupStatic(groupName)
-        if DCS_UTIL.__miz_groups[groupName] then
-            return DCS_UTIL.__miz_groups[groupName].category == DCS_UTIL.GroupCategory.STATIC
-        end
-
-        return StaticObject.getByName(groupName) ~= nil
-    end
-
-    ---destroy the given group
-    ---@param groupName string
-    function DCS_UTIL.DestroyGroup(groupName)
-        if DCS_UTIL.IsGroupStatic(groupName) then
-            local object = StaticObject.getByName(groupName)
-            if object ~= nil then
-                object:destroy()
-            end
-        else
-            local group = Group.getByName(groupName)
-            if group and group:isExist() then
-                group:destroy()
-            end
-        end
-    end
 
     ---destroy the given unit
     ---@param unitName string
@@ -1049,43 +977,7 @@ do     -- INIT DCS_UTIL
             end
         end
     end
-    
-    --- get the group config as per start of the mission
-    --- group = {
-    ---     category,
-    ---     country_id,
-    ---     group_template
-    --- }
-    ---@param groupname string groupName you're looking for
-    function DCS_UTIL.GetMizGroupOrDefault(groupname, default)
-        local group = DCS_UTIL.__miz_groups[groupname]
-        if group == nil then
-            return default
-        end
-        return group
-    end
-
-    ---comment Get all group names. Can be a LOT
-    ---Includes statics
-    ---@return table groups
-    function DCS_UTIL.getAllGroupNames()
-        return DCS_UTIL.__groupNames
-    end
-
-    ---comment Get all BLUE group names. Can be a LOT
-    ---Includes statics
-    ---@return table groups
-    function DCS_UTIL.getAllBlueGroupNames()
-        return DCS_UTIL.__blueGroupNames
-    end
-
-    ---comment Get all RED group names. Can be a LOT
-    ---Includes statics
-    ---@return table groups
-    function DCS_UTIL.getAllRedGroupNames()
-        return DCS_UTIL.__redGroupNames
-    end
-
+  
     ---comment Get all units that are players
     ---@return Array<Unit> units
     function DCS_UTIL.getAllPlayerUnits()
@@ -1132,27 +1024,6 @@ do     -- INIT DCS_UTIL
             result = DCS_UTIL.__warehouseStartingCoalition[baseId]
         end
         return result
-    end
-
-    ---Spawn an corpse
-    ---@param countryId number countryId
-    ---@param unitType string
-    ---@param location table { z, y, z}
-    ---@param heading number
-    function DCS_UTIL.SpawnCorpse(countryId, unitName, unitType, location, heading)
-        local name = "dead_" .. unitName
-
-        local staticObj = {
-            ["heading"] = heading,
-            --["shape_name"] = "stolovaya",
-            ["type"] = unitType,
-            ["name"] = name,
-            ["y"] = location.z,
-            ["x"] = location.x,
-            ["dead"] = true,
-        }
-
-        coalition.addStaticObject(countryId, staticObj)
     end
 
     function DCS_UTIL.CleanCorpse(unitName)
@@ -1296,90 +1167,6 @@ do     -- INIT DCS_UTIL
         end
     end
 
-    --- spawns the units as specified in the mission file itself
-    --- location and route can be nil and will then use default route
-    ---@param groupName string
-    ---@param location table? vector 3 data. { x , z, alt }
-    ---@param route table? route of the group. If nil wil be the default route.
-    ---@param uncontrolled boolean? Sets the group to be uncontrolled on spawn
-    ---@param countryId CountryID? Overwrites the country
-    ---@param emptyLoadouts boolean? If true, the group will spawn with empty loadouts
-    ---@return table? new_group the Group class that was spawned
-    ---@return boolean? isStatic whether the group is a static or not
-    function DCS_UTIL.SpawnGroupTemplate(groupName, location, route, uncontrolled, countryId, emptyLoadouts)
-        if groupName == nil then
-            return nil, nil
-        end
-
-        local template = DCS_UTIL.GetMizGroupOrDefault(groupName, nil)
-        if template == nil then
-            return nil, nil
-        end
-        if template.category == DCS_UTIL.GroupCategory.STATIC then
-            --TODO: Implement location and route stuff
-            local spawn_template = template.group_template
-            local country = countryId or template.country_id
-
-            ---disable diagnostic as -1 is actually valid
-            ---@diagnostic disable-next-line: param-type-mismatch
-            coalition.addGroup(country, -1, spawn_template)
-
-            local object = StaticObject.getByName(spawn_template.name)
-            if object then
-                return object, true
-            end
-        else
-            local spawn_template = Spearhead.Util.deepCopyTable(template.group_template)
-            if location ~= nil then
-                local x_offset
-                if location.x ~= nil then x_offset = spawn_template.x - location.x end
-
-                local y_offset
-                if location.z ~= nil then y_offset = spawn_template.y - location.z end
-
-                spawn_template.x = location.x
-                spawn_template.y = location.z
-
-                for i, unit in pairs(spawn_template.units) do
-                    unit.x = unit.x - x_offset
-                    unit.y = unit.y - y_offset
-                    unit.alt = location.alt
-                end
-            end
-
-            if spawn_template.units then
-                for _, unit in pairs(spawn_template.units) do
-                    if unit["parking"] then
-                        unit["parking_landing"] = unit["parking"]
-                    end
-
-                    if unit["parking_id"] then
-                        unit["parking_landing_id"] = unit["parking_id"]
-                    end
-                end
-
-                if emptyLoadouts == true then
-                    for _, unit in pairs(spawn_template.units) do
-                        if unit["payload"] and unit["payload"]["pylons"] then
-                            unit["payload"]["pylons"] = {}
-                        end
-                    end
-                end
-            end
-
-            if route ~= nil then
-                spawn_template.route = route
-            end
-
-            if uncontrolled ~= nil then
-                spawn_template.uncontrolled = uncontrolled
-            end
-
-            local country = countryId or template.country_id
-            local new_group = coalition.addGroup(country, template.category, spawn_template)
-            return new_group, false
-        end
-    end
 
     ---@return number? id
     function DCS_UTIL.GetNeutralCountry()
@@ -1393,7 +1180,7 @@ do     -- INIT DCS_UTIL
 
     function DCS_UTIL.NeedsRTBInTen(groupName, fuelOffset)
 
-        local isBingo = Spearhead.DcsUtil.IsBingoFuel(groupName, fuelOffset)
+        local isBingo = DCS_UTIL.IsBingoFuel(groupName, fuelOffset)
         if isBingo then return true end
 
         local aliveUnits = 0
