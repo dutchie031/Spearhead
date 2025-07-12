@@ -1,6 +1,9 @@
 ---@class SpawnManager : OnUnitLostListener
 ---@field private _persistedUnits table<string,boolean>
+<<<<<<< HEAD
 ---@field private _persistedMovingGroups table<string,boolean>
+=======
+>>>>>>> main
 ---@field private _logger Logger
 local SpawnManager = {}
 SpawnManager.__index = SpawnManager
@@ -19,7 +22,6 @@ function SpawnManager.new(logger)
 
     self._persistedUnits = {} -- Stores units that should be persisted by name
     self._persistedMovingGroups = {} -- Stores moving units that should be persisted by name
-
     self:StartUpdatingPersistedMovingUnits()
 
     return self
@@ -134,7 +136,6 @@ do --- privates
         if spawnTemplate and spawnTemplate["units"] then
 
             local firstAlive = nil
-
             for _, unit in pairs(spawnTemplate["units"]) do
                 local name = unit["name"]
 
@@ -170,7 +171,6 @@ do --- privates
                     unit["parking_landing_id"] = unit["parking_id"]
                 end
             end
-
 
             if override and override.route ~= nil then
                 spawnTemplate["route"] = override.route
