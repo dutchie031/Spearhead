@@ -295,24 +295,18 @@ do --- privates
     end
 
     function SpawnManager:UpdatePersistedMovingUnits()
-
         for groupName, check in pairs(self._persistedMovingGroups) do
-
             if check == true then 
                 local group = Group.getByName(groupName)
-
                 if group and group:isExist() then
-                    
+                    for _, unit in pairs(group:getUnits()) do
+                        Spearhead.classes.persistence.Persistence.UpdateLocation(unit:getName(), unit:getPoint())
+                    end
                 else
                     self._persistedMovingGroups[groupName] = nil
                 end
-
             end
-
-            
-
         end
-
     end
 
     function SpawnManager:SendGroupToWaypointDelayed(groupName, waypointNumber)

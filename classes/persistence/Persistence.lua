@@ -332,6 +332,8 @@ do
     ---@param name string
     ---@param position Vec3
     Persistence.UpdateLocation = function(name, position)
+        if enabled == false then return end
+        
         if not tables.unitsStates[name] then
             tables.unitsStates[name] = {
                 isDead = false,
