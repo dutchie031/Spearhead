@@ -1,5 +1,9 @@
 ---@class SpawnManager : OnUnitLostListener
 ---@field private _persistedUnits table<string,boolean>
+<<<<<<< HEAD
+---@field private _persistedMovingGroups table<string,boolean>
+=======
+>>>>>>> main
 ---@field private _logger Logger
 local SpawnManager = {}
 SpawnManager.__index = SpawnManager
@@ -17,6 +21,8 @@ function SpawnManager.new(logger)
     self._logger = logger
 
     self._persistedUnits = {} -- Stores units that should be persisted by name
+    self._persistedMovingGroups = {} -- Stores moving units that should be persisted by name
+    self:StartUpdatingPersistedMovingUnits()
 
     return self
 end
@@ -124,10 +130,12 @@ do --- privates
         local removeableUnitNames = {}
         --[[
             TODO: Spawn units at "current"/LastKnown position with them going to the next waypoint. 
-            ONLY when perstable data is found.
+            ONLY when persitable data is found.
         ]]
 
         if spawnTemplate and spawnTemplate["units"] then
+
+            local firstAlive = nil
             for _, unit in pairs(spawnTemplate["units"]) do
                 local name = unit["name"]
 
@@ -136,7 +144,17 @@ do --- privates
                 if state then
                     if state.isDead == true then
                         removeableUnitNames[#removeableUnitNames+1] = name
+                    else
+                        if state.pos then
+                            unit["x"] = state.pos.x
+                            unit["y"] = state.pos.z
+                            unit["heading"] = state.heading or 0
+                        end
+                        firstAlive = unit
+
                     end
+                else
+                   firstAlive = unit
                 end
 
                 if override and override.emptyLoadouts == true then
@@ -158,6 +176,19 @@ do --- privates
                 spawnTemplate["route"] = override.route
             end
 
+            if firstAlive then
+                spawnTemplate["x"] = firstAlive.x or spawnTemplate["x"] or 0
+                spawnTemplate["y"] = firstAlive.y or spawnTemplate["y"] or 0
+
+                if spawnTemplate["route"] and spawnTemplate["route"]["points"] then
+                    local first = spawnTemplate["route"]["point"][1]
+                    if first then
+                        first["x"] = firstAlive.x or spawnTemplate["x"] or 0
+                        first["y"] = firstAlive.y or spawnTemplate["y"] or 0
+                    end
+                end
+            end
+
             if override and override.uncontrolled ~= nil then
                 spawnTemplate["uncontrolled"] = override.uncontrolled
             end
@@ -173,11 +204,145 @@ do --- privates
                 Spearhead.Events.addOnUnitLostEventListener(unit:getName(), self)
             end
 
+            if self:HasMovingRoute(groupName) == true then
+                local number = self:GetClosestWaypointNumber(spawnTemplate, firstAlive)
+                if number then
+                    self:SendGroupToWaypointDelayed(groupName, number)
+                end
+
+                if isPersistent == true then
+                    self._persistedMovingGroups[groupName] = true
+                end
+            end
+
             return group
         end
 
         
         return nil
+    end
+
+    ---@private 
+    ---@param groupName string
+    ---@return boolean
+    function SpawnManager:HasMovingRoute(groupName)
+        local spawnData = Spearhead.classes.helpers.MizGroupsManager.getSpawnTemplateData(groupName)
+        if spawnData and spawnData.groupTemplate and spawnData.groupTemplate.route and spawnData.groupTemplate.route.points then
+            if Spearhead.Util.tableLength(spawnData.groupTemplate.route.points) > 1 then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    ---@private 
+    ---@param spawnTemplate table 
+    ---@return number?
+    function SpawnManager:GetClosestWaypointNumber(spawnTemplate, aliveLead)
+
+        if not spawnTemplate or not spawnTemplate.route or not spawnTemplate.route.points then
+            return 1
+        end
+
+        local points = spawnTemplate.route.points
+        local posX = aliveLead.x
+        local posY = aliveLead.y
+
+        -- Find the segment (between two waypoints) closest to the unit's position
+        local closestSegIdx = 1
+        local closestDist = math.huge
+        for i = 1, #points - 1 do
+            local x1, y1 = points[i].x, points[i].y
+            local x2, y2 = points[i+1].x, points[i+1].y
+            -- Project aliveLead onto the segment
+            local dx, dy = x2 - x1, y2 - y1
+            local segLen2 = dx*dx + dy*dy
+            local t = 0
+            if segLen2 > 0 then
+                t = ((posX - x1) * dx + (posY - y1) * dy) / segLen2
+                t = math.max(0, math.min(1, t))
+            end
+            local projX = x1 + t * dx
+            local projY = y1 + t * dy
+            local dist = (projX - posX)^2 + (projY - posY)^2
+            if dist < closestDist then
+                closestDist = dist
+                closestSegIdx = i
+            end
+        end
+        -- Return the next waypoint index (the end of the closest segment)
+        return math.min(closestSegIdx + 1, #points)
+    end
+
+    function SpawnManager:StartUpdatingPersistedMovingUnits()
+
+        ---@class UpdateMovingUnitsParams
+        ---@field self SpawnManager
+
+        ---@type UpdateMovingUnitsParams
+        local params = {
+            self = self
+        }
+
+        ---@param params UpdateMovingUnitsParams
+        local updateMovingUnitsTask = function(params, time)
+            params.self:UpdatePersistedMovingUnits()
+            return time + 60
+        end
+
+        timer.scheduleFunction(updateMovingUnitsTask, params, timer.getTime() + 60)
+    end
+
+    function SpawnManager:UpdatePersistedMovingUnits()
+        for groupName, check in pairs(self._persistedMovingGroups) do
+            if check == true then 
+                local group = Group.getByName(groupName)
+                if group and group:isExist() then
+                    for _, unit in pairs(group:getUnits()) do
+                        Spearhead.classes.persistence.Persistence.UpdateLocation(unit:getName(), unit:getPoint())
+                    end
+                else
+                    self._persistedMovingGroups[groupName] = nil
+                end
+            end
+        end
+    end
+
+    function SpawnManager:SendGroupToWaypointDelayed(groupName, waypointNumber)
+        
+        ---@class SendGroupToWaypointParams
+        ---@field groupName string
+        ---@field waypointNumber number
+
+        ---@type SendGroupToWaypointParams
+        local params = {
+            groupName = groupName,
+            waypointNumber = waypointNumber
+        }
+
+        ---comment
+        ---@param params SendGroupToWaypointParams
+        local sendGroupToWaypoint = function(params)
+
+            local group = Group.getByName(params.groupName)
+            if group and group:isExist() then
+                local goToWaypoint= { 
+                id = 'goToWaypoint', 
+                    params = {
+                        fromWaypointIndex = 0, -- Start from the first waypoint
+                        goToWaypointIndex = params.waypointNumber,
+                    }
+                }
+
+                local controller = group:getController()
+                if controller then
+                    controller:setCommand(goToWaypoint)
+                end
+            end
+        end
+
+        timer.scheduleFunction(sendGroupToWaypoint, params, timer.getTime() + 2)
     end
 
     ---@private
@@ -259,90 +424,3 @@ if not Spearhead then Spearhead = {} end
 if not Spearhead.classes then Spearhead.classes = {} end
 if not Spearhead.classes.helpers then Spearhead.classes.helpers = {} end
 Spearhead.classes.helpers.SpawnManager = SpawnManager
-
---Old Spawn Method
-
--- --- spawns the units as specified in the mission file itself
--- --- location and route can be nil and will then use default route
--- ---@param groupName string
--- ---@param location table? vector 3 data. { x , z, alt }
--- ---@param route table? route of the group. If nil wil be the default route.
--- ---@param uncontrolled boolean? Sets the group to be uncontrolled on spawn
--- ---@param countryId CountryID? Overwrites the country
--- ---@param emptyLoadouts boolean? If true, the group will spawn with empty loadouts
--- ---@return table? new_group the Group class that was spawned
--- ---@return boolean? isStatic whether the group is a static or not
--- function DCS_UTIL.SpawnGroupTemplate(groupName, location, route, uncontrolled, countryId, emptyLoadouts)
---     if groupName == nil then
---         return nil, nil
---     end
-
---     local template = DCS_UTIL.GetMizGroupOrDefault(groupName, nil)
---     if template == nil then
---         return nil, nil
---     end
---     if template.category == DCS_UTIL.GroupCategory.STATIC then
---         --TODO: Implement location and route stuff
---         local spawn_template = template.group_template
---         local country = countryId or template.country_id
-
---         ---disable diagnostic as -1 is actually valid
---         ---@diagnostic disable-next-line: param-type-mismatch
---         coalition.addGroup(country, -1, spawn_template)
-
---         local object = StaticObject.getByName(spawn_template.name)
---         if object then
---             return object, true
---         end
---     else
---         local spawn_template = Spearhead.Util.deepCopyTable(template.group_template)
---         if location ~= nil then
---             local x_offset
---             if location.x ~= nil then x_offset = spawn_template.x - location.x end
-
---             local y_offset
---             if location.z ~= nil then y_offset = spawn_template.y - location.z end
-
---             spawn_template.x = location.x
---             spawn_template.y = location.z
-
---             for i, unit in pairs(spawn_template.units) do
---                 unit.x = unit.x - x_offset
---                 unit.y = unit.y - y_offset
---                 unit.alt = location.alt
---             end
---         end
-
---         if spawn_template.units then
---             for _, unit in pairs(spawn_template.units) do
---                 if unit["parking"] then
---                     unit["parking_landing"] = unit["parking"]
---                 end
-
---                 if unit["parking_id"] then
---                     unit["parking_landing_id"] = unit["parking_id"]
---                 end
---             end
-
---             if emptyLoadouts == true then
---                 for _, unit in pairs(spawn_template.units) do
---                     if unit["payload"] and unit["payload"]["pylons"] then
---                         unit["payload"]["pylons"] = {}
---                     end
---                 end
---             end
---         end
-
---         if route ~= nil then
---             spawn_template.route = route
---         end
-
---         if uncontrolled ~= nil then
---             spawn_template.uncontrolled = uncontrolled
---         end
-
---         local country = countryId or template.country_id
---         local new_group = coalition.addGroup(country, template.category, spawn_template)
---         return new_group, false
---     end
--- end
