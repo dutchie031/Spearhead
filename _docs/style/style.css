@@ -191,6 +191,7 @@ header {
     left: -5.5rem;
     top: 1.7rem;
     color: var(--color-text-subTitle);
+    text-wrap: nowrap;;
 }
 
 .logo:hover {
