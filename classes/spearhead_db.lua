@@ -7,6 +7,7 @@
 ---@field MissionZonesLocations table<string, Vec2> All Mission Zone Locations
 ---@field StageZonesByNumber table<string, Array<string>> Stage zones grouped by index number
 ---@field AllFarpZones Array<string>
+---@field AllSceneryObjects Array<SpearheadSceneryObject> All scenery objects
 ---@field AllCapRoutes Array<string> All Cap route zone names
 ---@field AllInterceptZones Array<string> All intercept zones
 ---@field capZonesByCapZoneID table<string, CapRoute>
@@ -58,10 +59,8 @@
 
 ---@class MissionZoneData
 ---@field RedGroups Array<string>
+---@field SceneryTargets Array<SpearheadSceneryObject>
 ---@field BlueGroups Array<string>
-
----@class MissionData
----@field Groups Array<string>
 
 ---@class FarpZoneData
 ---@field groups Array<string>
@@ -85,6 +84,7 @@ function Database.New(Logger)
         AllCapRoutes = {},
         capZonesByCapZoneID = {},
         AllInterceptZones = {},
+        AllSceneryObjects = {},
         interceptZonesByZoneID = {},
         CarrierRouteZones = {},
         MissionZones = {},
@@ -186,6 +186,19 @@ function Database.New(Logger)
             if lowered == "supplyhub" then
                 table.insert(self._tables.SupplyHubZones, zone_name)
             end
+
+            if zone_data.properties then
+                for _, kvPair in pairs(zone_data.properties) do
+                    if kvPair.key and kvPair.key == "OBJECT ID" then
+                        local objectID = tonumber(kvPair.value)
+                        if objectID then
+                            local sceneryObject = Spearhead.classes.stageClasses.Groups.SpearheadSceneryObject.New(objectID)
+                            table.insert(self._tables.AllSceneryObjects, sceneryObject)
+                        end
+                    end
+                end
+            end
+
         end
     end
 
@@ -649,67 +662,57 @@ function Database:loadBlueSamUnits()
 end
 
 ---@private
-function Database:loadMissionzoneUnits()
+function Database:LoadZoneData(missionZoneName)
     local all_groups = getAvailableGroups()
-    for _, missionZoneName in pairs(self._tables.MissionZones) do
-        self._tables.MissionZoneData[missionZoneName] = {
-            RedGroups = {},
-            BlueGroups = {},
-        }
+    self._tables.MissionZoneData[missionZoneName] = {
+        RedGroups = {},
+        BlueGroups = {},
+        SceneryTargets = {}
+    }
 
-        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
-        for _, groupName in pairs(groups) do
-            if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
-                local object = StaticObject.getByName(groupName)
-                
-                if object and object:getCoalition() == coalition.side.RED then
-                    table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
-                elseif object  then
-                    table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
-                end
-                
-            else
-                local group = Group.getByName(groupName)
-                if group and group:getCoalition() == coalition.side.RED then
-                    table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
-                elseif group then
-                    table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
-                end
+    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
+    for _, groupName in pairs(groups) do
+        if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
+            local object = StaticObject.getByName(groupName)
+            
+            if object and object:getCoalition() == coalition.side.RED then
+                table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
+            elseif object  then
+                table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
             end
-            is_group_taken[groupName] = true
+            
+        else
+            local group = Group.getByName(groupName)
+            if group and group:getCoalition() == coalition.side.RED then
+                table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
+            elseif group then
+                table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
+            end
+        end
+        is_group_taken[groupName] = true
+    end
+
+    for _, sceneryObject in pairs(self._tables.AllSceneryObjects) do
+        local point = sceneryObject:GetPoint()
+        if point then
+            if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, missionZoneName) == true then
+                table.insert(self._tables.MissionZoneData[missionZoneName].SceneryTargets, sceneryObject)
+            end
         end
     end
 end
 
 ---@private
+function Database:loadMissionzoneUnits()
+    for _, missionZoneName in pairs(self._tables.MissionZones) do
+        self:LoadZoneData(missionZoneName)
+    end
+end
+
+---@private
 function Database:loadRandomMissionzoneUnits()
-    local all_groups = getAvailableGroups()
     for _, missionZoneName in pairs(self._tables.RandomMissionZones) do
-        self._tables.MissionZoneData[missionZoneName] = {
-            RedGroups = {},
-            BlueGroups = {},
-        }
-        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
-        for _, groupName in pairs(groups) do
-            if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
-                local object = StaticObject.getByName(groupName)
-                
-                if object and object:getCoalition() == coalition.side.RED then
-                    table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
-                elseif object  then
-                    table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
-                end
-                
-            else
-                local group = Group.getByName(groupName)
-                if group and group:getCoalition() == coalition.side.RED then
-                    table.insert(self._tables.MissionZoneData[missionZoneName].RedGroups, groupName)
-                elseif group then
-                    table.insert(self._tables.MissionZoneData[missionZoneName].BlueGroups, groupName)
-                end
-            end
-            is_group_taken[groupName] = true
-        end
+        self:LoadZoneData(missionZoneName)
     end
 end
 

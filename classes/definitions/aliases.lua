@@ -14,3 +14,6 @@ do -- mission aliases
 
 end
 
+---@class KeyValuePair
+---@field key string
+---@field value any

@@ -18,6 +18,7 @@ class Header extends HTMLElement {
                             <div class="dropdown-content">
                                 <a href="/pages/tutorials.html">Quick Starts</a>
                                  <a href="/pages/advanced/CAP.html">Advanced: CAP</a>
+                                 <a href="/pages/advanced/missions.html">Advanced: Missions</a>
                             </div>
                         </div>
                         
