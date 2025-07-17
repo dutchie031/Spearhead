@@ -36,6 +36,8 @@ assert(loadfile(classPath .. "stageClasses\\Stages\\WaitingStage.lua"))()
 
 
 assert(loadfile(classPath .. "stageClasses\\Groups\\SpearheadGroup.lua"))()
+assert(loadfile(classPath .. "stageClasses\\Groups\\SpearheadSceneryObject.lua"))()
+
 
 assert(loadfile(classPath .. "stageClasses\\helpers\\MissionCommandsHelper.lua"))()
 assert(loadfile(classPath .. "stageClasses\\helpers\\SupplyConfig.lua"))()

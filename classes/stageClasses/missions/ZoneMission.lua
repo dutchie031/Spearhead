@@ -15,6 +15,7 @@ local ZoneMission = {}
 --- @field blueGroups Array<SpearheadGroup>
 --- @field unitsAlive table<string, table<string, boolean>>
 --- @field targetsAlive table<string, table<string, boolean>>
+--- @field sceneryTargets Array<SpearheadSceneryObject>
 --- @field groupNamesPerunit table<string,string>
 
 ---@class ParsedMissionName
@@ -101,7 +102,8 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
         unitsAlive = {},
         targetsAlive = {},
         hasTargets = false,
-        groupNamesPerunit = {}
+        groupNamesPerunit = {},
+        sceneryTargets = {}
     }
 
     self._parentStage = parentStage
@@ -127,6 +129,10 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
 
     local missionData = database:getMissionDataForZone(zoneName)
     if not missionData then return end
+    self._missionGroups.sceneryTargets = missionData.SceneryTargets or {}
+    if Spearhead.Util.tableLength(self._missionGroups.sceneryTargets) > 0 then
+        self._missionGroups.hasTargets = true
+    end
 
     for _, groupName in pairs(missionData.BlueGroups) do
         local spearheadGroup = SpearheadGroup.New(groupName, spawnManager, true)
@@ -288,6 +294,13 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
             end
         end
 
+        for _, sceneryObject in pairs(self._missionGroups.sceneryTargets) do
+            total = total + 1
+            if sceneryObject:IsAlive() == true then
+                alive = alive + 1
+            end
+        end
+
         local deadRatio = (total - alive) / total
         if deadRatio >= self._completeAtIndex then
             self._logger:debug("Dead ratio " .. self.zoneName .. deadRatio .. " >= " .. self._completeAtIndex)
@@ -327,6 +340,10 @@ function ZoneMission:SpawnPersistedState()
     for _, group in pairs(self._missionGroups.redGroups) do
         group:Spawn()
     end
+
+    for _, object in pairs(self._missionGroups.sceneryTargets) do
+        object:UpdateStatePersistently()
+    end
 end
 
 ---spawns the mission, but doesn't add
@@ -359,6 +376,10 @@ function ZoneMission:SpawnActive()
 
     for _, group in pairs(self._missionGroups.blueGroups) do
         group:Spawn()
+    end
+
+    for _, sceneryObject in pairs(self._missionGroups.sceneryTargets) do
+        sceneryObject:UpdateStatePersistently()
     end
 
     if self._battleManager then
@@ -401,6 +422,13 @@ function ZoneMission:PercentageComplete()
                         dead = dead + 1
                     end
                 end
+            end
+        end
+
+        for _, sceneryObject in pairs(self._missionGroups.sceneryTargets) do
+            total = total + 1
+            if sceneryObject:IsAlive() == false then
+                dead = dead + 1
             end
         end
 

@@ -539,6 +539,7 @@ do     -- INIT DCS_UTIL
         ---@field radius number
         ---@field verts Array<Vec2>
         ---@field zone_type SpearheadTriggerZoneType
+        ---@field properties Array<KeyValuePair>?
 
         ---@type Array<SpearheadTriggerZone>
         DCS_UTIL.__trigger_zones = {}
@@ -598,8 +599,17 @@ do     -- INIT DCS_UTIL
                         zone_type = zoneType,
                         location = { x = trigger_zone.x, y = trigger_zone.y },
                         radius = trigger_zone.radius,
-                        verts = verts
+                        verts = verts,
+                        properties = {}
                     }
+
+                    if trigger_zone.properties then
+                        for _, kvPair in pairs(trigger_zone.properties) do
+                            local key = kvPair["key"]
+                            local value = kvPair["value"]
+                            zone.properties[#zone.properties + 1] = { key = key, value = value }
+                        end
+                    end
 
                     DCS_UTIL.__trigger_zones[zone.name] = zone
                 end
@@ -977,7 +987,8 @@ do     -- INIT DCS_UTIL
             end
         end
     end
-  
+
+
     ---comment Get all units that are players
     ---@return Array<Unit> units
     function DCS_UTIL.getAllPlayerUnits()

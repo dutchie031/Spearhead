@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spearhead Missions</title>
+    <link rel="stylesheet" href="/style/style.css">
+    <script src="/js/site.js"></script>
+    <style>
+        .side-nav a.active {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+    </style>
+    <script type="module" src="/js/components.js"></script>
+</head>
+
+<body>
+    <header>
+        <app-header></app-header>
+    </header>
+    <main>
+        <div class="reference-container">
+            <app-sidebar></app-sidebar>
+
+            <div class="content-wrapper">
+                <h1>Advanced Tutorial: Missions</h1>
+                <h2 id="strike">Strike</h2>
+                <p>
+                    Naming: <span class="inline-lua"><span class="lua-variable">MISSION_STRIKE_[Name]</span></span> <br>
+                </p>
+                <h3 id="specific_targets">Specific Targets</h3>
+                <p>TBD</p>
+
+
+                <h3 id="scenery_targets">Scenery Targets</h3>
+                <p>
+                    Bridges, buildings or other type of targets that are baked into the map are awesome targets.<br>
+                    We wanted to make sure they were easily integrated in Spearhead.
+
+                    All you will need to do is right click on the scenery object you want added. <br>
+                    You will then get the option to "Assign as...", click this and you'll see a new trigger zone created. <br>
+                    It's best not to edit the triggerzone, but you can rename it however you like. <br>
+                    
+                    Scenery objects will always be a specific "target" in the mission. 
+
+                </p>
+
+                  <note-box type="warning" title="Changing IDs">
+                       Be aware that Object IDs can change when maps are updated and edited and the "Assign as..." action will have to be performed again.
+                    </note-box>
+
+                
+                <p>Here's two images showing how a bridge is added to a mission.</p>
+                <img src="/img/bridge.png" style="max-height: 35remrem;"/>
+                <img src="/img/bridge_added.png" style="max-height: 35remrem;"/>
+            </div>
+        </div>
+        
+    </main>
+    <footer>
+        <p>&copy; 2025 Spearhead Project</p>
+    </footer>
+</body>
+
+</html>
+```

@@ -9,6 +9,7 @@ class Header extends HTMLElement {
         this.innerHTML = `
             <div class="header-box">
                 <a class="logo" href="/index.html">Spearhead</a>
+                <span class="subTitle">mission making, made easy</span>
                 <div class="header-right">
                     <nav>
                         <a href="/index.html">Home</a>
@@ -18,6 +19,7 @@ class Header extends HTMLElement {
                             <div class="dropdown-content">
                                 <a href="/pages/tutorials.html">Quick Starts</a>
                                  <a href="/pages/advanced/CAP.html">Advanced: CAP</a>
+                                 <a href="/pages/advanced/missions.html">Advanced: Missions</a>
                             </div>
                         </div>
                         
@@ -25,6 +27,7 @@ class Header extends HTMLElement {
                         <a href="/pages/persistence.html">Persistence</a>
                         <a href="/pages/reference.html">Reference</a>
                         <a href="/pages/spearheadapi.html">API</a>
+                         <a href="/pages/about_us.html">About Us</a>
                     </nav>
                     <button id="theme-toggle" class="theme-toggle" title="Toggle light/dark theme">
                         <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
