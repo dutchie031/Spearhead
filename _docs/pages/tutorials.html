@@ -6,8 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spearhead Tutorials</title>
     
-    <link rel="stylesheet" href="../style/style.css">
-    <script src="../js/site.js"></script>
+    <link rel="stylesheet" href="/style/prism.css">
+    <link rel="stylesheet" href="/style/style.css">
+
+    <script src="/js/prism.js"></script>
+    <script src="/js/site.js"></script>
     <style>
     .side-nav a.active {
         font-weight: bold;
@@ -49,13 +52,11 @@
                     <img style="width: 100%;" src="../img/script_install.png"></img>
                 </div>
 
-                <div class="note">
-                    <p>
-                        Spearhead does not require any dependencies (eg. MIST or MOOSE). Compatibility with other frameworks is
-                        not tested at this time, so cannot be guaranteed, but there should be no conflicts if they are not
-                        controlling the same units.
-                    </p>
-                </div>
+                <note-box type="info" title="Note">
+                    Spearhead does not require any dependencies (eg. MIST or MOOSE). Compatibility with other frameworks is
+                    not tested at this time, so cannot be guaranteed, but there should be no conflicts if they are not
+                    controlling the same units.
+                </note-box>
 
                 <h2 id="stages">Stages</h2>
 
@@ -114,13 +115,9 @@
                     will trigger a backup unit to startup and fly out to take over. <br />
                 </p>
 
-                <div class="note">
-                    <p>
-                        TIP ! <br />
-                        You can start a mission, speed up the simulation and make the CAP fly out to see what happens
-                    </p>
-                
-                </div>
+                <note-box type="info" title="Tip">
+                    You can start a mission, speed up the simulation and make the CAP fly out to see what happens
+                </note-box>
 
                 <h3 id="creating-cap-routes">Creating CAP Routes</h3>
                 <p>
@@ -153,11 +150,10 @@
                     Missions are managed and monitored by Spearhead. <br/>
                     Statics, groups and single units all alike. <br/>
                 </p>
-                <div class="note">
-                    <p>
-                        <strong>NOTE:</strong> While static are the same as groups in this context, they are not within DCS, please refrain from using static groups. A <span class="inline-ref">static</span> in DCS has a 1:1 relation for group:unit.
-                    </p>
-                </div>
+                <note-box type="info" title="Note">
+                    While static are the same as groups in this context, they are not within DCS, please refrain from artificially created static groups. A <code-inline>static</code-inline> in DCS has a 1:1 relation for group:unit. <br>
+                    By default DCS will always keep 1 static object in 1 groups.
+                </note-box>
                 <p>
                     For this example I'll set up two missions. The first one is <span class="inline-lua"><span class="lua-variable">DEAD</span></span> mission and will consist of an SA-2 site with an additional "control center". 
                 </p>
@@ -284,12 +280,6 @@
                         <img src="../img/briefing_mission.png"/>
                     </div>
                 </div>
-                <div class="note">
-                    <p>
-                        <strong>TIP:</strong> You can make both the <span class="inline-ref">Color</span> and <span class="inline-ref">Fill</span> have a <span class="inline-ref">0</span> value for <span class="inline-ref">a</span>. This will make the weird box be invisible. Make sure to add the name of the mission to the text box name to easily find it back.   
-                    </p>
-                </div>
-
                 <p>
                     We are now done creating a first mission. Hit fly and test it. <br/>
                     Check all references for way more features and keep up to date with the latest changes as they come along! <br/>

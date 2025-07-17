@@ -1,14 +1,11 @@
-
 :root {
     /* Dark Theme (Default) - Slightly lighter */
     --color-bg-primary: #1b1d27;    /* Much darker primary background */
     --color-bg-secondary: #2d303f;  /* Darker secondary background */
     --color-bg-tertiary: #2c3041;   /* Darker tertiary */
     --color-bg-header: #10121b;     /* Darker header */
-    --color-bg-code: #10121a;       /* Almost black code block background */
     --color-bg-note: rgba(30, 32, 40, 0.85);  /* Slightly darker note background */
     --color-bg-hover: rgba(120, 140, 255, 0.12);  /* More visible hover */
-    --color-bg-inline-lua: #181a22;  /* Match code block background */
     --color-bg-note-dark: rgba(40, 35, 30, 0.85);  /* Slightly darker note box */
     
     --color-text-primary: #a5a5a5;  /* Brighter text */
@@ -21,14 +18,6 @@
     
     --color-link: #7ecbff;
     --color-link-hover: #ffffff;
-    
-    /* Lua syntax highlighting colors with high contrast */
-    --color-lua-variable: #4fc3f7;
-    --color-lua-comment: #b0b8d0;    /* Lighter, more visible comment */
-    --color-lua-operator: #ffffff;
-    --color-lua-keyword: #ffd166;    /* Orange for keywords */
-    --color-lua-string: #7fffde;     /* Aqua for strings */
-    --color-lua-function: #ffe066;   /* Gold for functions */
     
     /* Shadow and transparency values - unchanged */
     --shadow-small: 0 2px 5px rgba(0, 0, 0, 0.3);
@@ -59,11 +48,14 @@
     --gradient-header: linear-gradient(135deg, var(--color-bg-header) 0%, var(--color-bg-secondary) 70%, var(--color-bg-header-accent) 100%);
     --color-bg-header-accent: #2a2620;
     --color-logo-gradient: linear-gradient(120deg, #5caaff, #a0e8ff, #ffffff);
+    --color-text-subTitle: #4a576f; /* Lighter subtitle text */
     --color-nav-underline: #b0a890;
     --color-nav-underline-glow: rgba(176, 168, 144, 0.6);    --color-nav-hover-bg: var(--color-bg-hover);
     --color-nav-hover-text: #ffffff;
     --color-nav-hover-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     
+    --color-inline-code: #3498db;
+
     /* Heading colors */
     --color-heading-h1: #8fc6ff;
     --color-heading-h2: #b3e0ff;
@@ -77,10 +69,8 @@
     --color-bg-secondary: #b6b6b6;
     --color-bg-tertiary: #b6b6b6;
     --color-bg-header: #d3d3d3;
-    --color-bg-code: #e3e6eb; /* Medium-light gray for code block background */
     --color-bg-note: rgba(215, 228, 245, 0.75);
     --color-bg-hover: rgba(100, 120, 200, 0.1);
-    --color-bg-inline-lua: #e3e6eb;
     --color-bg-note-dark: rgba(235, 240, 250, 0.7);
     
     --color-text-primary: #151720;
@@ -94,15 +84,6 @@
     --color-link: #3050b0;
     --color-link-hover: #4060c0;
     
-    /* Lua syntax highlighting colors for light theme */
-    --color-lua-variable: #1a237e;
-    --color-lua-comment: #374151;
-    --color-lua-operator: #23272e;
-    --color-lua-keyword: #b45309;
-    --color-lua-string: #065f46;
-    --color-lua-function: #6d28d9;
-    
-
     /* Shadow values adjusted for light theme */
     --shadow-small: 0 2px 5px rgba(0, 0, 0, 0.15);
     --shadow-medium: 0 3px 8px rgba(0, 0, 0, 0.2);
@@ -188,7 +169,7 @@ header {
 }
 
 .header-right {
-    width: 50%;
+    width: auto;
     margin-left: 10em;
     display: flex;
     justify-content: space-between;
@@ -204,6 +185,12 @@ header {
     color: transparent;
     text-shadow: var(--shadow-small);
     transition: all 0.3s ease;
+}
+.subTitle {
+    position: relative;
+    left: -5.5rem;
+    top: 1.7rem;
+    color: var(--color-text-subTitle);
 }
 
 .logo:hover {
@@ -363,10 +350,6 @@ main {
     will-change: transform;
 }
 
-.side-nav h4 {
-    margin-top: 0;
-    margin-bottom: 0.5em;
-}
 
 .side-nav ul {
     list-style-type: none;
@@ -412,6 +395,12 @@ main {
     color: var(--color-text-primary);
     padding-left: 1em;
     font-size: 0.9em;
+}
+
+.side-nav-h4 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    font-size: 0.75em;
 }
 
 .content-wrapper {
@@ -503,62 +492,6 @@ th {
     font-weight: bold;
 }
 
-/* Code and syntax highlighting with improved contrast */
-.inline-lua {
-    background-color: var(--color-bg-inline-lua);
-    border-radius: 3px;
-    font-family: var(--font-family-code);
-    white-space: nowrap;
-    padding: 0.1em 0.3em;
-    color: #23272e;
-}
-
-/* Code block styling with improved contrast */
-pre {
-    background-color: var(--color-bg-code);
-    border: 1px solid var(--color-border-primary);
-    border-radius: 8px;
-    padding: 1.2em;
-    margin: 1.5em 0;
-    overflow-x: auto;
-    font-family: var(--font-family-code);
-    line-height: 1.4;
-    box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.08);
-    color: #23272e;
-}
-
-.lua-variable {
-    color: var(--color-lua-variable);  /* Brighter variable color */
-}
-
-.lua-comment {
-    color: var(--color-lua-comment);  /* Brighter comment color */
-    font-style: italic;
-}
-
-.lua-operator {
-    color: var(--color-lua-operator);  /* Bright white for better contrast */
-}
-
-.lua-keyword {
-    color: var(--color-lua-keyword);  /* Brighter keyword color */
-    font-weight: bold;
-}
-
-.lua-string {
-    color: var(--color-lua-string);  /* Brighter string color */
-}
-
-.lua-function {
-    color: var(--color-lua-function);  /* Brighter function color */
-    font-weight: bold;
-}
-
-.inline-ref {
-    color: var(--color-text-accent);
-    font-weight: bold;
-    padding: 0 2px;
-}
 
 /* Note boxes */
 .note {
@@ -574,12 +507,139 @@ pre {
     margin-bottom: 0;
 }
 
+/* Enhanced note component styles */
+.note-title {
+    margin-top: 0;
+    margin-bottom: 0.8em;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--color-text-accent);
+    border-bottom: 1px solid rgba(126, 203, 255, 0.3);
+    padding-bottom: 0.3em;
+}
+
+/* Note type variations */
+.note-warning {
+    background: linear-gradient(to right, rgba(80, 60, 30, 0.7), rgba(70, 55, 30, 0.55));
+    border-left-color: #f39c12;
+}
+
+.note-warning .note-title {
+    color: #f39c12;
+    border-bottom-color: rgba(243, 156, 18, 0.3);
+}
+
+.note-info {
+    background: linear-gradient(to right, rgba(30, 60, 80, 0.7), rgba(25, 55, 75, 0.55));
+    border-left-color: #3498db;
+}
+
+.note-info .note-title {
+    color: #3498db;
+    border-bottom-color: rgba(52, 152, 219, 0.3);
+}
+
+.note-success {
+    background: linear-gradient(to right, rgba(30, 80, 40, 0.7), rgba(25, 75, 35, 0.55));
+    border-left-color: #27ae60;
+}
+
+.note-success .note-title {
+    color: #27ae60;
+    border-bottom-color: rgba(39, 174, 96, 0.3);
+}
+
+.note-danger {
+    background: linear-gradient(to right, rgba(80, 30, 30, 0.7), rgba(75, 25, 25, 0.55));
+    border-left-color: #e74c3c;
+}
+
+.note-danger .note-title {
+    color: #e74c3c;
+    border-bottom-color: rgba(231, 76, 60, 0.3);
+}
+
 /* Image styling */
 img {
     max-width: 100%;
     height: auto;
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Code styling */
+code, pre {
+    font-family: var(--font-family-code);
+    font-size: 0.9em;
+}
+
+/* Block code styling */
+.custom-code-block {
+    background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
+    border: 1px solid var(--color-border-primary);
+    border-radius: 8px;
+    padding: 1.2em;
+    margin: 1.5em 0;
+    overflow-x: auto;
+    box-shadow: var(--shadow-small);
+    position: relative;
+}
+
+.custom-code-block code {
+    background: none;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    font-size: 0.85em;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+
+/* Inline code styling */
+code.custom-inline-code {
+    background: var(--color-bg-secondary) !important;
+    border: 1px solid var(--color-border-primary);
+    border-radius: 4px;
+    padding: 0.2em 0.4em;
+    font-size: 0.85em;
+    color: var(--color-inline-code) !important;
+    font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: inline;
+    white-space: nowrap;
+    font-family: var(--font-family-code) !important;
+}
+
+/* Variable highlighting within inline code */
+.inline-var {
+    color: var(--color-text-accent);
+    font-weight: 600;
+    background: rgba(126, 203, 255, 0.1);
+    padding: 0.1em 0.2em;
+    border-radius: 2px;
+    border: 1px solid rgba(126, 203, 255, 0.2);
+}
+
+/* Prism.js compatibility - override default styles */
+.custom-code-block .token.variable {
+    color: var(--color-text-accent) !important;
+}
+
+.custom-code-block .token.string {
+    color: #a3d977 !important;
+}
+
+.custom-code-block .token.keyword {
+    color: #ff7aa3 !important;
+}
+
+.custom-code-block .token.function {
+    color: #78dce8 !important;
+}
+
+.custom-code-block .token.comment {
+    color: #727072 !important;
+    font-style: italic;
 }
 
 /* Custom Scrollbar - Enhanced version */
@@ -692,6 +752,19 @@ img {
         flex-wrap: wrap;
         justify-content: center;
     }
+}
+
+.table-no-style {
+    border-collapse: collapse;
+    gap: 0px;
+
+}
+
+.table-no-style > tr,td {
+    border: none;
+    padding: 0px;
+    padding-left: 1rem;
+    margin: none;
 }
 
 /* Theme Toggle Button */
