@@ -81,7 +81,10 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
         return nil
     end
 
-    local missionBriefing = database:getMissionBriefingForMissionZone(zoneName) or "no briefing provided"
+    local missionData = database:getMissionDataForZone(zoneName)
+    if not missionData then return end
+
+    local missionBriefing = missionData.description or "No briefing available"
 
     local success, error = Mission.newSuper(self, zoneName, parsed.missionName, parsed.type, missionBriefing, priority,
         database, logger)
@@ -109,26 +112,25 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
     self._parentStage = parentStage
     self._dependencies = {}
 
-    local dependencies = database:getMissionDependencies(zoneName)
-    for _, dependency in pairs(dependencies) do
-        self._dependencies[dependency] = false
-    end
-
-    local completeAtIndex = database:getMissionCompleteAt(zoneName)
-    if completeAtIndex == nil and self.missionType == "BAI" or self.missionType == "CAS" then
-        self._completeAtIndex = 0.8
-    elseif completeAtIndex == nil then
-        self._completeAtIndex = 1
-    else
-        self._completeAtIndex = completeAtIndex
-    end
 
     self._logger:debug("Complete at index " .. self.zoneName .. ": " .. self._completeAtIndex)
 
     local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
 
-    local missionData = database:getMissionDataForZone(zoneName)
-    if not missionData then return end
+    if missionData.dependsOn then
+        for _, dependency in pairs(missionData.dependsOn) do
+            self._dependencies[dependency] = false
+        end
+    end
+
+    if missionData.completeAt == nil and (self.missionType == "BAI" or self.missionType == "CAS") then
+        self._completeAtIndex = 0.8
+    elseif missionData.completeAt == nil then
+        self._completeAtIndex = 1
+    else
+        self._completeAtIndex = missionData.completeAt
+    end
+
     self._missionGroups.sceneryTargets = missionData.SceneryTargets or {}
     if Spearhead.Util.tableLength(self._missionGroups.sceneryTargets) > 0 then
         self._missionGroups.hasTargets = true

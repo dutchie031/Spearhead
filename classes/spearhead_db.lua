@@ -15,7 +15,6 @@
 ---@field CarrierRouteZones Array<string> All Carrier routes zones
 ---@field BlueSams Array<string> All blue sam zones
 ---@field SupplyHubZones Array<string> All supply hub zones
----@field MissionAnnotations table<string, MissionAnnotations> table<ZoneName, MissionAnnotations>
 ---@field AirbaseDataPerAirfield table<string, AirbaseData>
 ---@field BlueSamDataPerZone table<string, BlueSamData>
 ---@field MissionZoneData table<string, MissionZoneData>
@@ -26,11 +25,6 @@
 ---@class CapRoute
 ---@field zones Array<SpearheadTriggerZone>
 ---@field current number
-
----@class MissionAnnotations
----@field description string?
----@field dependsOn Array<string>
----@field completeAt number?
 
 ---@class StageZoneData
 ---@field StageZoneName string
@@ -58,9 +52,13 @@
 ---@field buildingKilos number?
 
 ---@class MissionZoneData
+---@field ZoneName string
 ---@field RedGroups Array<string>
 ---@field SceneryTargets Array<SpearheadSceneryObject>
 ---@field BlueGroups Array<string>
+---@field description string?
+---@field dependsOn Array<string>
+---@field completeAt number?
 
 ---@class FarpZoneData
 ---@field groups Array<string>
@@ -99,7 +97,6 @@ function Database.New(Logger)
         MissionZoneData = {},
         FarpZoneData = {},
         missionCodes = {},
-        MissionAnnotations = {},
         SupplyHubZones = {}
     }
 
@@ -209,44 +206,19 @@ function Database.New(Logger)
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
                         if Spearhead.Util.startswith(string.lower(layer_object.name), "buildable", true) == true then
-                            local blueSamData = self:getBlueSamDataForDrawLayer(layer_object)
-                            if blueSamData then
-                                local number = tonumber(layer_object.text)
-                                blueSamData.buildingKilos = number
-                            end
-
-                            local farpData = self:getFarpDataForDrawLayer(layer_object)
-                            if farpData then
-                                local number = tonumber(layer_object.text)
-                                farpData.buildingKilos = number
-                            end
-
+                            
                             local airbaseData = self:getAirbaseDataForDrawLayer(layer_object)
                             if airbaseData then
                                 self._logger:debug("found airbase data for " .. layer_object.name)
                                 local number = tonumber(layer_object.text)
                                 airbaseData.buildingKilos = number
                             end
-                        elseif Spearhead.Util.startswith(string.lower(layer_object.name), "completeat", true) == true then
-                            local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)
-                            if annotationData then
-                                local number = tonumber(layer_object.text)
-                                if number and number > 1 then
-                                    number = number / 100
-                                end
-                                annotationData.completeAt = number
-                            end
-                        elseif Spearhead.Util.startswith(string.lower(layer_object.name), "dependson", true) == true then
-                            local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)
-                            if annotationData then
-                                table.insert(annotationData.dependsOn, layer_object.text)
-                            end
                         elseif Spearhead.Util.startswith(layer_object.name, "stagebriefing", true) == true then
                             --[[
                                 TODO: Stage Briefings
                             ]]
                         else
-                            local annotationData = self:getMissionMetaDataForDrawLayer(layer_object)
+                            local annotationData = self:getMissionDataForZone(layer_object)
                             if annotationData then
                                 annotationData.description = layer_object.text
                             end
@@ -347,13 +319,13 @@ function Database.New(Logger)
     end
 
     for _, missionZone in pairs(self._tables.MissionZones) do
-        if self._tables.MissionAnnotations[missionZone] == nil or self._tables.MissionAnnotations[missionZone].description == nil then
+        if self._tables.MissionZoneData[missionZone] == nil or self._tables.MissionZoneData[missionZone].description == nil then
             Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
         end
     end
 
     for _, missionZone in pairs(self._tables.RandomMissionZones) do
-        if self._tables.MissionAnnotations[missionZone] == nil or self._tables.MissionAnnotations[missionZone].description == nil then
+        if self._tables.MissionZoneData[missionZone] == nil or self._tables.MissionZoneData[missionZone].description == nil then
             Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
         end
     end
@@ -384,7 +356,7 @@ function Database.New(Logger)
     self:loadBlueSamUnits()
     self:loadMissionzoneUnits()
     self:loadRandomMissionzoneUnits()
-    self:loadFarpGroups()
+    self:loadFarpData()
     self:loadAirbaseGroups()
     self:loadMiscGroupsInStages()
 
@@ -491,31 +463,6 @@ function Database:initAvailableUnits()
 end
 
 ---comment
----@private
----@param layer_object table
----@return BlueSamData?
-function Database:getBlueSamDataForDrawLayer(layer_object)
-    for _, zonename in pairs(self._tables.BlueSams) do
-        if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
-            return self:getOrCreateBlueSamDataForZone(zonename)
-        end
-    end
-    return nil
-end
-
----@private
----@param layer_object table
----@return FarpZoneData?
-function Database:getFarpDataForDrawLayer(layer_object)
-    for _, zonename in pairs(self._tables.AllFarpZones) do
-        if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
-            return self:getOrCreateFarpDataForZone(zonename)
-        end
-    end
-    return nil
-end
-
----comment
 ---@param layer_object table
 ---@return AirbaseData?
 function Database:getAirbaseDataForDrawLayer(layer_object)
@@ -536,7 +483,6 @@ function Database:getOrCreateBlueSamDataForZone(zoneName)
     if blueSamData == nil then
         blueSamData = {
             groups = {},
-            buildingCrates = nil
         }
         self._tables.BlueSamDataPerZone[zoneName] = blueSamData
     end
@@ -550,7 +496,6 @@ function Database:getOrCreateFarpDataForZone(zoneName)
         farpData = {
             padNames = {},
             groups = {},
-            buildingCrates = nil,
             supplyHubNames = {}
         }
         self._tables.FarpZoneData[zoneName] = farpData
@@ -575,38 +520,6 @@ function Database:getOrCreateAirbaseData(baseName)
         self._tables.AirbaseDataPerAirfield[baseName] = baseData
     end
     return baseData
-end
-
----@private
----@param layer_object table
----@return MissionAnnotations?
-function Database:getMissionMetaDataForDrawLayer(layer_object)
-    for _, zonename in pairs(self._tables.MissionZones) do
-        if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
-            if self._tables.MissionAnnotations[zonename] == nil then
-                self._tables.MissionAnnotations[zonename] = {
-                    description = nil,
-                    dependsOn = {}
-                }
-            end
-
-            return self._tables.MissionAnnotations[zonename]
-        end
-    end
-
-    for _, zonename in pairs(self._tables.RandomMissionZones) do
-        if Spearhead.DcsUtil.isPositionInZone(layer_object.mapX, layer_object.mapY, zonename) == true then
-            if self._tables.MissionAnnotations[zonename] == nil then
-                self._tables.MissionAnnotations[zonename] = {
-                    description = nil,
-                    dependsOn = {}
-                }
-            end
-
-            return self._tables.MissionAnnotations[zonename]
-        end
-    end
-    return nil
 end
 
 ---@private
@@ -658,16 +571,31 @@ function Database:loadBlueSamUnits()
             is_group_taken[groupName] = true
             table.insert(samData.groups, groupName)
         end
+
+        local triggerZone = Spearhead.DcsUtil.getZoneByName(blueSamZone)
+        if triggerZone then
+            for _, kvPair in pairs(triggerZone.properties) do
+                if kvPair.key and Spearhead.Util.startswith(kvPair.key, "buildable") then
+                    local number = tonumber(kvPair.value)
+                    if number and number > 0 then
+                        samData.buildingKilos = number
+                    end
+                end
+            end
+        end
     end
 end
 
+---Loads all units, data and briefings
 ---@private
 function Database:LoadZoneData(missionZoneName)
     local all_groups = getAvailableGroups()
     self._tables.MissionZoneData[missionZoneName] = {
         RedGroups = {},
         BlueGroups = {},
-        SceneryTargets = {}
+        SceneryTargets = {},
+        ZoneName = missionZoneName,
+        dependsOn = {}
     }
 
     local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
@@ -700,6 +628,47 @@ function Database:LoadZoneData(missionZoneName)
             end
         end
     end
+
+    -- Check for properties and adds the settings to the mission data
+    local triggerZone = Spearhead.DcsUtil.getZoneByName(missionZoneName)
+    if triggerZone and triggerZone.properties then
+        for _, kvPair in pairs(triggerZone.properties) do
+            local key = kvPair.key
+            if Spearhead.Util.startswith(key, "dependson", true) == true then
+                table.insert(self._tables.MissionZoneData[missionZoneName].dependsOn, kvPair.value)
+            elseif Spearhead.Util.startswith(key, "completeat") == true then
+                local value = tonumber(kvPair.value)
+                if value then
+                    if value > 1 and value <= 100 then
+                        value = value / 100
+                    elseif value > 100 then
+                        Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZoneName .. " has a complete at value of " .. value .. " which is higher than 100, this will not work as intended")
+                    end
+                    self._tables.MissionZoneData[missionZoneName].completeAt = value
+                end
+            end
+        end
+    end
+
+    ---Adds Briefings
+    if env.mission.drawings and env.mission.drawings.layers then
+        for i, layer in pairs(env.mission.drawings.layers) do
+            if string.lower(layer.name) == "author" then
+                for key, layer_object in pairs(layer.objects) do
+
+                    local vec2 = { x = layer_object.mapX, y = layer_object.mapY }
+                    if triggerZone and Spearhead.Util.is2dPointInZone(vec2, triggerZone) then
+                        if layer_object.name and Spearhead.Util.startswith(layer_object.name, "briefing_", true) then
+                            local description = layer_object.text
+                            if description and description ~= "" then
+                                self._tables.MissionZoneData[missionZoneName].description = description
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 ---@private
@@ -717,7 +686,7 @@ function Database:loadRandomMissionzoneUnits()
 end
 
 ---@private
-function Database:loadFarpGroups()
+function Database:loadFarpData()
     local all_groups = getAvailableGroups()
     for _, farpZone in pairs(self._tables.AllFarpZones) do
         local farpzoneData = self:getOrCreateFarpDataForZone(farpZone)
@@ -726,6 +695,18 @@ function Database:loadFarpGroups()
         for _, groupName in pairs(groups) do
             is_group_taken[groupName] = true
             table.insert(farpzoneData.groups, groupName)
+        end
+
+        local triggerZone = Spearhead.DcsUtil.getZoneByName(farpZone)
+        if triggerZone then
+            for _, kvPair in pairs(triggerZone.properties) do
+                if kvPair.key and Spearhead.Util.startswith(kvPair.key, "buildable", true) == true then
+                    local number = tonumber(kvPair.value)
+                    if number and number > 0 then
+                        farpzoneData.buildingKilos = number
+                    end
+                end
+            end
         end
     end
 end
@@ -808,34 +789,6 @@ function Database:loadMiscGroupsInStages()
             end
         end
     end
-end
-
----@return string?
-function Database:getMissionBriefingForMissionZone(missionZoneName)
-    if not self._tables.MissionAnnotations[missionZoneName] then
-        return nil
-    end
-
-    return self._tables.MissionAnnotations[missionZoneName].description
-end
-
----@param missionZoneName string
----@return Array<string>
-function Database:getMissionDependencies(missionZoneName)
-    if not self._tables.MissionAnnotations[missionZoneName] then
-        return {}
-    end
-
-    return self._tables.MissionAnnotations[missionZoneName].dependsOn
-end
-
----@return number?
-function Database:getMissionCompleteAt(missionZoneName)
-    if not self._tables.MissionAnnotations[missionZoneName] then
-        return nil
-    end
-
-    return self._tables.MissionAnnotations[missionZoneName].completeAt
 end
 
 ---comment

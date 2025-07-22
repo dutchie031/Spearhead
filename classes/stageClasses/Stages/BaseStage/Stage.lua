@@ -5,6 +5,7 @@
 ---| "GRAY"
 
 --- @class StageData
+--- @field stageBriefing string?
 --- @field missionsByCode table<string, Mission>
 --- @field missionsByName table<string, Mission>
 --- @field missions Array<ZoneMission>
@@ -29,6 +30,7 @@
 --- @field zoneName string
 --- @field stageName string?
 --- @field stageNumber number
+--- @field protected _missionCommandsHelper MissionCommandsHelper
 --- @field protected _isActive boolean
 --- @field protected _isComplete boolean
 --- @field protected _missionPriority MissionPriority
@@ -83,6 +85,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     self._database = database
     self._logger = logger
     self._db = {
+        stageBriefing = nil,
         missionsByCode = {},
         missions = {},
         sams ={},
@@ -98,6 +101,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     self._activeStage = -99
     self._preActivated = false
     self._stageConfig = stageConfig or {}
+    self._missionCommandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(logger.LogLevel)
 
     local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
     if zone then
@@ -238,7 +242,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     end
 
     Spearhead.Events.AddStageNumberChangedListener(self)
-        
+
     return self
 end
 
@@ -453,12 +457,20 @@ function Stage:OnStageNumberChanged(number)
 
     if number == self.stageNumber then
         self:ActivateStage()
+
+        if self._db and self._db.stageBriefing then
+            self._missionCommandsHelper:AddStageBriefing(self.zoneName, self._db.stageBriefing)
+        end
     end
 
     if previousActive <= self.stageNumber then
         if number > self.stageNumber then
             self:ActivateBlueStage()
         end
+    end
+
+    if number > self.stageNumber then
+        self._missionCommandsHelper:RemoveStageBriefing(self.zoneName)
     end
 end
 
