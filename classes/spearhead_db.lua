@@ -28,6 +28,7 @@
 
 ---@class StageZoneData
 ---@field StageZoneName string
+---@field StageBriefing string?
 ---@field AirbaseNames Array<string>
 ---@field FarpZones Array<string>
 ---@field MissionZones Array<string>
@@ -206,21 +207,11 @@ function Database.New(Logger)
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
                         if Spearhead.Util.startswith(string.lower(layer_object.name), "buildable", true) == true then
-                            
                             local airbaseData = self:getAirbaseDataForDrawLayer(layer_object)
                             if airbaseData then
                                 self._logger:debug("found airbase data for " .. layer_object.name)
                                 local number = tonumber(layer_object.text)
                                 airbaseData.buildingKilos = number
-                            end
-                        elseif Spearhead.Util.startswith(layer_object.name, "stagebriefing", true) == true then
-                            --[[
-                                TODO: Stage Briefings
-                            ]]
-                        else
-                            local annotationData = self:getMissionDataForZone(layer_object)
-                            if annotationData then
-                                annotationData.description = layer_object.text
                             end
                         end
                     end
@@ -238,6 +229,27 @@ function Database.New(Logger)
     for _, stageZoneName in pairs(self._tables.StageZoneNames) do
         local stageData = self._tables.StageZones[stageZoneName]
         if stageData then
+
+            -- Find and add Briefing
+            if env.mission.drawings and env.mission.drawings.layers then
+                for i, layer in pairs(env.mission.drawings.layers) do
+                    if string.lower(layer.name) == "author" then
+                        for key, layer_object in pairs(layer.objects) do
+                            if Spearhead.Util.startswith(string.lower(layer_object.name), "stagebriefing_", true) == true then
+                                local zone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
+                                local vec2 = { x = layer_object.mapX, y = layer_object.mapY }
+                                if zone and Spearhead.Util.is2dPointInZone(vec2, zone) == true then
+                                    local description = layer_object.text
+                                    if description and description ~= "" then
+                                        stageData.StageBriefing = description
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
             -- fill blue sams
             for _, blueSamStageName in pairs(self._tables.BlueSams) do
                 if Spearhead.DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
@@ -846,6 +858,14 @@ function Database:getCarrierRouteZones()
     return self._tables.CarrierRouteZones
 end
 
+---@param stagename string
+---@return string
+function Database:getBriefingForStage(stagename)
+    local stageZone = self._tables.StageZones[stagename]
+    if not stageZone then return "" end
+    return stageZone.StageBriefing or ""
+end
+
 ---@return Array<string>
 function Database:getMissionsForStage(stagename)
     local stageZone = self._tables.StageZones[stagename]
@@ -895,6 +915,12 @@ function Database:getAirbaseDataForZone(baseName)
     return baseData
 end
 
+---@return string?
+function Database:getStageBriefingForStage(stageName)
+    local stageData = self._tables.StageZones[stageName]
+    if not stageData then return nil end
+    return stageData.StageBriefing or nil
+end
 
 ---@param stageName string
 ---@return Array<string>

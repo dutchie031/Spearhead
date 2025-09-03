@@ -112,9 +112,6 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
     self._parentStage = parentStage
     self._dependencies = {}
 
-
-    self._logger:debug("Complete at index " .. self.zoneName .. ": " .. self._completeAtIndex)
-
     local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
 
     if missionData.dependsOn then

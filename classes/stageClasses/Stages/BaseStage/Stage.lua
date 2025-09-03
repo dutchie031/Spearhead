@@ -124,6 +124,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         table.insert(self._db.supplyHubs, supplyHub)
     end
 
+    self._db.stageBriefing = database:getStageBriefingForStage(self.zoneName)
     self._logger:info("Initiating new Stage with name: " .. self.zoneName)
 
     ---comment
