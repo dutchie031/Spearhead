@@ -54,7 +54,7 @@ function SpearheadGroup:Spawn(lateStart)
 
     ---@type SpawnOverrides
     local overrides = {
-        uncontrolled = lateStart or false,
+        uncontrolled = lateStart,
     }
 
     local spawnedObject, isStatic = self._spawnManager:SpawnGroup(self._groupName, overrides, self._isPersistent)

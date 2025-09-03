@@ -28,6 +28,7 @@ function BuildableZone:New(targetZone, kilosRequired, crateType,  buildableGroup
     self._receivedBuildingKilos = 0
     local persistedKilos = Spearhead.classes.persistence.Persistence.GetZoneDeliveredKilos(targetZone.name)
     if persistedKilos and persistedKilos > 0 then
+        self._buildableLogger:debug("Zone " .. targetZone.name .. " already has " .. persistedKilos .. " kilos delivered")
         self._receivedBuildingKilos = persistedKilos
 
         ---@param params UnpackCrateParam

@@ -59,6 +59,7 @@ function FarpZone.New(database, logger, zoneName, spawnManager)
 
         local zone = Spearhead.DcsUtil.getZoneByName(zoneName)
         if zone then
+            self._logger:debug("Creating Buildable zone: " .. zoneName .. " with " .. (farpData.buildingKilos or "nil") .. " kilos")
             Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone.New(self, zone, farpData.buildingKilos or 0, "FARP_CRATE",  self._groups, logger, database)
         end
     end

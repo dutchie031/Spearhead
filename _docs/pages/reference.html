@@ -54,21 +54,20 @@
 
                 <h3 id="stage-zones">Stage Zones</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_[OrderNumber]_[FreeForm]</span></span>
+                    <strong>Format:</strong> <code-inline>MISSIONSTAGE_[OrderNumber]_[FreeForm]</code-inline>
                     <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">MISSIONSTAGE_1_EAST</span></span>
+                    <strong>Example:</strong> <code-inline>MISSIONSTAGE_1_EAST</code-inline>
                 </p>
                 <p>
                     Stages are logical parts of a mission. They encapsulate multiple missions, airbases, and other
                     objects. <br />
-                    Secondary stages can be defined using the format: <span
-                        class="inline-lua"><span class="lua-variable">MISSIONSTAGE_x[OrderNumber]</span></span>.
+                    Secondary stages can be defined using the format: <code-inline>MISSIONSTAGE_x[OrderNumber]</code-inline>.
                 </p>
 
                 <h3 id="waiting-stages">Waiting Stages</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">WAITINGSTAGE_[Order]_[Seconds]</span></span> <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">WAITINGSTAGE_2_180</span></span>
+                    <strong>Format:</strong> <code-inline>WAITINGSTAGE_[Order]_[Seconds]</code-inline> <br />
+                    <strong>Example:</strong> <code-inline>WAITINGSTAGE_2_180</code-inline>
                 </p>
                 <p>
                     Waiting stages introduce delays between stages. They activate only after the previous stage is
@@ -77,8 +76,8 @@
 
                 <h3 id="mission-zones">Mission Zones</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">MISSION_[Type]_[Name]</span></span> <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">MISSION_DEAD_BYRON</span></span>
+                    <strong>Format:</strong> <code-inline>MISSION_[Type]_[Name]</code-inline> <br />
+                    <strong>Example:</strong> <code-inline>MISSION_DEAD_BYRON</code-inline>
                 </p>
                 <p>
                     Missions are completable objectives with specific types, such as DEAD, BAI, STRIKE, or SAM. <br />
@@ -88,8 +87,8 @@
 
                 <h3 id="cap-routes">CAP Routes</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">CAPROUTE_[routeID]_[Name]</span></span> <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">CAPROUTE_103_ALPHA</span></span>
+                    <strong>Format:</strong> <code-inline>CAPROUTE_[routeID]_[Name]</code-inline> <br />
+                    <strong>Example:</strong> <code-inline>CAPROUTE_103_ALPHA</code-inline>
                 </p>
                 <p>
                     CAP routes define the patrol paths for CAP units. They are tied to specific stages and zones.
@@ -97,9 +96,9 @@
 
                 <h3 id="farp-zones">FARP Zones</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">FARP_A|B_[Name]</span></span> <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">FARP_A_HOUSTON</span></span>
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">FARP_B_HOUSTON</span></span>
+                    <strong>Format:</strong> <code-inline>FARP_A|B_[Name]</code-inline> <br />
+                    <strong>Example:</strong> <code-inline>FARP_A_HOUSTON</code-inline>
+                    <strong>Example:</strong> <code-inline>FARP_B_HOUSTON</code-inline>
                 </p>
                 <p>
                     FARP zones are spawned and activated based on the "activation parameter". <br/>
@@ -113,9 +112,9 @@
                 
                 <h3 id="supply-hub">Supply Hub</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">SUPPLYHUB_[Name]</span></span> <br />
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">SUPPLYHUB_A_[Name]</span></span> <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">SUPPLYHUB_HOUSTON</span></span> <br/> <br/>
+                    <strong>Format:</strong> <code-inline>SUPPLYHUB_[Name]</code-inline> <br />
+                    <strong>Format:</strong> <code-inline>SUPPLYHUB_A_[Name]</code-inline> <br />
+                    <strong>Example:</strong> <code-inline>SUPPLYHUB_HOUSTON</code-inline> <br/> <br/>
 
                     Supply hubs are used as zones to pick up logistics for logistic missions. <br/>
                     They are activated when their parent is activated. <br/>
@@ -175,7 +174,7 @@
                     They are replaced with the corresponding values at the time a briefing is requested and can therefore show real time data. <br/>
 
 
-                    <strong>Field:</strong> <span class="inline-lua"><span class="lua-variable">{{coords}}</span></span><br/>
+                    <strong>Field:</strong> <code-inline>{{coords}}</code-inline><br/>
                     Coords are taken from the location of the trigger zone. Then converted to the aircrafts preferred format. <br/>
                 </p>
 
@@ -186,12 +185,12 @@
 
                 <h3 id="cap-group-naming">CAP Group Naming</h3>
                 <p>
-                    <strong>Format:</strong> <span class="inline-lua"><span class="lua-variable">CAP_[A|B][Config]_[FreeForm]</span></span> <br />
-                    <strong>Example:</strong> <span class="inline-lua"><span class="lua-variable">CAP_A[1-4]5_SomeName</span></span>
+                    <strong>Format:</strong> <code-inline>CAP_[A|B][Config]_[FreeForm]</code-inline> <br />
+                    <strong>Example:</strong> <code-inline>CAP_A[1-4]5_SomeName</code-inline>
                 </p>
 
                 <h3 id="cap-group-config">CAP Group Config</h3>
-                <pre>
+                <code-block>
                 <span class="lua-comment">1 at x:</span>               <span class="lua-variable">[&lt;activeStage&gt;]&lt;CapRouteID&gt;</span>
                 <span class="lua-comment">n and n  at x:</span>        <span class="lua-variable">[&lt;activeStage&gt;,&lt;activeStage&gt;]&lt;CapRouteID&gt;</span>
                 <span class="lua-comment">n till n at x:</span>        <span class="lua-variable">[&lt;activeStage&gt;-&lt;activeStage&gt;]&lt;CapRouteID&gt;</span>
@@ -202,7 +201,7 @@
                 <span class="lua-comment">Examples:</span>
                 <span class="lua-variable">CAP_A[1-4,6]7|[5,7]8_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at stage 7 when stages 1 through 4 and 6 are active and will fly CAP at 8 when 5 and 7 are active.</span>
                 <span class="lua-variable">CAP_A[2-5]5|[6]6_SomeName</span> <span class="lua-comment">=&gt; Will fly CAP at stage 5 when stages 2 through 5 are active and will fly CAP at CapRoute 6 when 6 is active.</span>
-                </pre>
+                </code-block>
 
                 <h3 id="active-and-backup-cap">Active and Backup CAP</h3>
                 <p>
@@ -221,7 +220,7 @@
                 <p>
                     If you want to have missions inside of a stage depends on each other you can. <br/>
                     Add a text drawing box inside of the mission trigger zone with the name: 
-                    <span class="inline-lua"><span class="lua-variable">dependson_[freeform]</span></span> <br/>
+                    <code-inline>dependson_[freeform]</code-inline> <br/>
                     And in the text add the "Name" of the mission zone you want the mission to depend on. <br/>
                     The mission will be "pre-activated" (spawned) but won't have a f10 mission menu until the mission(s) it depends on is completed. <br/>
                 </p>
@@ -229,17 +228,22 @@
                 <h2 id="buildable">Buildables</h2>
                 <p>
                     Current buildables:  <br/>
-                    <span class="inline-lua"><span class="lua-variable">FARP_</span></span> <br/>
-                    <span class="inline-lua"><span class="lua-variable">BLUESAM_</span></span> <br/>
-                    <span class="inline-lua"><span class="lua-variable">Airbases</span></span> <br/>
+                    <code-inline>FARP_</code-inline> <br/>
+                    <code-inline>BLUESAM_</code-inline> <br/>
+                    <code-inline>Airbases</code-inline> <br/>
                     <br/>
 
                     Buildables are zones or objects that first require logistics. <br/>
                     Eg. A forward SAM site or FARP requires logistic crates before it can be built. <br/>
-
-                    To make an item buildable add a text box inside of the trigger zone and name it: <span class="inline-lua"><span class="lua-variable">buildable_[freeform]</span></span> <br/>
+                    
+                    <br>
+                    To make a zone buildable (farp, or bluesam): Select triggerzone -> below the property box hit "Add" -> Property Name should be  <code-inline>buildable</code-inline> -> Value should be the kilos required eg. <code-inline>8000</code-inline>
+                    <br>
+                    To make an airbase buildable add a text box inside of the trigger zone and name it: <code-inline>buildable_[freeform]</code-inline> <br/>
                     Then in the text box type amount of kilo's you want to be transfered before the logistisc mission is complete. <br/>
-                    The base will slowly build up with each crate giving both a nice view of it happening AND it's good for performance as there's not a big addition of objects at once. <br/>
+                    
+                    <br>
+                    The base or zone will slowly build up with each crate giving both a nice view of it happening AND it's good for performance as there's not a big addition of objects at once. <br/>
                     Right now a crate takes 15 seconds to unpack per 500kg. Meaning 2 crates of 1000kg will be faster than 1 crate of 2000kg. <br/>
 
                     All helicopters have a max limit set based on quick google searches and cannot be changed but the ME at this point: <br/>

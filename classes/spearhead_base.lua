@@ -939,7 +939,7 @@ do     -- INIT DCS_UTIL
 
         if coordType == "MGRS" then
             local mgrs = coord.LLtoMGRS(lattitude, longitude)
-            return string.format("%s %s %s %s", mgrs.UTMZone, mgrs.MGRSDigraph, mgrs.Northing, mgrs.Easting)
+            return string.format("%s %s %s %s", mgrs.UTMZone, mgrs.MGRSDigraph, mgrs.Easting, mgrs.Northing)
         end
 
         -- Convert DD to DDM (Degrees Decimal Minutes)

@@ -6,6 +6,7 @@
 ---@field lastUpdate number @last update time
 ---@field updateContinuous fun(self: MissionCommandsHelper, time: number): number @function to update commands continuously
 ---@field pinnedByGroup table<string, Mission> @table of pinned missions by group ID
+---@field private _stageBriefings table<string, string> @table of stage briefings by stage name
 ---@field private _supplyHubGroups table<string, boolean> @table of supply hub groups by their ID
 ---@field private _logger Logger @logger instance for logging
 ---@field private _supplyUnitsTracker SupplyUnitsTracker @supply units tracker instance
@@ -32,6 +33,7 @@ function MissionCommandsHelper.getOrCreate(logLevel)
         instance.pinnedByGroup = {}
         instance.lastUpdate = 0
         instance._supplyHubGroups = {}
+        instance._stageBriefings = {}
 
         instance._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate(logLevel)
 
@@ -64,6 +66,14 @@ function MissionCommandsHelper.getOrCreate(logLevel)
     end
 
     return instance
+end
+
+function MissionCommandsHelper:AddStageBriefing(stageName, briefing)
+    self._stageBriefings[stageName] = briefing
+end
+
+function MissionCommandsHelper:RemoveStageBriefing(stageName)
+    self._stageBriefings[stageName] = nil
 end
 
 ---@param mission Mission
@@ -172,6 +182,10 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
             end
 
             return string.format("[%s]\t%s \t%s \t%s %% \t%s nM\n", mission.code,  mission.missionTypeDisplay, mission.name, mission:PercentageComplete(), distanceText)
+        end
+
+        for _, briefing in pairs(self._stageBriefings) do
+            text = text .. briefing .. "\n\n"
         end
 
         ---Primary missions
