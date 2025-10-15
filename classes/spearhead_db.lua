@@ -58,6 +58,7 @@
 ---@field SceneryTargets Array<SpearheadSceneryObject>
 ---@field BlueGroups Array<string>
 ---@field description string?
+---@field descriptionLocation Vec2?
 ---@field dependsOn Array<string>
 ---@field completeAt number?
 
@@ -674,6 +675,7 @@ function Database:LoadZoneData(missionZoneName)
                             local description = layer_object.text
                             if description and description ~= "" then
                                 self._tables.MissionZoneData[missionZoneName].description = description
+                                self._tables.MissionZoneData[missionZoneName].descriptionLocation = vec2
                             end
                         end
                     end
@@ -807,6 +809,11 @@ end
 ---@param missionZoneName any
 ---@return Vec2?
 function Database:GetLocationForMissionZone(missionZoneName)
+
+    if self._tables.MissionZoneData[missionZoneName] and self._tables.MissionZoneData[missionZoneName].descriptionLocation then
+        return self._tables.MissionZoneData[missionZoneName].descriptionLocation
+    end
+
     return self._tables.MissionZonesLocations[missionZoneName]
 end
 
