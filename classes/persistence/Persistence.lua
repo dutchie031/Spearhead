@@ -11,7 +11,7 @@ do
     ---@field unitsStates table<string, UnitState>
     ---@field random_missions table<string, MissionState>
     ---@field deliveredKilos table<string, number>
-    ---@field activeStage integer|nil
+    ---@field activeStagePerLane table<string, integer|nil>
 
     ---@class UnitState 
     ---@field isDead boolean
@@ -31,7 +31,7 @@ do
         unitsStates = {},
         random_missions = {},
         deliveredKilos = {},
-        activeStage = nil
+        activeStagePerLane = {}
     }
 
     local logger = {}
@@ -228,9 +228,10 @@ do
     end
 
     ---Sets the stage in the persistence table
-    ---@param stageNumber number 
-    Persistence.SetActiveStage = function(stageNumber)
-        tables.activeStage = stageNumber
+    ---@param stageNumber number
+    ---@param stageLane string
+    Persistence.SetActiveStage = function(stageNumber, stageLane)
+        tables.activeStagePerLane[stageLane] = stageNumber
         Persistence._updateRequired = true
     end
 
@@ -255,9 +256,9 @@ do
 
     ---Get the active stage as in the persistance file
     ---@return integer|nil
-    Persistence.GetActiveStage = function()
-        if tables.activeStage then
-            return tables.activeStage
+    Persistence.GetActiveStage = function(stageLane)
+        if tables.activeStagePerLane[stageLane] then
+            return tables.activeStagePerLane[stageLane]
         end
         return nil
     end

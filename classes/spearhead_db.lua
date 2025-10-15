@@ -29,6 +29,7 @@
 ---@class StageZoneData
 ---@field StageZoneName string
 ---@field StageBriefing string?
+---@field LaneName string?
 ---@field AirbaseNames Array<string>
 ---@field FarpZones Array<string>
 ---@field MissionZones Array<string>
@@ -128,10 +129,18 @@ function Database.New(Logger)
                     end
                     table.insert(self._tables.StageZonesByNumber[stringified], zone_name)
 
+                    local lane = nil
+                    for _, kv in pairs(zone_data.properties or {}) do
+                        if kv.key == "lane" then
+                            lane = kv.value
+                        end
+                    end
+
                     ---@type StageZoneData
                     local stageData = {
                         StageZoneName = zone_name,
                         StageIndex = stringified,
+                        LaneName = lane,
                         AirbaseNames = {},
                         BlueSamZones = {},
                         FarpZones = {},
@@ -856,6 +865,12 @@ end
 
 function Database:getCarrierRouteZones()
     return self._tables.CarrierRouteZones
+end
+
+---@param stageZoneName string
+---@return StageZoneData?
+function Database:getStageZoneData(stageZoneName)
+    return self._tables.StageZones[stageZoneName]
 end
 
 ---@param stagename string

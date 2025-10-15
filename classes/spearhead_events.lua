@@ -26,10 +26,14 @@ do
     end
 
     ---@class OnStageChangedListener
-    ---@field OnStageNumberChanged fun(self:OnStageChangedListener, number:integer)
+    ---@field OnStageNumberChanged fun(self:OnStageChangedListener, number:integer, stageLane:string?)
 
     do -- STAGE NUMBER CHANGED
+    
+        ---@type Array<OnStageChangedListener>
         local OnStageNumberChangedListeners = {}
+
+        ---@type Array<fun(number:integer, stageLane:string?)>
         local OnStageNumberChangedHandlers = {}
         ---Add a stage zone number changed listener
         ---@param listener OnStageChangedListener object with function OnStageNumberChanged(self, number)
@@ -38,7 +42,7 @@ do
         end
 
         ---Add a stage zone number changed listener
-        ---@param handler function function(number)
+        ---@param handler fun(number:integer, stageLane:string)
         SpearheadEvents.AddStageNumberChangedHandler = function(handler)
             if type(handler) ~= "function" then
                 warn("Event handler not of type function, did you mean to use listener?")
@@ -48,14 +52,18 @@ do
         end
 
         ---@param newStageNumber number
-        SpearheadEvents.PublishStageNumberChanged = function(newStageNumber)
+        ---@param stageLane string?
+        SpearheadEvents.PublishStageNumberChanged = function(newStageNumber, stageLane)
+
+            if not stageLane then stageLane = Spearhead.classes.stageClasses.GlobalStageManager.DEFAULT_STAGE_LANE_NAME end
+
             pcall(function ()
-                Spearhead.classes.persistence.Persistence.SetActiveStage(newStageNumber)
+                Spearhead.classes.persistence.Persistence.SetActiveStage(newStageNumber, stageLane)
             end)
 
             for _, callable in pairs(OnStageNumberChangedListeners) do
                 local succ, err = pcall(function()
-                    callable:OnStageNumberChanged(newStageNumber)
+                    callable:OnStageNumberChanged(newStageNumber, stageLane)
                 end)
                 if err then
                     logError(err)
@@ -63,7 +71,7 @@ do
             end
 
             for _, callable in pairs(OnStageNumberChangedHandlers) do
-                local succ, err = pcall(callable, newStageNumber)
+                local succ, err = pcall(callable, newStageNumber, stageLane)
                 if err then
                     logError(err)
                 end

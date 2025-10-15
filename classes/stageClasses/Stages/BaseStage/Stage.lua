@@ -6,6 +6,7 @@
 
 --- @class StageData
 --- @field stageBriefing string?
+--- @field laneName string?
 --- @field missionsByCode table<string, Mission>
 --- @field missionsByName table<string, Mission>
 --- @field missions Array<ZoneMission>
@@ -86,6 +87,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     self._logger = logger
     self._db = {
         stageBriefing = nil,
+        laneName = nil,
         missionsByCode = {},
         missions = {},
         sams ={},
@@ -116,6 +118,12 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     for _, farpName in pairs(farpNames) do
         local farp = Spearhead.classes.stageClasses.SpecialZones.FarpZone.New(database, logger, farpName, spawnManager)
         table.insert(self._db.farps, farp)
+    end
+
+    local stageData = database:getStageZoneData(self.zoneName)
+
+    if stageData then
+        self._db.laneName = stageData.LaneName
     end
 
     local supplyHubNames = database:getSupplyHubsInStage(self.zoneName)
@@ -267,6 +275,11 @@ function Stage:IsComplete()
 
     self._isComplete = true
     return true
+end
+
+---@return string?
+function Stage:GetLaneName()
+    return self._db.laneName
 end
 
 ---@return boolean
@@ -440,7 +453,12 @@ end
 ---comment
 ---@param self Stage
 ---@param number integer
-function Stage:OnStageNumberChanged(number)
+---@param stageLaneName string
+function Stage:OnStageNumberChanged(number, stageLaneName)
+
+    if stageLaneName ~= self:GetLaneName() then
+        return
+    end
 
     if self._activeStage == number then --only activate once for a stage
         return

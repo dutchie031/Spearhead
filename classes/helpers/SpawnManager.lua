@@ -252,7 +252,6 @@ do --- privates
             coalition.addStaticObject(unit:getCountry(), staticObject)
         end
     end
-
 end
 
 if not Spearhead then Spearhead = {} end
