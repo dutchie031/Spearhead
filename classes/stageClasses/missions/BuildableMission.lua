@@ -119,7 +119,7 @@ function BuildableMission:ShowBriefing(groupID)
         "\n\n" ..
         "NOTE: Do not land in the orange construction zone!"
 
-    trigger.action.outTextForGroup(groupID, briefing, 30)
+    trigger.action.outTextForGroup(groupID, briefing, Spearhead.GlobalConfig:getBriefingTime())
 end
 
 function BuildableMission:MarkMissionAreaToGroup(groupID)

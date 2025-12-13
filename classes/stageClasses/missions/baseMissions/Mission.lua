@@ -94,7 +94,7 @@ function Mission:ShowBriefing(groupId)
 
     local text = "Mission [" ..
     self.code .. "] " .. self.name .. "\n \n" .. briefing .. " \n \n" .. stateString
-    trigger.action.outTextForGroup(groupId, text, 30);
+    trigger.action.outTextForGroup(groupId, text, Spearhead.GlobalConfig:getBriefingTime());
 end
 
 
@@ -142,9 +142,6 @@ if not Spearhead.classes.stageClasses then Spearhead.classes.stageClasses = {} e
 if not Spearhead.classes.stageClasses.missions then Spearhead.classes.stageClasses.missions = {} end
 if not Spearhead.classes.stageClasses.missions.baseMissions then Spearhead.classes.stageClasses.missions.baseMissions = {} end
 Spearhead.classes.stageClasses.missions.baseMissions.Mission = Mission
-
-
-
 
 do --aliases
 

@@ -145,6 +145,7 @@ end
 ---@field groupId integer @the group ID of the player requesting the briefing
 ---@field mission Mission @the mission object
 
+---@param args PinMissionCommandArgs
 local pinMissionCommand = function(args)
     ---@type MissionCommandsHelper
     local self = args.self
@@ -265,12 +266,15 @@ local folderNames = {
 }
 
 
+---@param mission Mission
+---@param groupID integer
 function MissionCommandsHelper:PinMission(mission, groupID)
     self._logger:debug("Pinning mission: [" .. mission.code .. "]" .. mission.name)
     self.pinnedByGroup[tostring(groupID)] = mission
     trigger.action.outTextForGroup(groupID, "Pinned mission: [" .. mission.code .. "]" .. mission.name, 3, true)
 
     self:updateCommandsForGroup(groupID)
+    mission:ShowBriefing(groupID)
 end
 
 function MissionCommandsHelper:AddAllMissionCommandsToGroup(groupID)

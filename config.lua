@@ -4,6 +4,10 @@ SpearheadConfig = {
     ---DEBUG LOGGING
     debugEnabled = false, -- default false
 
+    --- The time briefings should be displayed by default.
+    --- Players can always "Clear Messages" through the F10 menu, so setting it to a high value can be 
+    briefingMessageDuration = 30, --default 30
+
     CapConfig = {
         --quickly enable of disable the entire CAP Logic 
         --(you can also just rename all units to not be named "CAP_")
