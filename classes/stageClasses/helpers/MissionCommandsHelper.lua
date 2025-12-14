@@ -13,6 +13,16 @@
 local MissionCommandsHelper = {}
 MissionCommandsHelper.__index = MissionCommandsHelper
 
+---@param list Array<Mission>
+---@param groupPos Vec2
+local function sortMissions(list, groupPos)
+    table.sort(list, function(a, b)
+        local distA = Spearhead.Util.VectorDistance2d(groupPos, a.location or {x=0, y=0})
+        local distB = Spearhead.Util.VectorDistance2d(groupPos, b.location or {x=0, y=0})
+        return distA < distB;
+    end)
+end
+
 local id = 0
 
 local instance = nil
@@ -165,6 +175,12 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
         local text = "Missions Overview\n\n"
 
         local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(id)
+        ---@type Vec2
+        local groupPos = { x=0, y=0 }
+        if group then
+            local pos = group:getUnit(1):getPosition().p
+            groupPos = { x= pos.x, y=pos.z }
+        end
 
         ---comment
         ---@param mission Mission
@@ -189,29 +205,49 @@ function MissionCommandsHelper:AddOverviewCommand(groupID)
             text = text .. briefing .. "\n\n"
         end
 
+
+        
+
         ---Primary missions
         text = text .. "Primary Missions\n"
+
+        ---@type Array<Mission>
+        local primaryMissions = {}
         for code, enabled in pairs(self.enabledByCode) do
-            
             if enabled == true then
                 local mission = self.missionsByCode[code]
                 if mission and mission:getState() == "ACTIVE" and mission.priority == "primary" then
-                    text = text .. formatLine(mission)
+                    table.insert(primaryMissions, mission)
                 end
             end
+        end
+        
+        sortMissions(primaryMissions, groupPos)
+
+        for _, mission in pairs(primaryMissions) do
+            text = text .. formatLine(mission)
         end
 
         ---Secondary missions
         text = text .. "\nSecondary Missions\n"
+
+        ---@type Array<Mission>
+        local secondaryMissions = {}
         for code, enabled in pairs(self.enabledByCode) do
             
             if enabled == true then
                 local mission = self.missionsByCode[code]
                 if mission and mission:getState() == "ACTIVE" and mission.priority == "secondary" then
-                    text = text .. formatLine(mission)
+                    table.insert(secondaryMissions, mission)
                 end
             end
         end
+
+        sortMissions(secondaryMissions, groupPos)
+        for _, mission in pairs(secondaryMissions) do
+            text = text .. formatLine(mission)
+        end
+        
         
         trigger.action.outTextForGroup(id, text, 20, true)
     end
@@ -256,6 +292,12 @@ function MissionCommandsHelper:updateCommandsForGroup(groupID)
     missionCommands.removeItemForGroup(groupID, { "Clear View" } )
     missionCommands.addCommandForGroup(groupID, "Clear View", nil, clearView, groupID)
 
+    missionCommands.removeItemForGroup(groupID, { "Refresh Missions" } )
+    missionCommands.addCommandForGroup(groupID, "Refresh Missions", nil, function(refresh_mission_id)
+        self._logger:debug("Manual refresh of missions for group: " .. tostring(refresh_mission_id))
+        self:updateCommandsForGroup(refresh_mission_id)
+    end, groupID)
+
 end
 
 local folderNames = {
@@ -281,24 +323,41 @@ function MissionCommandsHelper:AddAllMissionCommandsToGroup(groupID)
 
     local perFolder = 9
 
+    local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupID)
+    ---@type Vec2
+    local groupPos = { x=0, y=0 }
+    if group then
+        local pos = group:getUnit(1):getPosition().p
+        groupPos = { x= pos.x, y=pos.z }
+    end
+    
     do --- primary missions
         local count = 0
         local path = { [1] = folderNames.primary }
+
+        ---@type Array<Mission>
+        local primaryMissions = {}
+
         for code, enabled in pairs(self.enabledByCode) do
             if enabled == true then
                 local mission = self.missionsByCode[code]
                 if mission and mission.priority == "primary" then
-                    count = count + 1
-                    if count <= perFolder then
-                        local copied = Spearhead.Util.deepCopyTable(path)
-                        self:addMissionCommands(groupID, copied, mission)
-                    else
-                        local name = "Next Menu ..."
-                        missionCommands.addSubMenuForGroup(groupID, name, path)
-                        path[#path+1] = name
-                        count = 0
-                    end
+                    table.insert(primaryMissions, mission)
                 end
+            end
+        end
+
+        sortMissions(primaryMissions, groupPos)
+        for _, mission in pairs(primaryMissions) do
+            count = count + 1
+            if count <= perFolder then
+                local copied = Spearhead.Util.deepCopyTable(path)
+                self:addMissionCommands(groupID, copied, mission)
+            else
+                local name = "Next Menu ..."
+                missionCommands.addSubMenuForGroup(groupID, name, path)
+                path[#path+1] = name
+                count = 0
             end
         end
     end
@@ -306,20 +365,28 @@ function MissionCommandsHelper:AddAllMissionCommandsToGroup(groupID)
     do --- secondary missions
         local count = 0
         local path = { [1] = folderNames.secondary }
+
+        local secondaryMissions = {}
         for code, enabled in pairs(self.enabledByCode) do
             if enabled == true then
                 local mission = self.missionsByCode[code]
                 if mission and mission.priority == "secondary" then
-                    count = count + 1
-                    if count <= perFolder then
-                        local copied = Spearhead.Util.deepCopyTable(path)
-                        self:addMissionCommands(groupID, copied, mission)
-                    else
-                        local name = "Next Menu ..."
-                        missionCommands.addSubMenuForGroup(groupID, name, path)
-                        path[#path+1] = "more missions ..."
-                    end
+                    table.insert(secondaryMissions, mission)
                 end
+            end
+        end
+
+        sortMissions(secondaryMissions, groupPos)
+        for _, mission in pairs(secondaryMissions) do
+            count = count + 1
+            if count <= perFolder then
+                local copied = Spearhead.Util.deepCopyTable(path)
+                self:addMissionCommands(groupID, copied, mission)
+            else
+                local name = "Next Menu ..."
+                missionCommands.addSubMenuForGroup(groupID, name, path)
+                path[#path+1] = name
+                count = 0
             end
         end
     end
@@ -333,7 +400,20 @@ end
 function MissionCommandsHelper:addMissionCommands(groupId, path, mission)
 
     if path then
-        local missionFolderName = "[" .. mission.code .. "]" .. mission.name
+
+        local group = Spearhead.DcsUtil.GetPlayerGroupByGroupID(groupId)
+        local distance = "[?]"
+        if group then
+            local lead = group:getUnit(1)
+            if lead and lead:isExist() == true then
+                local pos = lead:getPoint()
+                local Vec2Pos = { x= pos.x, y=pos.z }
+                local dist = Spearhead.Util.VectorDistance2d(Vec2Pos, mission.location) / 1852
+                distance = "[" .. string.format("~%dnM", math.floor(dist)) .. "]"
+            end
+        end
+
+        local missionFolderName = "[" .. mission.code .. "]" .. distance .. mission.name .. "( " .. mission.missionTypeDisplay .. " )"
         missionCommands.addSubMenuForGroup(groupId, missionFolderName, path)
         table.insert(path, missionFolderName)
 
@@ -379,7 +459,6 @@ function MissionCommandsHelper:AddSupplyHubCommandsIfApplicable(groupID)
 
     local path = { [1] = folderNames.supplyHub }
 
-    
     ---@type LoadCargoCommandParams
     local farpParams1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_1000", supplyUnitsTracker = self._supplyUnitsTracker }
     missionCommands.addCommandForGroup(groupID, "Load FARP Crate (1000)", path, loadCargoCommand, farpParams1000)
