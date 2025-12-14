@@ -44,3 +44,10 @@ Since automated testing for now doesn't seem feasible, please make sure to verif
 
 Finalise the PR and let the maintainers know! <br/>
 We can all have a look and discuss the changes. <br/>
+
+
+
+
+# TODO: 
+
+- Would it be possible to generate optional markers on mission briefing locations for Tomcat / Phantom navigation? Then Jester can type it in for the pilots automatically.
