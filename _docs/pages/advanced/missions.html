@@ -38,23 +38,27 @@
                 <p>
                     Bridges, buildings or other type of targets that are baked into the map are awesome targets.<br>
                     We wanted to make sure they were easily integrated in Spearhead.
+                </p>
 
-                    All you will need to do is right click on the scenery object you want added. <br>
-                    You will then get the option to "Assign as...", click this and you'll see a new trigger zone created. <br>
-                    It's best not to edit the triggerzone, but you can rename it however you like. <br>
-                    
-                    Scenery objects will always be a specific "target" in the mission. 
+                <note-box type="info" title="Implementation details">
+                    Spearhead detects scenery targets by the trigger zone name. A zone named <strong>scenerytarget_[freeform]</strong> or
+                    <strong>scenerytargets</strong> (case-insensitive) will be scanned and any scenery objects that has the attribute "Buildings" inside the zone
+                    will be added as mission scenery targets.
+                </note-box>
 
+                <p>
+                    Scenery targets are treated like mission targets: they are included in the mission completion calculation
+                    (their `IsAlive()` state is checked) and their state is persisted/updated when missions spawn or resume.
                 </p>
 
                   <note-box type="warning" title="Changing IDs">
-                       Be aware that Object IDs can change when maps are updated and edited and the "Assign as..." action will have to be performed again.
+                       Due to Object IDs changing when maps are updated and edited the "Assign as..." functionality does not work for scenery targets.
+                       Hence the need to use trigger zones to define them.
                     </note-box>
 
                 
                 <p>Here's two images showing how a bridge is added to a mission.</p>
                 <img src="/img/bridge.png" style="max-height: 35remrem;"/>
-                <img src="/img/bridge_added.png" style="max-height: 35remrem;"/>
             </div>
         </div>
         
