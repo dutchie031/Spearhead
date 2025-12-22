@@ -186,18 +186,12 @@ function Database.New(Logger)
                 table.insert(self._tables.SupplyHubZones, zone_name)
             end
 
-            if zone_data.properties then
-                for _, kvPair in pairs(zone_data.properties) do
-                    if kvPair.key and kvPair.key == "OBJECT ID" then
-                        local objectID = tonumber(kvPair.value)
-                        if objectID then
-                            local sceneryObject = Spearhead.classes.stageClasses.Groups.SpearheadSceneryObject.New(objectID)
-                            table.insert(self._tables.AllSceneryObjects, sceneryObject)
-                        end
-                    end
+            if lowered == "scenerytarget" or lowered == "scenerytargets" then
+                local sceneryObjects = Spearhead.DcsUtil.getSceneryObjectsInZone(zone_data)
+                for _, sceneryObject in pairs(sceneryObjects) do
+                    table.insert(self._tables.AllSceneryObjects, sceneryObject)
                 end
             end
-
         end
     end
 

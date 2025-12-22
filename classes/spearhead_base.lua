@@ -979,6 +979,90 @@ do     -- INIT DCS_UTIL
         
     end
 
+    ---@param zone SpearheadTriggerZone
+    ---@return Array<SpearheadSceneryObject> sceneryObjects
+    function DCS_UTIL.getSceneryObjectsInZone(zone)
+        ---@type Volume
+        local volume
+
+        if(zone.zone_type == "Cilinder") then
+            local y = land.getHeight({ x = zone.location.x, y = zone.location.y })
+            ---@type Sphere
+            local sphere = {
+                id = world.VolumeType.SPHERE,
+                params = {
+                    point = { x = zone.location.x, y = y, z = zone.location.y },
+                    radius = zone.radius
+                }
+            }
+            volume = sphere
+        else
+            local minX = nil
+            local maxX = nil
+            local minZ = nil
+            local maxZ = nil
+
+            for _, point in pairs(zone.verts) do
+                if minX == nil or point.x < minX then
+                    minX = point.x
+                end
+                if maxX == nil or point.x > maxX then
+                    maxX = point.x
+                end
+                if minZ == nil or point.y < minZ then
+                    minZ = point.y
+                end
+                if maxZ == nil or point.y > maxZ then
+                    maxZ = point.y
+                end
+            end
+
+            if(minX == nil or maxX == nil or minZ == nil or maxZ == nil) then
+                return {}
+            end
+
+            ---@type Vec3
+            local min = {
+                x = minX,
+                y = land.getHeight({ x = minX, y = minZ }) - 100,
+                z = minZ
+             }
+
+            ---@type Vec3
+            local max = {
+                x = maxX,
+                y = land.getHeight({ x = maxX, y = maxZ }) + 500,
+                z = maxZ
+             }
+
+            ---@type Box
+            local box = {
+                id = world.VolumeType.BOX,
+                params = {
+                    min = min,
+                    max = max
+                }
+            }
+            volume = box
+        end
+
+        ---@type Array<SpearheadSceneryObject>
+        local sceneryObjects = {}
+
+        ---@param object SceneryObject
+        local onFound = function(object)
+            if object and object:isExist() and
+                object:hasAttribute("Buildings")
+            then
+                local obj = Spearhead.classes.stageClasses.Groups.SpearheadSceneryObject.New(object["id_"])
+                table.insert(sceneryObjects, obj)
+            end
+        end
+
+        world.searchObjects(Object.Category.SCENERY, volume, onFound)
+        return sceneryObjects
+    end
+
     ---@param group Group
     function DCS_UTIL.getUnitTypeFromGroup(group)
         for _, unit in pairs(group:getUnits()) do
