@@ -20,7 +20,7 @@
 ---@field MissionZoneData table<string, MissionZoneData>
 ---@field FarpZoneData table<string,FarpZoneData>
 ---@field missionCodes table<string, boolean>
-
+---@field CustomDrawings Array<CustomDrawing>
 
 ---@class CapRoute
 ---@field zones Array<SpearheadTriggerZone>
@@ -99,7 +99,8 @@ function Database.New(Logger)
         MissionZoneData = {},
         FarpZoneData = {},
         missionCodes = {},
-        SupplyHubZones = {}
+        SupplyHubZones = {},
+        CustomDrawings = {}
     }
 
     Database.__index = Database
@@ -208,6 +209,23 @@ function Database.New(Logger)
                                 local number = tonumber(layer_object.text)
                                 airbaseData.buildingKilos = number
                             end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    ---@type table<integer, boolean>
+    do -- custom drawings
+        if env.mission.drawings and env.mission.drawings.layers then
+            for i, layer in pairs(env.mission.drawings.layers) do
+                if string.lower(layer.name) == "author" then
+                    for key, layer_object in pairs(layer.objects) do
+                        if Spearhead.Util.startswith(layer_object.name, "drawing_", true) then
+                            local object = layer_object --[[@as DrawingObject]]
+                            local customDrawing = Spearhead.classes.stageClasses.drawings.CustomDrawing.New(object)
+                            table.insert(self._tables.CustomDrawings, customDrawing)
                         end
                     end
                 end
@@ -591,6 +609,14 @@ function Database:loadBlueSamUnits()
             end
         end
     end
+end
+
+---@return Array<CustomDrawing>
+function Database:getCustomDrawings()
+    if self._tables.CustomDrawings == nil then
+        return {}
+    end
+    return self._tables.CustomDrawings
 end
 
 ---Loads all units, data and briefings

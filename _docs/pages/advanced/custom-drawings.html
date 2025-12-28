@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spearhead Missions</title>
+    <link rel="stylesheet" href="/style/style.css">
+    <script src="/js/site.js"></script>
+    <style>
+        .side-nav a.active {
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+    </style>
+    <script type="module" src="/js/components.js"></script>
+</head>
+
+<body>
+    <header>
+        <app-header></app-header>
+    </header>
+    <main>
+        <div class="reference-container">
+            <app-sidebar></app-sidebar>
+
+            <div class="content-wrapper">
+                <h1>Advanced Tutorial: Custom Drawings</h1>
+                
+                <p>
+                    Drawings can be very powerful in DCS missions. <br>
+                    They can guide players towards the right objectives or warn them of dangers ahead. <br>
+                    In Spearhead, we provide an easy way to manage and update these drawings dynamically as the mission progresses. <br>                    
+                </p>
+
+                <h2 id="custom_drawings_how_to">How to</h2>
+                <p>
+                    Adding a custom drawing is easy. <br>
+                    Simply create the drawing and then name it according to the following convention: <br>
+                    <code-inline>DRAWING_[a]:[b]_[FreeForm]</starting></code-inline> <br>
+                    Where: 
+                    <ul>
+                        <li><strong>[a]</strong> is the stage number at which the drawing should appear.</li>
+                        <li><strong>[b]</strong> is the stage number at which the drawing should be removed again.</li>
+                        <li><strong>[FreeForm]</strong> is any name you want to make it unique or findables.</li>
+                    </ul>
+                </p>
+
+                 <note-box type="warning" title="Author Layer">
+                       The custom drawings need to be in the "Author" layer of the mission editor to be managed by Spearhead.
+                       This is due to other layers being visible by default and cannot be as easily removed when not needed.
+                       The author layer is not visible by default in multiplayer, making it perfect for this use case.
+                </note-box>
+
+
+            </div>
+        </div>
+        
+    </main>
+    <footer>
+        <p>&copy; 2025 Spearhead Project</p>
+    </footer>
+</body>
+
+</html>

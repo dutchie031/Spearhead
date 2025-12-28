@@ -39,7 +39,7 @@ local detectionLogger = Spearhead.LoggerTemplate.new("DetectionManager", default
 local detectionManager = Spearhead.classes.capClasses.detection.DetectionManager.New(detectionLogger)
 
 Spearhead.classes.capClasses.GlobalCapManager.start(databaseManager, capConfig, detectionManager, stageConfig, defaultLogLevel, spawnManager)
-Spearhead.internal.GlobalStageManager:NewAndStart(databaseManager, stageConfig, defaultLogLevel, spawnManager)
+Spearhead.internal.GlobalStageManager.NewAndStart(databaseManager, stageConfig, defaultLogLevel, spawnManager)
 
 Spearhead.internal.GlobalFleetManager.start(databaseManager)
 

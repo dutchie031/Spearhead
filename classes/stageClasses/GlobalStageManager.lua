@@ -13,8 +13,12 @@ local WaitingStagesByIndex = {}
 
 local currentStage = -99
 
-
-GlobalStageManager = {}
+---@class GlobalStageManager : StageCompleteListener
+---@field private database Database
+---@field private logger Logger
+---@field private stageConfig StageConfig
+local GlobalStageManager = {}
+GlobalStageManager.__index = GlobalStageManager
 
 ---comment
 ---@param database Database
@@ -22,13 +26,14 @@ GlobalStageManager = {}
 ---@param logLevel LogLevel
 ---@param spawnManager SpawnManager
 ---@return nil
-function GlobalStageManager:NewAndStart(database, stageConfig, logLevel, spawnManager)
+function GlobalStageManager.NewAndStart(database, stageConfig, logLevel, spawnManager)
     local logger = Spearhead.LoggerTemplate.new("StageManager", logLevel)
     logger:info("Using Stage Log Level: " .. logLevel)
-    local o = {}
-    setmetatable(o, { __index = self })
+    local self = setmetatable({}, GlobalStageManager)
+    self.database = database
+    self.stageConfig = stageConfig
 
-    o.logger = logger
+    self.logger = logger
     if stageConfig.isAutoStages ~= true then
         logger:warn("Spearhead will not automatically progress stages due to the given settings. If you manually have implemented this, please ignore this message")
     end
@@ -42,53 +47,6 @@ function GlobalStageManager:NewAndStart(database, stageConfig, logLevel, spawnMa
 
     Spearhead.Events.AddStageNumberChangedListener(OnStageNumberChangedListener)
 
-    ---@type StageCompleteListener
-    local OnStageCompleteListener = {
-        OnStageComplete = function(self, stage)
-            logger:debug("Receiving stage complete event from: " .. stage.zoneName)
-
-            local anyIncomplete = false
-            logger:debug("Checking stages for index: " .. tostring(currentStage))
-            for index, stage in pairs(StagesByIndex[tostring(currentStage)]) do
-                if stage:IsComplete() == false then
-                    anyIncomplete = true
-                    logger:debug("Need to wait for Stage " .. stage.zoneName .. " to be completed")
-                else
-                    logger:debug("Stage verified to be completed:  " .. stage.zoneName)
-                end
-            end
-
-            if anyIncomplete == false and stageConfig.isAutoStages == true then
-
-                -- CHECK WAITING STAGES 
-                local nextStage = currentStage + 1
-                
-                if WaitingStagesByIndex[tostring(nextStage)] then
-                    for _, waitingStage in pairs(WaitingStagesByIndex[tostring(nextStage)]) do
-                        if waitingStage:IsActive() == false then
-                            waitingStage:ActivateStage()
-                        end
-                    end
-                end
-                
-                local anyWaiting = false
-                if WaitingStagesByIndex[tostring(nextStage)] then
-                    for _, waitingStage in pairs(WaitingStagesByIndex[tostring(nextStage)]) do
-                        if waitingStage:IsComplete() == false then
-                            anyWaiting = true
-                        end
-                    end
-                end
-
-                if anyWaiting == false then
-                    logger:debug("Setting next stage to: " .. tostring(currentStage + 1))
-                    Spearhead.Events.PublishStageNumberChanged(currentStage + 1)
-                end
-            end
-        end
-    }
-
-    
     for _, stageName in pairs(database:getStagezoneNames()) do
         logger:debug("Found stage zone with name: " .. stageName)
 
@@ -136,13 +94,13 @@ function GlobalStageManager:NewAndStart(database, stageConfig, logLevel, spawnMa
 
                 if isSideStage == true then
                     local stage = Spearhead.classes.stageClasses.Stages.ExtraStage.New(database, stageConfig, stagelogger, initData, spawnManager)
-                    stage:AddStageCompleteListener(OnStageCompleteListener)
+                    stage:AddStageCompleteListener(self)
 
                     if SideStageByIndex[tostring(orderNumber)] == nil then SideStageByIndex[tostring(orderNumber)] = {} end
                     table.insert(SideStageByIndex[tostring(orderNumber)], stage) 
                 else 
                     local stage = Spearhead.classes.stageClasses.Stages.PrimaryStage.New(database, stageConfig, stagelogger, initData, spawnManager)
-                    stage:AddStageCompleteListener(OnStageCompleteListener)
+                    stage:AddStageCompleteListener(self)
                     
                     if StagesByIndex[tostring(orderNumber)] == nil then StagesByIndex[tostring(orderNumber)] = {} end
                     table.insert(StagesByIndex[tostring(orderNumber)], stage) 
@@ -193,15 +151,71 @@ function GlobalStageManager:NewAndStart(database, stageConfig, logLevel, spawnMa
                     end
                     table.insert(WaitingStagesByIndex[tostring(stageIndex)], waitingStage)
 
-                    waitingStage:AddStageCompleteListener(OnStageCompleteListener)
+                    waitingStage:AddStageCompleteListener(self)
                 end
             end
         end
     end
 
+    return self
+end
 
+function GlobalStageManager:OnStageComplete(stage)
+    self.logger:debug("Receiving stage complete event from: " .. stage.zoneName)
 
-    return o
+    local anyIncomplete = false
+    self.logger:debug("Checking stages for index: " .. tostring(currentStage))
+    for index, stage in pairs(StagesByIndex[tostring(currentStage)]) do
+        if stage:IsComplete() == false then
+            anyIncomplete = true
+            self.logger:debug("Need to wait for Stage " .. stage.zoneName .. " to be completed")
+        else
+            self.logger:debug("Stage verified to be completed:  " .. stage.zoneName)
+        end
+    end
+
+    if anyIncomplete == false and self.stageConfig.isAutoStages == true then
+
+        -- CHECK WAITING STAGES 
+        local nextStage = currentStage + 1
+        
+        if WaitingStagesByIndex[tostring(nextStage)] then
+            for _, waitingStage in pairs(WaitingStagesByIndex[tostring(nextStage)]) do
+                if waitingStage:IsActive() == false then
+                    waitingStage:ActivateStage()
+                end
+            end
+        end
+        
+        local anyWaiting = false
+        if WaitingStagesByIndex[tostring(nextStage)] then
+            for _, waitingStage in pairs(WaitingStagesByIndex[tostring(nextStage)]) do
+                if waitingStage:IsComplete() == false then
+                    anyWaiting = true
+                end
+            end
+        end
+
+        if anyWaiting == false then
+            local newStageNumber = currentStage + 1
+            self:UpdateDrawings(newStageNumber)
+            self.logger:debug("Setting next stage to: " .. tostring(newStageNumber))
+            Spearhead.Events.PublishStageNumberChanged(newStageNumber)
+        end
+    end
+end
+
+---@private
+function GlobalStageManager:UpdateDrawings(stageNumber)
+    local drawings = self.database:getCustomDrawings()
+    for _, drawing in pairs(drawings) do
+        local startStage, stopStage = drawing:GetStartAndStop()
+        if stageNumber >= startStage and stageNumber < stopStage then
+            drawing:Draw()
+        else
+            drawing:Remove()
+        end
+    end
 end
 
 

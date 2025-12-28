@@ -270,11 +270,11 @@ header nav a:hover::after {
     border-radius: 8px;
     
     max-height: 0px;
-    transition: all 1.5s ease;
+    transition: all 1s ease;
 }
 
 .dropdown:hover  .dropdown-content {
-    max-height: 200px;
+    max-height: 100vh;
 }
 
 header.collapsible {

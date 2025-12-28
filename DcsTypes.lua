@@ -53,6 +53,83 @@ do -- env
     env = env
 end
 
+do -- Mission table
+
+    ---@class Mission
+    ---@field  drawings Array<DrawingObject>
+
+    ---@alias PrimitiveType
+    ---| "Polygon"
+    ---| "Line"
+    ---| "TextBox"
+    
+    ---@alias PolygonMode
+    ---| "circle"
+    ---| "free"
+    ---| "oval"
+    ---| "rect"
+    ---| "arrow"
+
+    ---@alias LineMode
+    ---| "segment"
+    ---| "segments"
+    ---| "free"
+
+    ---@class DrawingObject
+    ---@field primitiveType PrimitiveType
+    ---@field name string
+    ---@field visible boolean
+    ---@field layerName string?
+    ---@field mapX number
+    ---@field mapY number
+    ---@field colorString string Hex ARGB color
+    ---@field style string
+    ---@field thickness number
+
+    ---@class Polygon : DrawingObject
+    ---@field polygonMode PolygonMode
+    ---@field fillColorString string?
+    
+    ---@class Circle : Polygon
+    ---@field radius number
+
+    ---@class Free : Polygon
+    ---@field points Array<Vec2>
+    
+    ---@class Oval : Polygon
+    ---@field r1 number
+    ---@field r2 number
+    ---@field angle number?
+
+    ---@class Rect : Polygon
+    ---@field width number
+    ---@field height number
+    ---@field angle number?
+
+    ---@class Arrow : Polygon
+    ---@field length number
+    ---@field angle number?
+
+    ---@class Line : DrawingObject
+    ---@field primitiveType PrimitiveType # PrimitiveType.Line
+    ---@field lineMode LineMode
+    ---@field closed boolean
+    ---@field points Array<Vec2>
+
+    ---@class Segment : Line
+
+    ---@class Segments : Line
+
+    ---@class FreeLine : Line
+
+    ---@class TextBox : DrawingObject
+    ---@field fontSize number
+    ---@field text string
+    ---@field fillColorString string
+    ---@field borderThickness number
+
+end
+
 do -- timer
     ---@class timer
     ---@field getTime fun() : number returns the time in the mission (in seconds. 3 decimals)
@@ -358,7 +435,7 @@ do -- trigger
     ---@field circleToAll fun(coalition: DrawCoalition, id: number, center: Vec3 , radius: number, color: table , fillColor: table , lineType: LineType , readOnly: boolean?, message: string?) Creates a circle on the map with a given radius, color, fill color, and outline.
     ---@field rectToAll fun(coalition:DrawCoalition, id:number, startPoint: Vec3, endPoint:Vec3, color: table, fillColor: table, lineType: LineType , readOnly: boolean?, message: string?)  	Creates a rectangle on the map from the startpoint in one corner to the endPoint in the opposite corner.
     ---@field quadToAll fun(coalition:DrawCoalition, id:number, point1: Vec3, point2:Vec3, point3:Vec3, point4:Vec3,color: table, fillColor: table, lineType: LineType , readOnly: boolean?, message: string?) Creates a shape defined by the 4 points on the F10 map.
-    ---@field textToAll fun(coalition:DrawCoalition, id: number, point:Vec3, color: table, fillColor: table, fontSize:table, readOnly:boolean, text:string) Creates a text imposed on the map at a given point. Text scales with the map.
+    ---@field textToAll fun(coalition:DrawCoalition, id: number, point:Vec3, color: table, fillColor: table, fontSize:number, readOnly:boolean, text:string) Creates a text imposed on the map at a given point. Text scales with the map.
     ---@field arrowToAll fun(coalition:DrawCoalition, id: number, startPoint:Vec3, endPoint:Vec3, color:table, fillColor:table, lineType:LineType, readonly:boolean?, message: string?) Creates an arrow from the startPoint to the endPoint on the F10 map. The arrow will be "pointing at" the startPoint
     ---@field setMarkupRadius fun(id:number, radius:number) Updates the radius of the specified mark to be the new value.
     ---@field setMarkupText fun(id:number, text: string) Updates the text value of the passed mark to the passed text value.
