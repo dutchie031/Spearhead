@@ -327,6 +327,22 @@ do
          }
         Persistence._updateRequired = true
     end
+
+    ---comment
+    ---@param name string
+    ---@param position Vec3
+    Persistence.UpdateLocation = function(name, position)
+        if enabled == false then return end
+        
+        if not tables.unitsStates[name] then
+            tables.unitsStates[name] = {
+                isDead = false,
+                pos = position
+            }
+        else
+            tables.unitsStates[name].pos = position
+        end
+    end
 end
 
 if Spearhead == nil then Spearhead = {} end
