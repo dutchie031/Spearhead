@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spearhead Tutorials</title>
+    
+    <link rel="stylesheet" href="/style/prism.css">
+    <link rel="stylesheet" href="/style/style.css">
+
+    <script src="/js/prism.js"></script>
+    <script src="/js/site.js"></script>
+    <style>
+    .side-nav a.active {
+        font-weight: bold;
+        color: #4fc3f7;
+    }    
+    </style>
+    <script type="module" src="../js/components.js"></script>
+</head>
+
+<body>
+    <header>
+        <app-header></app-header>
+    </header>    <main>
+        <div class="reference-container">
+            <app-sidebar></app-sidebar>
+
+            <div class="content-wrapper">
+                <h1>Tutorials</h1>
+                <p>
+                    This guide is to get you started building your first Spearhead mission. <br />
+                    Spearhead was created to enable the mission maker to worry as little about the running, timing and scripting
+                    and most about the setting and looks and feel of the mission. <br />
+                    In the example we'll show how you can create a simple island hopping mission
+                </p>
+
+                <h2>Include the script</h2>
+                <p>
+                    Read <a href="/pages/include-script.html">here</a> how to include the Spearhead script in your mission first. <br /> 
+                </p>
+
+                <h2 id="stages">Stages</h2>
+
+                <p>
+                    In general, stages are the backbone of a Spearhead mission. <br>
+                    They define the flow of the mission and what is active at what time. <br>
+
+                    Don't worry, it can be changed and adapted later on, but it's best to translate your mission idea into stages first. <br>
+                </p>
+
+                <p>
+                    Stages are defined by trigger zones. <br>
+                    They'll be picked up by Spearhead when named according to the naming convention: <br>
+                    <code-inline>MISSIONSTAGE_[OrderNumber]_[FreeForm]</code-inline> <br>
+                    <br>
+                    Stages are divided in primary stages: <code-inline>MISSIONSTAGE_[number]</code-inline> <br>
+                    or secondary stages: <code-inline>MISSIONSTAGE_x[number]</code-inline> <br>
+                    Note the x before the number. This marks it as "extra" <br>
+                    Secondary stages will follow the order number, but are not required to be completed before moving on to the next stage numbers. <br>
+                </p>
+
+                <p>
+                    For this Demo mission we'll create 3 stages. <br>
+                    <code-inline>MissionStage_1_start</code-inline><br>
+                    <code-inline>MissionStage_2_continuation</code-inline><br>
+                    <code-inline>MissionStage_3_finale</code-inline> <br>
+                    Each stage will have it's own trigger zone. <br/>
+                </p>
+                <img src="../img/first-start/1.png" alt="The first stages displayed" style="width: 100%;"></img>
+
+                <p>
+                    There's 3 stages now. <br>
+                    The first <code-inline>MissionStage_1_start</code-inline> is the first stage and will be active at mission start. <br>
+                    The second <code-inline>MissionStage_2_continuation</code-inline> will be pre-activated when stage 1 is active. <br>
+                    But will be fully activated when stage 1 is complete. <br>
+                    Pre-activated means that the SAM missions and Airbase units will be activated. <br>
+                    This is the difference between SAM and DEAD missions, but let's not get into too much detail at this time. <br>
+
+                    You can ofcourse create as many stages as you want. <br>
+                    You can also change the amount of stages that get pre-activated. <br>
+                    By default Spearhead will pre-activate 1 stage ahead. <br/>
+                    This can be changed in the configuration. <br/>
+                </p>
+
+                <h2 id="create-missions">Create Missions</h2>
+                <p>
+                    Now that we've created the stages we can start adding missions to them. <br>
+                    Missions are also defined by trigger zones. <br>
+                    They'll be picked up by Spearhead when named according to the naming convention: <br>
+                    <code-inline>MISSION_[Type]_[FreeForm]</code-inline> <br>
+                    Where <code-inline>[Type]</code-inline> is the type of mission. <br>
+
+                </p>
+
+                <h3 id="mission-cas">CAS</h3>
+                <p>
+                    Personally CAS is one of our favorite mission types. <br>
+                    Mostly because it's easy to set up and creates a truly immersive experience. <br>
+                    
+                </p>
+
+                <h3 id="mission-sam">SAM</h3>
+                <p>
+
+                </p>
+
+                <h3 id="mission-strike">STRIKE</h3>
+                <p>
+
+                </p>
+
+
+                <h2 id="setting-up-cap">Setting up CAP</h2>
+                <p>
+                    If you don't want to use the CAP managers withing Spearhead you can skip this and continue to <a href="#setting-up-the-missions">Setting up Missions</a>. <br />
+                    However CAP is one of the painpoints in a lot of missions and setting up a dynamic feeling airspace can be
+                    quite the challenge. <br />
+                    With the CAP managers we've tried to make this a lot easier. <br />
+
+                    A CAP group needs to follow the following naming convention: <code-inline>CAP_[A|B][CONFIG]_[Free Form]</code-inline>
+
+                    For details on config read this: <code-inline>CAP Group Config</code-inline>
+
+                    For now I set up 3 groups with the following names. <code-inline>CAP_A[1]1_Rota1</code-inline>, <code-inline>CAP_A[1]1_Rota1-1</code-inline>,
+                    <code-inline>CAP_B[1]1_Rota1</code-inline> <br />
+                    The first two are marked with <code-inline>A</code-inline> and will therefore be primary CAP units. They will be
+                    scheduled and make up for the total count. <br />
+                    Meaning that for this airbase there is 2 CAP units max at a time flying out. <br />
+                    In this case all groups have <code-inline>[1]1</code-inline> in the name, (This would be the same as <code-inline>[1]A</code-inline>) which means
+                    that when stage 1 is active the groups will activate and fly out to stage 1.
+
+                    I also set up a few groups further back. One example: <code-inline>CAP_A[1-3]3_Group1</code-inline>. This group will
+                    protect zone 3 when zones 1 through 3 are active.
+
+                    CAP units fly out, fly their CAP zone for x amount of minutes and will then RTB. <br />
+                    Before they actually RTB an event is triggered 10 minutes before the actual RTB task. This event
+                    will trigger a backup unit to startup and fly out to take over. <br />
+                </p>
+
+                <note-box type="info" title="Tip">
+                    You can start a mission, speed up the simulation and make the CAP fly out to see what happens
+                </note-box>
+
+                <h3 id="creating-cap-routes">Creating CAP Routes</h3>
+                <p>
+                    Creating CAP routes is not needed per se, but with a multi-stage stage (we have 2 stages with <code-inline>_1_</code-inline>) it is recommended. <br/>
+                    Similarly with huge stages. <br/>
+                    If there is multiple zones it will "round-robin" over them. <br/>
+                </p>
+                <p>
+                    If no CAP route is present the unit will fly a route generated differently per zone: <br/>
+                    <code-inline>quad zone</code-inline> => race-track between the corner closest to the origin airbase to the center point of the zone <br/>
+                    <code-inline>circle zone</code-inline> => race-track between the closest point on circle to the origin airbase to the center <br/>
+                </p>
+                <p>
+                    If you want to create your own CAP Routes you can! <br/>
+                    For this example I created 2 CAP routes inside of the 2 <code-inline>_1_</code-inline> stages. <br/>
+                </p>
+                <p>
+                    As you can see below there's a nice feature you can exploit. As long as the <code-inline>X</code-inline> of the zone is inside of the the <code-inline>CAPROUTE</code-inline> will be used for that stage! 
+                </p>
+                <img src="../img/cap_routes.png" alt="CAP Routes Image" style="width: 100%;"></img>
+
+                <p>
+                    Well, nice, we're done setting up the initial CAP effort. <br/>
+                    If you want to change values for the CAP routes please read about how to configure it here: <a href="./Reference.html#cap-config">Cap Config</a>
+                </p>
+
+                <h2 id="mission-briefings">Mission Briefings</h2>
+                <p>
+                    So now we've created some missions we also want to add briefings to them. This is pretty easy with Spearhead. <br/>
+                </p>
+                <p>
+                    To do so click on <code-inline>draw</code-inline> on the left hand pane in the mission editor. This opens up the drawing tools in the editor. <br/>
+                    On the right click <code-inline>TextBox</code-inline> and click somewhere inside the zone to which you want to add the briefing. <br/>
+                    Give the briefing a name (It's not used, but can be nice to use to reference the briefing later) and add the briefing. <br/>
+                    The text box is quite small, but can have a lot of text. Easiest is to edit the text in an editor of choice and paste it into the box afterwards. <br/>
+                </p>
+                <p>
+                    Keep the binding layer to "Author" only. That way it doesn't show up for anyone other than in the mission editor. 
+                </p>
+                <p>
+                    See the two images below. The left shows the <code-inline>Text Box</code-inline> drawing. The right shows the briefing as shown in the mission.
+                </p>
+                <div style="display: flex">
+                    <div style="flex: 50%">
+                        <img src="../img/briefing_me.png"/>
+                    </div>
+                    <div style="flex: 50%">
+                        <img src="../img/briefing_mission.png"/>
+                    </div>
+                </div>
+                <p>
+                    We are now done creating a first mission. Hit fly and test it. <br/>
+                    Check all references for way more features and keep up to date with the latest changes as they come along! <br/>
+                </p>
+
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Spearhead Project</p>
+    </footer>
+</body>
+
+</html>

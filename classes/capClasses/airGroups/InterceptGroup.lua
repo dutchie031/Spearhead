@@ -80,7 +80,9 @@ function InterceptGroup:SetTargetUnits(unitNames)
     self:UpdateTask()
 
     if self._updateTaskID then
-        timer.removeFunction(self._updateTaskID)
+        pcall(function()
+            timer.removeFunction(self._updateTaskID)
+        end)
     end
 
     local updateContinous = function(selfA, time)

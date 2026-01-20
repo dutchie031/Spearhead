@@ -25,24 +25,46 @@
             <app-sidebar></app-sidebar>
 
             <div class="content-wrapper">
-                <h1>Advanced Tutorial: Custom Drawings</h1>
+                <h1>Map Markings</h1>
                 
                 <p>
                     Drawings can be very powerful in DCS missions. <br>
                     They can guide players towards the right objectives or warn them of dangers ahead. <br>
-                    In Spearhead, we provide an easy way to manage and update these drawings dynamically as the mission progresses. <br>                    
+                    In Spearhead, we have both automatic markers and drawings as well as the possibility to integrate custom drawings.<br>                    
                 </p>
 
-                <h2 id="custom_drawings_how_to">How to</h2>
+                <h2 id="automatic_drawings">Automated</h2>
+
+
+                <h3 id="stage_drawings">Stages</h3>
+                <p>
+                    Spearhead automatically draws stage markings on the map for players to see. <br>
+                    These are drawn when a stage becomes active and removed when the stage is completed. <br>
+                    This gives players a clear visual indication of where they need to go next. <br>
+                    <br>
+                    These can however be disabled in the configuration if desired. <br>
+                    <code-inline>SpearheadConfig.StageConfig.drawStages</code-inline> <br>
+                    <code-inline>SpearheadConfig.StageConfig.drawPreActived</code-inline> <br>
+                </p>
+
+                <h3 id="lastcontact_markings">Last Contact</h3>
+                <p>
+                    If enabled, Spearhead will draw a marker on the map where the enemy was last killed. <br>
+                    This might help in big multiplayer missions where players log off without sharing intel. <br>
+                    This can be enabled or disabled in the configuration. <br>
+                    <code-inline>SpearheadConfig.StageConfig.markLastContact</code-inline>
+                </p>
+
+                <h2 id="custom_drawings">Custom</h2>
                 <p>
                     Adding a custom drawing is easy. <br>
                     Simply create the drawing and then name it according to the following convention: <br>
                     <code-inline>DRAWING_[a]:[b]_[FreeForm]</starting></code-inline> <br>
                     Where: 
                     <ul>
-                        <li><strong>[a]</strong> is the stage number at which the drawing should appear.</li>
-                        <li><strong>[b]</strong> is the stage number at which the drawing should be removed again.</li>
-                        <li><strong>[FreeForm]</strong> is any name you want to make it unique or findables.</li>
+                        <li><code-inline>[a]</code-inline> is the stage number at which the drawing should appear.</li>
+                        <li><code-inline>[b]</code-inline> is the stage number at which the drawing should be removed again.</li>
+                        <li><code-inline>[FreeForm]</code-inline> is any name you want to make it unique or findables.</li>
                     </ul>
                 </p>
 
@@ -51,8 +73,6 @@
                        This is due to other layers being visible by default and cannot be as easily removed when not needed.
                        The author layer is not visible by default in multiplayer, making it perfect for this use case.
                 </note-box>
-
-
             </div>
         </div>
         
