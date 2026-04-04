@@ -1,23 +1,26 @@
-
 local Logger = require("classes.util.Logger")
 local Util = require("classes.util.Util")
 local DcsUtil = require("classes.util.DcsUtil")
-local MissionCommandsHelper = require("classes.stageClasses.helpers.MissionCommandsHelper")
 local SpearheadEvents = require("classes.spearhead_events")
 local SupplyConfigHelper = require("classes.stageClasses.helpers.SupplyConfigHelper")
 local MaxLoadConfig = require("classes.stageClasses.helpers.MaxLoadConfig")
 
 env.info("Spearhead SupplyUnitsTracker loaded")
 
+---@class SupplyUnitEventListener
+---@field supplyUnitSpawned fun(self:SupplyUnitEventListener, unit:Unit) | nil
+---@field enteredSupplyHub fun(self:SupplyUnitEventListener, unit:Unit, hub:SupplyHub) | nil
+---@field exitedSupplyHub fun(self:SupplyUnitEventListener, unit:Unit, hub:SupplyHub) | nil
+
 ---@class SupplyUnitsTracker
 ---@field private _supplyUnitsByName table<string, Unit>
 ---@field private _cargoInUnits table<string, table<CrateType, number>>
 ---@field private _logger Logger
 ---@field private _unitPositions table<string, Vec3>
----@field private _commandsHelper MissionCommandsHelper
+---@field private _unitInSupplyHub table<string, boolean>
 ---@field private _droppedCrates table<string, StaticObject>
 ---@field private _registeredHubs table<SupplyHub, boolean>
----@field private _supplyUnitSpawnedListener Array<SupplyUnitSpawnedListener>
+---@field private _supplyUnitEventsListeners Array<SupplyUnitEventListener>
 local SupplyUnitsTracker = {}
 SupplyUnitsTracker.__index = SupplyUnitsTracker
 
@@ -37,10 +40,9 @@ function SupplyUnitsTracker.getOrCreate(logLevel)
         singleton._supplyUnitsByName = {}
         singleton._droppedCrates = {}
         singleton._registeredHubs = {}
-        singleton._supplyUnitSpawnedListener = {}
+        singleton._supplyUnitEventsListeners = {}
+        singleton._unitInSupplyHub = {}
 
-        singleton._commandsHelper = MissionCommandsHelper.getOrCreate(singleton._logger.LogLevel)
-        
         SpearheadEvents.AddOnPlayerEnterUnitListener(singleton)
 
         ---@param selfA SupplyUnitsTracker
@@ -78,29 +80,30 @@ function SupplyUnitsTracker:OnPlayerEntersUnit(unit)
     if self:IsSupplyUnit(unit) == true then
         self._supplyUnitsByName[unit:getName()] = unit
         self._cargoInUnits[tostring(unit:getID())] = nil
+        self._unitInSupplyHub[tostring(unit:getID())] = false
         self._unitPositions[tostring(unit:getID())] = unit:getPoint()
     end
 
-    for _, listener in pairs(self._supplyUnitSpawnedListener) do
+    for _, listener in pairs(self._supplyUnitEventsListeners) do
         pcall(function()
-            listener:SupplyUnitSpawned(unit)
+            if listener.supplyUnitSpawned then
+                listener:supplyUnitSpawned(unit)
+            end
         end)
     end
 
 end
 
----@class SupplyUnitSpawnedListener
----@field SupplyUnitSpawned fun(self:SupplyUnitSpawnedListener, unit:Unit)
 
----@param listener SupplyUnitSpawnedListener
+---@param listener SupplyUnitEventListener
 function SupplyUnitsTracker:AddOnSupplyUnitSpawnedListener(listener)
     if listener == nil then return end
 
-    if self._supplyUnitSpawnedListener == nil then
-        self._supplyUnitSpawnedListener = {}
+    if self._supplyUnitEventsListeners == nil then
+        self._supplyUnitEventsListeners = {}
     end
 
-    table.insert(self._supplyUnitSpawnedListener, listener)
+    table.insert(self._supplyUnitEventsListeners, listener)
 end
 
 function SupplyUnitsTracker:Update()
@@ -150,6 +153,7 @@ function SupplyUnitsTracker:AddCargoToUnit(unitID, crateType)
 
 end
 
+---@private
 ---@param unitID number
 ---@param crateType CrateType
 function SupplyUnitsTracker:RemoveCargoFromUnit(unitID, crateType)
@@ -176,6 +180,7 @@ function SupplyUnitsTracker:RemoveCargoFromUnit(unitID, crateType)
 
 end
 
+---@private
 ---@param unit Unit
 function SupplyUnitsTracker:UpdateWeightForUnit(unit)
 
@@ -206,9 +211,29 @@ function SupplyUnitsTracker:CheckUnitsInZones()
                     local zone = hub:GetZone()
                     if zone ~= nil then
                         if Util.is3dPointInZone(pos, zone) then
-                            self._commandsHelper:MarkUnitInSupplyHub(group:getID())
+                            if self._unitInSupplyHub[tostring(unit:getID())] ~= true then
+                                self._unitInSupplyHub[tostring(unit:getID())] = true
+                                
+                                for _, listener in pairs(self._supplyUnitEventsListeners) do
+                                    pcall(function()
+                                        if listener.enteredSupplyHub then
+                                            listener:enteredSupplyHub(unit, hub)
+                                        end
+                                    end)
+                                end
+                            end
+                            
                         else
-                            self._commandsHelper:MarkUnitOutsideSupplyHub(group:getID())
+                            if self._unitInSupplyHub[tostring(unit:getID())] == true then
+                                self._unitInSupplyHub[tostring(unit:getID())] = false
+                                for _, listener in pairs(self._supplyUnitEventsListeners) do
+                                    pcall(function()
+                                        if listener.exitedSupplyHub then
+                                            listener:exitedSupplyHub(unit, hub)
+                                        end
+                                    end)
+                                end
+                            end
                         end
                     end
                 end
@@ -245,7 +270,12 @@ function SupplyUnitsTracker:GetUnits()
 end
 
 local cargoCount = 0
-function SupplyUnitsTracker:UnloadRequested(unitID, crateType)
+
+---comment
+---@param unitID number
+---@param crateType CrateType
+---@param missionCommandsHelper MissionCommandsHelper
+function SupplyUnitsTracker:UnloadRequested(unitID, crateType, missionCommandsHelper)
     
     self._logger:debug("Unload requested for unit: " .. unitID .. " crateType: " .. crateType)
 
@@ -278,7 +308,7 @@ function SupplyUnitsTracker:UnloadRequested(unitID, crateType)
 
     local spawned = coalition.addStaticObject(unit:getCoalition(), cargoSpawnObject)
     self._droppedCrates[cargoSpawnObject.name] = spawned
-    self._commandsHelper:updateCommandsForGroup(group:getID())
+    missionCommandsHelper:updateCommandsForGroup(group:getID())
 end
 
 ---@return table<string,StaticObject>
@@ -289,7 +319,8 @@ end
 ---Loads a crate directly into the unit
 ---@param groupID number
 ---@param crateType CrateType  
-function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
+---@param missionCommandsHelper MissionCommandsHelper
+function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType, missionCommandsHelper)
 
     self._logger:debug("UnitRequestCrateLoading called with groupID: " .. groupID .. " and crateType: " .. crateType)
 
@@ -320,11 +351,12 @@ function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
         ---@field unit Unit
         ---@field groupID number
         ---@field crateType CrateType
+        ---@field commandHelper MissionCommandsHelper
 
         ---@param params LoadCargoParams
         local  LoadCrateTask = function(params)
             
-            local loaded = params.self:TryLoadCrateInUnit(params.unit, params.crateType)
+            local loaded = params.self:TryLoadCrateInUnit(params.unit, params.crateType, params.commandHelper)
             if loaded ~= false then
                 trigger.action.outTextForUnit(unit:getID(), "Loaded crate :" .. params.crateType, 10)
             end
@@ -335,7 +367,8 @@ function SupplyUnitsTracker:UnitRequestCrateLoading(groupID, crateType)
             self = self,
             unit = unit,
             crateType = crateType,
-            groupID = groupID
+            groupID = groupID,
+            commandHelper = missionCommandsHelper
         }
 
         timer.scheduleFunction(LoadCrateTask, params, timer.getTime() + 15)
@@ -346,8 +379,9 @@ end
 ---comment
 ---@param unit Unit
 ---@param crateType CrateType
+---@param commandHelper MissionCommandsHelper
 ---@return boolean
-function SupplyUnitsTracker:TryLoadCrateInUnit(unit, crateType)
+function SupplyUnitsTracker:TryLoadCrateInUnit(unit, crateType, commandHelper)
     
     local crateConfigA = SupplyConfigHelper.getSupplyConfig(crateType)
     if crateConfigA == nil then
@@ -381,7 +415,7 @@ function SupplyUnitsTracker:TryLoadCrateInUnit(unit, crateType)
     local group = unit:getGroup()
     if group == nil then return false end
     local groupID = group:getID()
-    self._commandsHelper:updateCommandsForGroup(groupID)
+    commandHelper:updateCommandsForGroup(groupID)
     
     return true
 end
@@ -412,19 +446,19 @@ end
 function SupplyUnitsTracker:GetCargoPlacePosition(unit)
 
     local pos = unit:getPosition()
-    local preferedPos = {
+    local preferredPos = {
         x = pos.p.x - 10 * pos.x.x,
         y = pos.p.y - 10 * pos.x.y,
         z = pos.p.z - 10 * pos.x.z
     }
 
-    return preferedPos
+    return preferredPos
 
 
     -- local volume = {
     --     id = world.VolumeType.SPHERE,
     --     params = {
-    --         point = preferedPos,
+    --         point = preferredPos,
     --         radius = 10
     --     }
     -- }

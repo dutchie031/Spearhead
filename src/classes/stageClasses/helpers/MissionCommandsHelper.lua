@@ -453,6 +453,7 @@ function MissionCommandsHelper:AddSupplyHubCommandsIfApplicable(groupID)
     ---@field groupID number
     ---@field crateType CrateType
     ---@field supplyUnitsTracker SupplyUnitsTracker
+    ---@field commandHelper MissionCommandsHelper
 
     ---comment
     ---@param params LoadCargoCommandParams
@@ -460,31 +461,31 @@ function MissionCommandsHelper:AddSupplyHubCommandsIfApplicable(groupID)
         local crateType = params.crateType
         local supplyUnitsTracker = params.supplyUnitsTracker
         if supplyUnitsTracker then
-            supplyUnitsTracker:UnitRequestCrateLoading(params.groupID, crateType)
+            supplyUnitsTracker:UnitRequestCrateLoading(params.groupID, crateType, params.commandHelper)
         end
     end
 
     local path = { [1] = folderNames.supplyHub }
 
     ---@type LoadCargoCommandParams
-    local farpParams1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_1000", supplyUnitsTracker = self._supplyUnitsTracker }
+    local farpParams1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_1000", supplyUnitsTracker = self._supplyUnitsTracker, commandHelper = self }
     missionCommands.addCommandForGroup(groupID, "Load FARP Crate (1000)", path, loadCargoCommand, farpParams1000)
 
     ---@type LoadCargoCommandParams
-    local farpParams2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_2000", supplyUnitsTracker = self._supplyUnitsTracker }
+    local farpParams2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "FARP_CRATE_2000", supplyUnitsTracker = self._supplyUnitsTracker, commandHelper = self }
     missionCommands.addCommandForGroup(groupID, "Load FARP Crate (2000)", path, loadCargoCommand, farpParams2000)
 
     ---@type LoadCargoCommandParams
-    local samParms1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "SAM_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker }
+    local samParms1000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "SAM_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker, commandHelper = self }
     missionCommands.addCommandForGroup(groupID, "Load SAM Crate (1000)", path, loadCargoCommand, samParms1000)
 
     ---@type LoadCargoCommandParams
-    local samParms2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "SAM_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker }
+    local samParms2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "SAM_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker, commandHelper = self }
     missionCommands.addCommandForGroup(groupID, "Load SAM Crate (2000)", path, loadCargoCommand, samParms2000)
 
     ---@type LoadCargoCommandParams
-    local samParms2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "AIRBASE_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker }
-    missionCommands.addCommandForGroup(groupID, "Airbase Crate (2000)", path, loadCargoCommand, samParms2000)
+    local airbaseParms2000 = { unitID = unit:getID(), groupID = group:getID(), crateType = "AIRBASE_CRATE_2000",  supplyUnitsTracker = self._supplyUnitsTracker, commandHelper = self }
+    missionCommands.addCommandForGroup(groupID, "Airbase Crate (2000)", path, loadCargoCommand, airbaseParms2000)
 end
 
 function MissionCommandsHelper:AddCargoCommands(groupID)
@@ -499,13 +500,15 @@ function MissionCommandsHelper:AddCargoCommands(groupID)
     ---@field unitID number
     ---@field crateType CrateType
     ---@field supplyUnitsTracker SupplyUnitsTracker
+    ---@field commandHelper MissionCommandsHelper
 
     ---comment
     ---@param params UnloadCargoCommandParams
     local unloadCargoCommand = function(params)
         local unitID = params.unitID
         local crateType = params.crateType
-        params.supplyUnitsTracker:UnloadRequested(unitID, crateType)
+        local supplyUnitsTracker = params.supplyUnitsTracker
+        params.supplyUnitsTracker:UnloadRequested(unitID, crateType, params.commandHelper)
     end
 
     local cargo = self._supplyUnitsTracker:GetCargoInUnit(unit:getID())
@@ -516,7 +519,7 @@ function MissionCommandsHelper:AddCargoCommands(groupID)
                 for i = 1, amount do
                     local path = { [1] = folderNames.cargo }
                     ---@type UnloadCargoCommandParams
-                    local params = { unitID = unit:getID(), crateType = cargoType, supplyUnitsTracker = self._supplyUnitsTracker }
+                    local params = { unitID = unit:getID(), crateType = cargoType, supplyUnitsTracker = self._supplyUnitsTracker, commandHelper = self }
                     missionCommands.addCommandForGroup(groupID, "Unload " .. cargoConfig.displayName, path, unloadCargoCommand, params)
                 end
             end

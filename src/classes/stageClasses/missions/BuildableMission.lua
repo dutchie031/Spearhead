@@ -6,7 +6,7 @@ local MissionCommandsHelper = require("classes.stageClasses.helpers.MissionComma
 local GlobalConfig = require("classes.configuration.GlobalConfig")
 local SupplyConfigHelper = require("classes.stageClasses.helpers.SupplyConfigHelper")
 
----@class BuildableMission : Mission, SupplyUnitSpawnedListener
+---@class BuildableMission : Mission, SupplyUnitEventListener
 ---@field private _requiredKilos number
 ---@field private _droppedKilos number
 ---@field private _crateType SupplyType
