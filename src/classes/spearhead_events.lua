@@ -1,3 +1,7 @@
+local Logger = require("classes.util.Logger")
+local Persistence = require("classes.persistence.Persistence")
+local DcsUtil = require("classes.util.DcsUtil")
+
 ---@class SpearheadEvents
 local SpearheadEvents = {}
 do
@@ -7,9 +11,8 @@ do
 
     ---@param logLevel LogLevel
     SpearheadEvents.Init = function(logLevel)
-        logger = Spearhead.LoggerTemplate.new("Events", logLevel)
+        logger = Logger.new("Events", logLevel)
     end
-
 
     local warn = function(text)
         if logger then
@@ -50,7 +53,7 @@ do
         ---@param newStageNumber number
         SpearheadEvents.PublishStageNumberChanged = function(newStageNumber)
             pcall(function ()
-                Spearhead.classes.persistence.Persistence.SetActiveStage(newStageNumber)
+                Persistence.SetActiveStage(newStageNumber)
             end)
 
             for _, callable in pairs(OnStageNumberChangedListeners) do
@@ -68,8 +71,7 @@ do
                     logError(err)
                 end
             end
-            Spearhead.LoggerTemplate.new("Events", "INFO"):info("Published stage number changed to: " .. tostring(newStageNumber))
-            Spearhead.StageNumber = newStageNumber
+            Logger.new("Events", "INFO"):info("Published stage number changed to: " .. tostring(newStageNumber))
         end
     end
 
@@ -349,7 +351,7 @@ do
         end
 
         if event.id == world.event.S_EVENT_MISSION_END then
-            Spearhead.classes.persistence.Persistence.UpdateNow()
+            Persistence.UpdateNow()
         end
 
         local AI_GROUPS = {}
@@ -370,7 +372,7 @@ do
                         return false
                     end
 
-                    local players = Spearhead.DcsUtil.getAllPlayerUnits()
+                    local players = DcsUtil.getAllPlayerUnits()
                     local unitName = unit:getName()
                     for i, unit in pairs(players) do
                         if unit:getName() == unitName then

@@ -1,3 +1,9 @@
+local BuildableZone = require("classes.stageClasses.SpecialZones.abstract.BuildableZone")
+local DcsUtil = require("classes.util.DcsUtil")
+local SpearheadGroup = require("classes.stageClasses.Groups.SpearheadGroup")
+local SupplyHub = require("classes.stageClasses.SpecialZones.SupplyHub")
+local Util = require("classes.util.Util")
+
 ---@class StageBase : BuildableZone
 ---@field private _database Database
 ---@field private _logger Logger
@@ -21,7 +27,7 @@ StageBase.__index = StageBase
 ---@param spawnManager SpawnManager
 ---@return StageBase?
 function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
-    setmetatable(StageBase, Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone)
+    setmetatable(StageBase, BuildableZone)
     local self = setmetatable({}, StageBase)
 
     self._database = databaseManager
@@ -33,7 +39,7 @@ function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
     self._supplyHubs = {}
 
     self._airbase = Airbase.getByName(airbaseName)
-    self._initialSide = Spearhead.DcsUtil.getStartingCoalition(self._airbase)
+    self._initialSide = DcsUtil.getStartingCoalition(self._airbase)
 
     do --init
         local airbaseData = databaseManager:getAirbaseDataForZone(airbaseName)
@@ -49,7 +55,7 @@ function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
         local blueUnitsPos = {}
 
         for _, groupName in pairs(airbaseData.RedGroups) do
-            local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName, spawnManager, true)
+            local shGroup = SpearheadGroup.New(groupName, spawnManager, true)
             table.insert(self._red_groups, shGroup)
 
             for _, unit in pairs(shGroup:GetObjects()) do
@@ -60,7 +66,7 @@ function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
         end
 
         for _, groupName in pairs(airbaseData.BlueGroups) do
-            local shGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName, spawnManager, true)
+            local shGroup = SpearheadGroup.New(groupName, spawnManager, true)
             table.insert(self._blue_groups, shGroup)
 
             for _, unit in pairs(shGroup:GetObjects()) do
@@ -71,7 +77,7 @@ function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
         end
 
         for _, supplyHubName in pairs(airbaseData.supplyHubNames) do
-            local supplyHub = Spearhead.classes.stageClasses.SpecialZones.SupplyHub.new(databaseManager, logger,
+            local supplyHub = SupplyHub.new(databaseManager, logger,
                 supplyHubName)
             if supplyHub then
                 table.insert(self._supplyHubs, supplyHub)
@@ -86,7 +92,7 @@ function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
 
             for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
                 for redUnitName, redUnitPos in pairs(redUnitsPos) do
-                    local distance = Spearhead.Util.VectorDistance3d(blueUnitPos, redUnitPos)
+                    local distance = Util.VectorDistance3d(blueUnitPos, redUnitPos)
                     if distance <= cleanup_distance then
                         self._cleanup_units[redUnitName] = true
                     end
@@ -94,9 +100,9 @@ function StageBase.New(databaseManager, logger, airbaseName, spawnManager)
             end
         end
 
-        local zone = Spearhead.DcsUtil.getAirbaseZoneByName(airbaseName)
+        local zone = DcsUtil.getAirbaseZoneByName(airbaseName)
         if zone then
-            Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone.New(self, zone, airbaseData.buildingKilos or 0, "AIRBASE_CRATE", self._blue_groups, logger, databaseManager)
+            BuildableZone.New(self, zone, airbaseData.buildingKilos or 0, "AIRBASE_CRATE", self._blue_groups, logger, databaseManager)
         end
     end
 
@@ -126,8 +132,8 @@ function StageBase:CleanRedUnits()
 
     for unitName, shouldClean in pairs(self._cleanup_units) do
         if shouldClean == true then
-            Spearhead.DcsUtil.DestroyUnit(unitName)
-            Spearhead.DcsUtil.CleanCorpse(unitName)
+            DcsUtil.DestroyUnit(unitName)
+            DcsUtil.CleanCorpse(unitName)
         end
     end
 end

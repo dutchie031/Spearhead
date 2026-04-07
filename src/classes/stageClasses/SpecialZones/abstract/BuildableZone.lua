@@ -1,3 +1,6 @@
+local Util = require("classes.util.Util")
+local Persistence = require("classes.persistence.Persistence")
+local BuildableMission = require("classes.stageClasses.missions.BuildableMission")
 
 ---@class BuildableZone : OnCrateDroppedListener
 ---@field protected _targetZone SpearheadTriggerZone
@@ -22,11 +25,11 @@ function BuildableZone:New(targetZone, kilosRequired, crateType,  buildableGroup
     self._requiredKilos = kilosRequired or 0
     self._buildableGroups = buildableGroups or {}
     self._buildableLogger = logger
-    local totalGroups = Spearhead.Util.tableLength(self._buildableGroups)
+    local totalGroups = Util.tableLength(self._buildableGroups)
     self._groupsPerKilo = totalGroups / self._requiredKilos
 
     self._receivedBuildingKilos = 0
-    local persistedKilos = Spearhead.classes.persistence.Persistence.GetZoneDeliveredKilos(targetZone.name)
+    local persistedKilos = Persistence.GetZoneDeliveredKilos(targetZone.name)
     if persistedKilos and persistedKilos > 0 then
         self._buildableLogger:debug("Zone " .. targetZone.name .. " already has " .. persistedKilos .. " kilos delivered")
         self._receivedBuildingKilos = persistedKilos
@@ -66,7 +69,7 @@ function BuildableZone:New(targetZone, kilosRequired, crateType,  buildableGroup
 
     local noLandingZone = self:GetNoLandingZone()
     if kilosRequired and kilosRequired > 0 then
-        self._buildableMission = Spearhead.classes.stageClasses.missions.BuildableMission.new(database, logger, targetZone, noLandingZone, kilosRequired, crateType)
+        self._buildableMission = BuildableMission.new(database, logger, targetZone, noLandingZone, kilosRequired, crateType)
         self._buildableMission:AddOnCrateDroppedOfListener(self)
     else
         self._buildableMission = nil
@@ -138,7 +141,7 @@ end
 ---@param kilos number
 function BuildableZone:FinaliseCrate(kilos)
     self._receivedBuildingKilos = self._receivedBuildingKilos + kilos
-    Spearhead.classes.persistence.Persistence.SetZoneDeliveredKilos(self._targetZone.name, self._receivedBuildingKilos)
+    Persistence.SetZoneDeliveredKilos(self._targetZone.name, self._receivedBuildingKilos)
     if self._receivedBuildingKilos >= self._requiredKilos then
         self:OnBuildingComplete()
     end
@@ -157,7 +160,7 @@ function BuildableZone:GetNoLandingZone()
         end
     end
 
-    local vecs = Spearhead.Util.getConvexHull(points)
+    local vecs = Util.getConvexHull(points)
 
     ---@type SpearheadTriggerZone
     local spearheadZone = {

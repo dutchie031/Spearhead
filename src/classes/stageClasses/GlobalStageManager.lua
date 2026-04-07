@@ -1,4 +1,11 @@
+local Events = require("classes.spearhead_events")
+local Util = require("classes.util.Util")
+local Logger = require("classes.util.Logger")
+local MissionEditorWarnings = require("classes.util.MissionEditorWarnings")
 
+local ExtraStage = require("classes.stageClasses.Stages.ExtraStage")
+local PrimaryStage = require("classes.stageClasses.Stages.PrimaryStage")
+local WaitingStage = require("classes.stageClasses.Stages.WaitingStage")
 
 local StagesByName = {}
 
@@ -29,7 +36,7 @@ GlobalStageManager.getCurrentStage = function() return currentStage end
 ---@param spawnManager SpawnManager
 ---@return nil
 function GlobalStageManager.NewAndStart(database, stageConfig, logLevel, spawnManager)
-    local logger = Spearhead.LoggerTemplate.new("StageManager", logLevel)
+    local logger = Logger.new("StageManager", logLevel)
     logger:info("Using Stage Log Level: " .. logLevel)
     local self = setmetatable({}, GlobalStageManager)
     self.database = database
@@ -48,28 +55,28 @@ function GlobalStageManager.NewAndStart(database, stageConfig, logLevel, spawnMa
     }
 
 
-    Spearhead.Events.AddStageNumberChangedListener(OnStageNumberChangedListener)
+    Events.AddStageNumberChangedListener(OnStageNumberChangedListener)
 
     for _, stageName in pairs(database:getStagezoneNames()) do
         logger:debug("Found stage zone with name: " .. stageName)
 
-        if Spearhead.Util.startswith(stageName, "missionstage", true) then
+        if Util.startswith(stageName, "missionstage", true) then
             local valid = true
-            local split = Spearhead.Util.split_string(stageName, "_")
-            if Spearhead.Util.tableLength(split) < 2 then
-                Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a order number or valid format")
+            local split = Util.split_string(stageName, "_")
+            if Util.tableLength(split) < 2 then
+                MissionEditorWarnings.Add("Stage zone with name " .. stageName .. " does not have a order number or valid format")
                 valid = false
             end
 
-            if Spearhead.Util.tableLength(split) < 3 then
-                Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a stage name")
+            if Util.tableLength(split) < 3 then
+                MissionEditorWarnings.Add("Stage zone with name " .. stageName .. " does not have a stage name")
             end
 
             local orderNumber = nil 
             local isSideStage = false
             if valid == true then
                 local orderNumberString = string.lower(split[2])
-                if Spearhead.Util.startswith(orderNumberString, "x") == true then
+                if Util.startswith(orderNumberString, "x") == true then
                     isSideStage = true
 
                     orderNumberString = string.gsub(orderNumberString, "x", "")
@@ -79,13 +86,13 @@ function GlobalStageManager.NewAndStart(database, stageConfig, logLevel, spawnMa
                 end
 
                 if orderNumber == nil then
-                    Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a valid order number : " .. split[2])
+                    MissionEditorWarnings.Add("Stage zone with name " .. stageName .. " does not have a valid order number : " .. split[2])
                     valid = false
                 end
             end
                 
             local stageDisplayName = split[3]
-            local stagelogger = Spearhead.LoggerTemplate.new(stageName, logLevel)
+            local stagelogger = Logger.new(stageName, logLevel)
             if valid == true and orderNumber then
 
                 ---@type StageInitData
@@ -96,13 +103,13 @@ function GlobalStageManager.NewAndStart(database, stageConfig, logLevel, spawnMa
                 }
 
                 if isSideStage == true then
-                    local stage = Spearhead.classes.stageClasses.Stages.ExtraStage.New(database, stageConfig, stagelogger, initData, spawnManager)
+                    local stage = ExtraStage.New(database, stageConfig, stagelogger, initData, spawnManager)
                     stage:AddStageCompleteListener(self)
 
                     if SideStageByIndex[tostring(orderNumber)] == nil then SideStageByIndex[tostring(orderNumber)] = {} end
                     table.insert(SideStageByIndex[tostring(orderNumber)], stage) 
                 else 
-                    local stage = Spearhead.classes.stageClasses.Stages.PrimaryStage.New(database, stageConfig, stagelogger, initData, spawnManager)
+                    local stage = PrimaryStage.New(database, stageConfig, stagelogger, initData, spawnManager)
                     stage:AddStageCompleteListener(self)
                     
                     if StagesByIndex[tostring(orderNumber)] == nil then StagesByIndex[tostring(orderNumber)] = {} end
@@ -111,13 +118,13 @@ function GlobalStageManager.NewAndStart(database, stageConfig, logLevel, spawnMa
             end
         end
 
-        if Spearhead.Util.startswith(stageName, "waitingstage", true) then
+        if Util.startswith(stageName, "waitingstage", true) then
             local valid = true
 
-            local split = Spearhead.Util.split_string(stageName, "_")
+            local split = Util.split_string(stageName, "_")
 
-            if Spearhead.Util.tableLength(split) < 3 then
-                Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a order number or valid format")
+            if Util.tableLength(split) < 3 then
+                MissionEditorWarnings.Add("Stage zone with name " .. stageName .. " does not have a order number or valid format")
                 valid = false
             end
 
@@ -126,19 +133,19 @@ function GlobalStageManager.NewAndStart(database, stageConfig, logLevel, spawnMa
                 local stageIndex = tonumber(stageIndexString)
 
                 if not stageIndex then
-                    Spearhead.AddMissionEditorWarning("Stage zone with name " .. stageName .. " does not have a valid order number")
+                    MissionEditorWarnings.Add("Stage zone with name " .. stageName .. " does not have a valid order number")
                     valid = false
                 end
 
                 local waitingSecondsString = split[3]
                 local waitingSeconds = tonumber(waitingSecondsString)
                 if not waitingSeconds then
-                    Spearhead.AddMissionEditorWarning("Waiting Stage zone with name " .. stageName .. " does not have a valid amount of seconds parameter")
+                    MissionEditorWarnings.Add("Waiting Stage zone with name " .. stageName .. " does not have a valid amount of seconds parameter")
                     valid = false
                 end
 
                 if valid == true then 
-                    local stagelogger = Spearhead.LoggerTemplate.new(stageName, logLevel)
+                    local stagelogger = Logger.new(stageName, logLevel)
 
                     ---@type WaitingStageInitData
                     local initData = {
@@ -147,7 +154,7 @@ function GlobalStageManager.NewAndStart(database, stageConfig, logLevel, spawnMa
                         stageZoneName = stageName,
                         waitingSeconds = waitingSeconds --[[@as integer]]
                     }
-                    local waitingStage = Spearhead.classes.stageClasses.Stages.WaitingStage.New(database, stageConfig, stagelogger, initData, spawnManager)
+                    local waitingStage = WaitingStage.New(database, stageConfig, stagelogger, initData, spawnManager)
 
                     if WaitingStagesByIndex[tostring(stageIndex)] == nil then
                         WaitingStagesByIndex[tostring(stageIndex)] = {}
@@ -203,7 +210,7 @@ function GlobalStageManager:OnStageComplete(stage)
             local newStageNumber = currentStage + 1
             self:UpdateDrawings(newStageNumber)
             self.logger:debug("Setting next stage to: " .. tostring(newStageNumber))
-            Spearhead.Events.PublishStageNumberChanged(newStageNumber)
+            Events.PublishStageNumberChanged(newStageNumber)
         end
     end
 end
@@ -224,7 +231,7 @@ end
 
 GlobalStageManager.printFullOverview = function ()
     
-    local logger = Spearhead.LoggerTemplate.new("StageOverview", "INFO")
+    local logger = Logger.new("StageOverview", "INFO")
     logger:info("Stage overview:")
 
     local max = 0 

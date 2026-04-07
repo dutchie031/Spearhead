@@ -3,7 +3,7 @@ local CapGroup = require("classes.capClasses.airGroups.CapGroup")
 local SweepGroup = require("classes.capClasses.airGroups.SweepGroup")
 local InterceptGroup = require("classes.capClasses.airGroups.InterceptGroup")
 local RunwayBombingTracker = require("classes.capClasses.runwayBombing.RunwayBombingTracker")
-local SpearheadEvents = require("classes.util.SpearheadEvents")
+local SpearheadEvents = require("classes.spearhead_events")
 local RunwayStrikeMission = require("classes.stageClasses.missions.RunwayStrikeMission")
 
 ---@class CapBase : OnStageChangedListener

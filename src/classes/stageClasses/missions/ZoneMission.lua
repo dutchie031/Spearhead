@@ -1,3 +1,11 @@
+local Util = require("classes.util.Util")
+local MissionEditorWarnings = require("classes.util.MissionEditorWarnings")
+local Mission = require("classes.stageClasses.missions.baseMissions.Mission")
+local SpearheadGroup = require("classes.stageClasses.Groups.SpearheadGroup")
+local Events = require("classes.spearhead_events")
+local BattleManager = require("classes.stageClasses.helpers.BattleManager")
+local DcsUtil = require("classes.util.DcsUtil")
+
 --- ZoneMission is missions that are defined by zones in the ME
 ---@class ZoneMission : Mission, OnUnitLostListener
 ---@field private _state MissionState
@@ -26,13 +34,13 @@ local ZoneMission = {}
 ---@param input string
 ---@return ParsedMissionName?
 local function ParseZoneName(input)
-    local split_name = Spearhead.Util.split_string(input, "_")
-    local split_length = Spearhead.Util.tableLength(split_name)
-    if Spearhead.Util.startswith(input, "RANDOMMISSION") == true and split_length < 4 then
-        Spearhead.AddMissionEditorWarning("Random Mission with zonename " .. input .. " not in right format")
+    local split_name = Util.split_string(input, "_")
+    local split_length = Util.tableLength(split_name)
+    if Util.startswith(input, "RANDOMMISSION") == true and split_length < 4 then
+        MissionEditorWarnings.Add("Random Mission with zonename " .. input .. " not in right format")
         return nil
     elseif split_length < 3 then
-        Spearhead.AddMissionEditorWarning("Mission with zonename" .. input .. " not in right format")
+        MissionEditorWarnings.Add("Mission with zonename" .. input .. " not in right format")
         return nil
     end
 
@@ -47,7 +55,7 @@ local function ParseZoneName(input)
     if inputType == "sam" then parsedType = "SAM" end
 
     if parsedType == "nil" then
-        Spearhead.AddMissionEditorWarning("Mission with zonename '" ..
+        MissionEditorWarnings.Add("Mission with zonename '" ..
             input .. "' has an unsupported type '" .. (type or "nil"))
         return nil
     end
@@ -69,7 +77,6 @@ MINIMAL_UNITS_ALIVE_RATIO = 0.21
 ---@param spawnManager SpawnManager
 ---@return ZoneMission?
 function ZoneMission.new(zoneName, priority, database, logger, parentStage, spawnManager)
-    local Mission = Spearhead.classes.stageClasses.missions.baseMissions.Mission
     ZoneMission.__index = ZoneMission
     setmetatable(ZoneMission, Mission)
 
@@ -112,8 +119,6 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
     self._parentStage = parentStage
     self._dependencies = {}
 
-    local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
-
     if missionData.dependsOn then
         for _, dependency in pairs(missionData.dependsOn) do
             self._dependencies[dependency] = false
@@ -129,7 +134,7 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
     end
 
     self._missionGroups.sceneryTargets = missionData.SceneryTargets or {}
-    if Spearhead.Util.tableLength(self._missionGroups.sceneryTargets) > 0 then
+    if Util.tableLength(self._missionGroups.sceneryTargets) > 0 then
         self._missionGroups.hasTargets = true
     end
 
@@ -145,10 +150,10 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
         local spearheadGroup = SpearheadGroup.New(groupName, spawnManager, true)
         table.insert(self._missionGroups.redGroups, spearheadGroup)
 
-        local isGroupTarget = Spearhead.Util.startswith(string.lower(groupName), "tgt_")
+        local isGroupTarget = Util.startswith(string.lower(groupName), "tgt_")
         for _, unit in pairs(spearheadGroup:GetObjects()) do
             local unitName = unit:getName()
-            local isUnitTarget = Spearhead.Util.startswith(string.lower(unitName), "tgt_")
+            local isUnitTarget = Util.startswith(string.lower(unitName), "tgt_")
 
             if self._missionGroups.unitsAlive[groupName] == nil then
                 self._missionGroups.unitsAlive[groupName] = {}
@@ -167,18 +172,18 @@ function ZoneMission.new(zoneName, priority, database, logger, parentStage, spaw
                 self._missionGroups.targetsAlive[groupName][unitName] = true
             end
 
-            Spearhead.Events.addOnUnitLostEventListener(unitName, self)
+            Events.addOnUnitLostEventListener(unitName, self)
         end
 
         spearheadGroup:Destroy()
     end
 
     if self.missionType == "CAS" then
-        self._battleManager = Spearhead.classes.stageClasses.helpers.BattleManager.New(self._missionGroups.redGroups, self._missionGroups.blueGroups, self.zoneName, self._logger.LogLevel)
+        self._battleManager = BattleManager.New(self._missionGroups.redGroups, self._missionGroups.blueGroups, self.zoneName, self._logger.LogLevel)
 
     end
 
-    self._logger:debug("Mission " .. self.name .. " group count: " .. Spearhead.Util.tableLength(missionData.RedGroups))
+    self._logger:debug("Mission " .. self.name .. " group count: " .. Util.tableLength(missionData.RedGroups))
 
     return self
 end
@@ -327,7 +332,7 @@ function ZoneMission:UpdateState(checkHealth, messageIfDone)
     end
 
     if self._state == "COMPLETED" and self._lastContactMarkerID then
-        Spearhead.DcsUtil.RemoveMark(self._lastContactMarkerID)
+        DcsUtil.RemoveMark(self._lastContactMarkerID)
     end
 
     if self._state == "COMPLETED" and self._battleManager then
@@ -511,10 +516,10 @@ function ZoneMission:MarkLastContact(unit)
 
 
     if self._lastContactMarkerID then
-        Spearhead.DcsUtil.RemoveMark(self._lastContactMarkerID)
+        DcsUtil.RemoveMark(self._lastContactMarkerID)
     end
 
-    self._lastContactMarkerID = Spearhead.DcsUtil.AddMarkToAll("Last Contact: " .. self.name .. " [" .. self.code .. "]", point)
+    self._lastContactMarkerID = DcsUtil.AddMarkToAll("Last Contact: " .. self.name .. " [" .. self.code .. "]", point)
 end
 
 return ZoneMission

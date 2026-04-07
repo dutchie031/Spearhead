@@ -1,3 +1,7 @@
+local Mission = require("classes.stageClasses.missions.baseMissions.Mission")
+local Util = require("classes.util.Util")
+local DcsUtil = require("classes.util.DcsUtil")
+
 ---@class RunwayStrikeMission : Mission
 ---@field runwayBombingTracker RunwayBombingTracker
 ---@field private _runway Runway
@@ -22,8 +26,7 @@ local RunwayStrikeMission = {}
 ---@param runwayBombingTracker RunwayBombingTracker
 ---@return RunwayStrikeMission?
 function RunwayStrikeMission.new(runway, airbaseName, database, logger, runwayBombingTracker)
-    
-    local Mission = Spearhead.classes.stageClasses.missions.baseMissions.Mission
+
     RunwayStrikeMission.__index = RunwayStrikeMission
     setmetatable(RunwayStrikeMission, Mission)
     local self = setmetatable({}, RunwayStrikeMission)
@@ -82,7 +85,7 @@ function RunwayStrikeMission:RunwayHit(impactPoint, explosiveMass)
     for _, section in pairs(self._runwaySections) do
         
         local zone = self:SectionToSpearheadZone(section)
-        if Spearhead.Util.is3dPointInZone({ x = impactPoint.x, z = impactPoint.y, y = 0 }, zone) then
+        if Util.is3dPointInZone({ x = impactPoint.x, z = impactPoint.y, y = 0 }, zone) then
             if section.kilosHit == nil then
                 section.kilosHit = 0
             end
@@ -153,10 +156,10 @@ function RunwayStrikeMission:Draw()
 
             local color = { r=0, g=1, b=0, a=0.5 }
 
-            runwaySection.drawID = Spearhead.DcsUtil.DrawZone(zone, color, color, 5)
+            runwaySection.drawID = DcsUtil.DrawZone(zone, color, color, 5)
         else
-            Spearhead.DcsUtil.SetFillColor(runwaySection.drawID, fillColor)
-            Spearhead.DcsUtil.SetLineColor(runwaySection.drawID, lineColor)
+            DcsUtil.SetFillColor(runwaySection.drawID, fillColor)
+            DcsUtil.SetLineColor(runwaySection.drawID, lineColor)
         end
 
     end
@@ -342,7 +345,7 @@ local repairStaticConfigs = {
 ---@private
 ---@param section RunwaySection
 function RunwayStrikeMission:AddOrUpdateRepairStatics(section)
-    if Spearhead.Util.tableLength(section.repairGroups) > 0 then
+    if Util.tableLength(section.repairGroups) > 0 then
         return
     end
 
@@ -351,7 +354,7 @@ function RunwayStrikeMission:AddOrUpdateRepairStatics(section)
         y = section.center.y,
     }
 
-    local repairGroup = Spearhead.Util.randomFromList(repairStaticConfigs)
+    local repairGroup = Util.randomFromList(repairStaticConfigs)
     for _, repairStatic in pairs(repairGroup) do
 
         repairStatic.x = location.x + repairStatic.x
@@ -369,7 +372,7 @@ end
 ---@private 
 ---@param section RunwaySection
 function RunwayStrikeMission:RemoveRepairStatics(section)
-    if Spearhead.Util.tableLength(section.repairGroups) == 0 then
+    if Util.tableLength(section.repairGroups) == 0 then
         return
     end
 

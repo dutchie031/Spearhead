@@ -1,4 +1,7 @@
 
+local Stage = require("classes.stageClasses.Stages.BaseStage.Stage")
+local GlobalCapManager = require("classes.capClasses.GlobalCapManager")
+
 ---@class ExtraStage : Stage
 local ExtraStage = {}
 ExtraStage.__index = ExtraStage
@@ -13,7 +16,6 @@ ExtraStage.__index = ExtraStage
 ---@return ExtraStage
 function ExtraStage.New(database, stageConfig, logger, initData, spawnManager)
 
-    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
     setmetatable(ExtraStage, Stage)
 
     local self = setmetatable({}, { __index = ExtraStage }) --[[@as ExtraStage]]
@@ -46,7 +48,7 @@ function ExtraStage:OnStageNumberChanged(number)
     if self.stageNumber - self._activeStage  == self._stageConfig.AmountPreactivateStage then
         self._logger:debug("Pre-activating stage: " .. self.zoneName .. " with number: " .. number)
         self:PreActivate(true)
-    elseif Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
+    elseif GlobalCapManager.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
         self:PreActivate(false)
     end
 

@@ -1,3 +1,4 @@
+local Stage = require("classes.stageClasses.Stages.BaseStage.Stage")
 
 ---@class WaitingStage : Stage
 ---@field private _waitTimeSeconds integer
@@ -18,8 +19,6 @@ local WaitingStageInitData = {}
 ---@param spawnManager SpawnManager
 ---@return WaitingStage
 function WaitingStage.New(database, stageConfig, logger, initData, spawnManager)
-
-    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
     setmetatable(WaitingStage, Stage)
 
     local self = setmetatable({}, { __index = WaitingStage }) --[[@as WaitingStage]]

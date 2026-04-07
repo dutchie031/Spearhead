@@ -1,3 +1,10 @@
+local Util =  require("classes.util.Util")
+local DcsUtil = require("classes.util.DcsUtil")
+local MissionEditorWarnings = require("classes.util.MissionEditorWarnings")
+local MizGroupsManager = require("classes.helpers.MizGroupsManager")
+local CustomDrawing = require("classes.stageClasses.drawings.CustomDrawing")
+
+
 ---@class DatabaseTables
 ---@field AllZoneNames Array<string> All Zone Names
 ---@field StageZoneNames Array<string> All Stage Zone Names
@@ -112,13 +119,13 @@ function Database.New(Logger)
     self._logger:debug("Initiating tables")
 
     do -- INIT ZONE TABLES
-        for zone_ind, zone_data in pairs(Spearhead.DcsUtil.__trigger_zones) do
+        for zone_ind, zone_data in pairs(DcsUtil.__trigger_zones) do
             local zone_name = zone_data.name
 
             ---@type Vec2
             local zoneLocation = { x = zone_data.location.x, y = zone_data.location.y }
 
-            local split_string = Spearhead.Util.split_string(zone_name, "_")
+            local split_string = Util.split_string(zone_name, "_")
             table.insert(self._tables.AllZoneNames, zone_name)
 
             if string.lower(split_string[1]) == "missionstage" then
@@ -188,7 +195,7 @@ function Database.New(Logger)
             end
 
             if lowered == "scenerytarget" or lowered == "scenerytargets" then
-                local sceneryObjects = Spearhead.DcsUtil.getSceneryObjectsInZone(zone_data)
+                local sceneryObjects = DcsUtil.getSceneryObjectsInZone(zone_data)
                 for _, sceneryObject in pairs(sceneryObjects) do
                     table.insert(self._tables.AllSceneryObjects, sceneryObject)
                 end
@@ -202,7 +209,7 @@ function Database.New(Logger)
             for i, layer in pairs(env.mission.drawings.layers) do
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
-                        if Spearhead.Util.startswith(string.lower(layer_object.name), "buildable", true) == true then
+                        if Util.startswith(string.lower(layer_object.name), "buildable", true) == true then
                             local airbaseData = self:getAirbaseDataForDrawLayer(layer_object)
                             if airbaseData then
                                 self._logger:debug("found airbase data for " .. layer_object.name)
@@ -222,9 +229,9 @@ function Database.New(Logger)
             for i, layer in pairs(env.mission.drawings.layers) do
                 if string.lower(layer.name) == "author" then
                     for key, layer_object in pairs(layer.objects) do
-                        if Spearhead.Util.startswith(layer_object.name, "drawing_", true) then
+                        if Util.startswith(layer_object.name, "drawing_", true) then
                             local object = layer_object --[[@as DrawingObject]]
-                            local customDrawing = Spearhead.classes.stageClasses.drawings.CustomDrawing.New(object)
+                            local customDrawing = CustomDrawing.New(object)
                             table.insert(self._tables.CustomDrawings, customDrawing)
                         end
                     end
@@ -248,10 +255,10 @@ function Database.New(Logger)
                 for i, layer in pairs(env.mission.drawings.layers) do
                     if string.lower(layer.name) == "author" then
                         for key, layer_object in pairs(layer.objects) do
-                            if Spearhead.Util.startswith(string.lower(layer_object.name), "stagebriefing_", true) == true then
-                                local zone = Spearhead.DcsUtil.getZoneByName(stageZoneName)
+                            if Util.startswith(string.lower(layer_object.name), "stagebriefing_", true) == true then
+                                local zone = DcsUtil.getZoneByName(stageZoneName)
                                 local vec2 = { x = layer_object.mapX, y = layer_object.mapY }
-                                if zone and Spearhead.Util.is2dPointInZone(vec2, zone) == true then
+                                if zone and Util.is2dPointInZone(vec2, zone) == true then
                                     local description = layer_object.text
                                     if description and description ~= "" then
                                         stageData.StageBriefing = description
@@ -265,18 +272,18 @@ function Database.New(Logger)
 
             -- fill blue sams
             for _, blueSamStageName in pairs(self._tables.BlueSams) do
-                if Spearhead.DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
+                if DcsUtil.isZoneInZone(blueSamStageName, stageZoneName) == true then
                     table.insert(stageData.BlueSamZones, blueSamStageName)
                 end
             end
 
             --- fill farp zones
             for _, farpZoneName in pairs(self._tables.AllFarpZones) do
-                if Spearhead.DcsUtil.isZoneInZone(farpZoneName, stageZoneName) then
+                if DcsUtil.isZoneInZone(farpZoneName, stageZoneName) then
                     table.insert(stageData.FarpZones, farpZoneName)
 
                     for hubZoneName, available in pairs(availableSupplyHubs) do
-                        if available == true and Spearhead.DcsUtil.isZoneInZone(hubZoneName, farpZoneName) == true then
+                        if available == true and DcsUtil.isZoneInZone(hubZoneName, farpZoneName) == true then
                             local farpZoneData = self:getOrCreateFarpDataForZone(farpZoneName)
                             if farpZoneData then
                                 table.insert(farpZoneData.supplyHubNames, hubZoneName)
@@ -291,15 +298,15 @@ function Database.New(Logger)
             for _, airbase in pairs(world.getAirbases()) do
                 local point = airbase:getPoint()
 
-                if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, stageZoneName) == true then
+                if DcsUtil.isPositionInZone(point.x, point.z, stageZoneName) == true then
                     if airbase:getDesc().category == 0 then
                         table.insert(stageData.AirbaseNames, airbase:getName())
 
-                        local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneByName(airbase:getName())
+                        local airbaseZone = DcsUtil.getAirbaseZoneByName(airbase:getName())
                         for hubZoneName, available in pairs(availableSupplyHubs) do
-                            local zone = Spearhead.DcsUtil.getZoneByName(hubZoneName)
+                            local zone = DcsUtil.getZoneByName(hubZoneName)
                             if zone and airbaseZone then
-                                if available == true and Spearhead.Util.is2dPointInZone(zone.location, airbaseZone) == true then
+                                if available == true and Util.is2dPointInZone(zone.location, airbaseZone) == true then
                                     local airbaseData = self:getOrCreateAirbaseData(airbase:getName())
                                     if airbaseData then
                                         table.insert(airbaseData.supplyHubNames, hubZoneName)
@@ -314,14 +321,14 @@ function Database.New(Logger)
 
             -- fill supply hubs
             for supplyHubZone, available in pairs(availableSupplyHubs) do
-                if available == true and Spearhead.DcsUtil.isZoneInZone(supplyHubZone, stageZoneName) == true then
+                if available == true and DcsUtil.isZoneInZone(supplyHubZone, stageZoneName) == true then
                     table.insert(stageData.SupplyHubZones, supplyHubZone)
                 end
             end
 
             for _, farpZoneName in pairs(stageData.FarpZones) do
                 for _, supplyHubZone in pairs(self._tables.SupplyHubZones) do
-                    if Spearhead.DcsUtil.isZoneInZone(supplyHubZone, farpZoneName) == true then
+                    if DcsUtil.isZoneInZone(supplyHubZone, farpZoneName) == true then
                         stageData.SupplyHubZonesInFarp[supplyHubZone] = farpZoneName
                     end
                 end
@@ -329,14 +336,14 @@ function Database.New(Logger)
 
             -- fill missions
             for key, missionZone in pairs(self._tables.MissionZones) do
-                if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZoneName) == true then
+                if DcsUtil.isZoneInZone(missionZone, stageZoneName) == true then
                     table.insert(stageData.MissionZones, missionZone)
                 end
             end
 
             -- fill random missions
             for key, missionZone in pairs(self._tables.RandomMissionZones) do
-                if Spearhead.DcsUtil.isZoneInZone(missionZone, stageZoneName) == true then
+                if DcsUtil.isZoneInZone(missionZone, stageZoneName) == true then
                     table.insert(stageData.RandomMissionZones, missionZone)
                 end
             end
@@ -345,13 +352,13 @@ function Database.New(Logger)
 
     for _, missionZone in pairs(self._tables.MissionZones) do
         if self._tables.MissionZoneData[missionZone] == nil or self._tables.MissionZoneData[missionZone].description == nil then
-            Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
+            MissionEditorWarnings.Add("Mission with zonename: " .. missionZone .. " does not have a briefing")
         end
     end
 
     for _, missionZone in pairs(self._tables.RandomMissionZones) do
         if self._tables.MissionZoneData[missionZone] == nil or self._tables.MissionZoneData[missionZone].description == nil then
-            Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZone .. " does not have a briefing")
+            MissionEditorWarnings.Add("Mission with zonename: " .. missionZone .. " does not have a briefing")
         end
     end
 
@@ -368,7 +375,7 @@ function Database.New(Logger)
                     }
                 end
                 local position = airbase:getPoint()
-                if Spearhead.DcsUtil.isPositionInZone(position.x, position.z, farpZoneName) == true then
+                if DcsUtil.isPositionInZone(position.x, position.z, farpZoneName) == true then
                     table.insert(self._tables.FarpZoneData[farpZoneName].padNames, name)
                 end
             end
@@ -387,7 +394,7 @@ function Database.New(Logger)
 
 
     for _, cap_route_zone in pairs(self._tables.AllCapRoutes) do
-        local split = Spearhead.Util.split_string(cap_route_zone, "_")
+        local split = Util.split_string(cap_route_zone, "_")
         local zoneID = split[2]
 
         if zoneID then
@@ -398,7 +405,7 @@ function Database.New(Logger)
                 }
             end
 
-            local zone = Spearhead.DcsUtil.getZoneByName(cap_route_zone)
+            local zone = DcsUtil.getZoneByName(cap_route_zone)
             if zone then
                 table.insert(tables.capZonesByCapZoneID[zoneID].zones, zone)
             end
@@ -406,7 +413,7 @@ function Database.New(Logger)
     end
 
     for _, interceptZone in pairs(self._tables.AllInterceptZones) do
-        local split = Spearhead.Util.split_string(interceptZone, "_")
+        local split = Util.split_string(interceptZone, "_")
         local zoneID = split[2]
 
         if zoneID then
@@ -414,7 +421,7 @@ function Database.New(Logger)
                 tables.interceptZonesByZoneID[zoneID] = {}
             end
 
-            local zone = Spearhead.DcsUtil.getZoneByName(interceptZone)
+            local zone = DcsUtil.getZoneByName(interceptZone)
             if zone then
                 table.insert(tables.interceptZonesByZoneID[zoneID], zone)
             end
@@ -443,12 +450,12 @@ function Database.New(Logger)
     if missions == 0 then missions = 1 end
 
     self._logger:info("initiated the database with amount of zones: ")
-    self._logger:info("Stages:            " .. Spearhead.Util.tableLength(self._tables.StageZones))
-    self._logger:info("Total Missions:    " .. Spearhead.Util.tableLength(self._tables.MissionZoneData))
+    self._logger:info("Stages:            " .. Util.tableLength(self._tables.StageZones))
+    self._logger:info("Total Missions:    " .. Util.tableLength(self._tables.MissionZoneData))
     self._logger:info("Average units per mission: " .. totalUnits / missions)
-    self._logger:info("Random Missions:   " .. Spearhead.Util.tableLength(self._tables.RandomMissionZones))
-    self._logger:info("Farps:             " .. Spearhead.Util.tableLength(self._tables.AllFarpZones))
-    self._logger:info("Airbases:          " .. Spearhead.Util.tableLength(self._tables.AirbaseDataPerAirfield))
+    self._logger:info("Random Missions:   " .. Util.tableLength(self._tables.RandomMissionZones))
+    self._logger:info("Farps:             " .. Util.tableLength(self._tables.AllFarpZones))
+    self._logger:info("Airbases:          " .. Util.tableLength(self._tables.AirbaseDataPerAirfield))
 
 
     return self
@@ -470,7 +477,7 @@ end
 local getAvailableCAPGroups = function()
     local result = {}
     for name, value in pairs(is_group_taken) do
-        if value == false and Spearhead.Util.startswith(name, "CAP") then
+        if value == false and Util.startswith(name, "CAP") then
             table.insert(result, name)
         end
     end
@@ -480,7 +487,7 @@ end
 ---@private
 function Database:initAvailableUnits()
     do
-        local all_groups = Spearhead.classes.helpers.MizGroupsManager.getAllGroupNames()
+        local all_groups = MizGroupsManager.getAllGroupNames()
         for _, value in pairs(all_groups) do
             is_group_taken[value] = false
         end
@@ -492,9 +499,9 @@ end
 ---@return AirbaseData?
 function Database:getAirbaseDataForDrawLayer(layer_object)
     for _, airbase in pairs(world.getAirbases()) do
-        local zone = Spearhead.DcsUtil.getAirbaseZoneByName(airbase:getName())
+        local zone = DcsUtil.getAirbaseZoneByName(airbase:getName())
 
-        if zone and Spearhead.Util.is2dPointInZone({ x = layer_object.mapX, y = layer_object.mapY }, zone) == true then
+        if zone and Util.is2dPointInZone({ x = layer_object.mapX, y = layer_object.mapY }, zone) == true then
             return self:getOrCreateAirbaseData(airbase:getName())
         end
     end
@@ -555,7 +562,7 @@ function Database:loadCapUnits()
         local point = airbase:getPoint()
 
         ---@type SpearheadTriggerZone?
-        local zone = Spearhead.DcsUtil.getAirbaseZoneByName(airbase:getName())
+        local zone = DcsUtil.getAirbaseZoneByName(airbase:getName())
 
         if zone == nil then
             zone = {
@@ -569,15 +576,15 @@ function Database:loadCapUnits()
 
 
         local baseData = self:getOrCreateAirbaseData(airbase:getName())
-        local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, zone)
+        local groups = DcsUtil.areGroupsInCustomZone(all_groups, zone)
         for _, groupName in pairs(groups) do
             is_group_taken[groupName] = true
 
-            if Spearhead.Util.startswith(groupName, "CAP_A", true) or Spearhead.Util.startswith(groupName, "CAP_B", true) then
+            if Util.startswith(groupName, "CAP_A", true) or Util.startswith(groupName, "CAP_B", true) then
                 table.insert(baseData.CapGroups, groupName)
-            elseif Spearhead.Util.startswith(groupName, "CAP_I", true) then
+            elseif Util.startswith(groupName, "CAP_I", true) then
                 table.insert(baseData.InterceptGroups, groupName)
-            elseif Spearhead.Util.startswith(groupName, "CAP_S", true) then
+            elseif Util.startswith(groupName, "CAP_S", true) then
                 table.insert(baseData.SweepGroups, groupName)
             end
         end
@@ -588,19 +595,19 @@ end
 
 ---@private
 function Database:loadBlueSamUnits()
-    local all_groups = Spearhead.classes.helpers.MizGroupsManager.getAllGroupNames()
+    local all_groups = MizGroupsManager.getAllGroupNames()
     for _, blueSamZone in pairs(self._tables.BlueSams) do
         local samData = self:getOrCreateBlueSamDataForZone(blueSamZone)
-        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, blueSamZone)
+        local groups = DcsUtil.getGroupsInZone(all_groups, blueSamZone)
         for _, groupName in pairs(groups) do
             is_group_taken[groupName] = true
             table.insert(samData.groups, groupName)
         end
 
-        local triggerZone = Spearhead.DcsUtil.getZoneByName(blueSamZone)
+        local triggerZone = DcsUtil.getZoneByName(blueSamZone)
         if triggerZone then
             for _, kvPair in pairs(triggerZone.properties) do
-                if kvPair.key and Spearhead.Util.startswith(kvPair.key, "buildable") then
+                if kvPair.key and Util.startswith(kvPair.key, "buildable") then
                     local number = tonumber(kvPair.value)
                     if number and number > 0 then
                         samData.buildingKilos = number
@@ -631,9 +638,9 @@ function Database:LoadZoneData(missionZoneName)
         dependsOn = {}
     }
 
-    local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, missionZoneName)
+    local groups = DcsUtil.getGroupsInZone(all_groups, missionZoneName)
     for _, groupName in pairs(groups) do
-        if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
+        if MizGroupsManager.IsGroupStatic(groupName) == true then
             local object = StaticObject.getByName(groupName)
             
             if object and object:getCoalition() == coalition.side.RED then
@@ -656,26 +663,26 @@ function Database:LoadZoneData(missionZoneName)
     for _, sceneryObject in pairs(self._tables.AllSceneryObjects) do
         local point = sceneryObject:GetPoint()
         if point then
-            if Spearhead.DcsUtil.isPositionInZone(point.x, point.z, missionZoneName) == true then
+            if DcsUtil.isPositionInZone(point.x, point.z, missionZoneName) == true then
                 table.insert(self._tables.MissionZoneData[missionZoneName].SceneryTargets, sceneryObject)
             end
         end
     end
 
     -- Check for properties and adds the settings to the mission data
-    local triggerZone = Spearhead.DcsUtil.getZoneByName(missionZoneName)
+    local triggerZone = DcsUtil.getZoneByName(missionZoneName)
     if triggerZone and triggerZone.properties then
         for _, kvPair in pairs(triggerZone.properties) do
             local key = kvPair.key
-            if Spearhead.Util.startswith(key, "dependson", true) == true then
+            if Util.startswith(key, "dependson", true) == true then
                 table.insert(self._tables.MissionZoneData[missionZoneName].dependsOn, kvPair.value)
-            elseif Spearhead.Util.startswith(key, "completeat") == true then
+            elseif Util.startswith(key, "completeat") == true then
                 local value = tonumber(kvPair.value)
                 if value then
                     if value > 1 and value <= 100 then
                         value = value / 100
                     elseif value > 100 then
-                        Spearhead.AddMissionEditorWarning("Mission with zonename: " .. missionZoneName .. " has a complete at value of " .. value .. " which is higher than 100, this will not work as intended")
+                        MissionEditorWarnings.Add("Mission with zonename: " .. missionZoneName .. " has a complete at value of " .. value .. " which is higher than 100, this will not work as intended")
                     end
                     self._tables.MissionZoneData[missionZoneName].completeAt = value
                 end
@@ -690,8 +697,8 @@ function Database:LoadZoneData(missionZoneName)
                 for key, layer_object in pairs(layer.objects) do
 
                     local vec2 = { x = layer_object.mapX, y = layer_object.mapY }
-                    if triggerZone and Spearhead.Util.is2dPointInZone(vec2, triggerZone) then
-                        if layer_object.name and Spearhead.Util.startswith(layer_object.name, "briefing_", true) then
+                    if triggerZone and Util.is2dPointInZone(vec2, triggerZone) then
+                        if layer_object.name and Util.startswith(layer_object.name, "briefing_", true) then
                             local description = layer_object.text
                             if description and description ~= "" then
                                 self._tables.MissionZoneData[missionZoneName].description = description
@@ -725,16 +732,16 @@ function Database:loadFarpData()
     for _, farpZone in pairs(self._tables.AllFarpZones) do
         local farpzoneData = self:getOrCreateFarpDataForZone(farpZone)
 
-        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, farpZone)
+        local groups = DcsUtil.getGroupsInZone(all_groups, farpZone)
         for _, groupName in pairs(groups) do
             is_group_taken[groupName] = true
             table.insert(farpzoneData.groups, groupName)
         end
 
-        local triggerZone = Spearhead.DcsUtil.getZoneByName(farpZone)
+        local triggerZone = DcsUtil.getZoneByName(farpZone)
         if triggerZone then
             for _, kvPair in pairs(triggerZone.properties) do
-                if kvPair.key and Spearhead.Util.startswith(kvPair.key, "buildable", true) == true then
+                if kvPair.key and Util.startswith(kvPair.key, "buildable", true) == true then
                     local number = tonumber(kvPair.value)
                     if number and number > 0 then
                         farpzoneData.buildingKilos = number
@@ -754,7 +761,7 @@ function Database:loadAirbaseGroups()
             if base then
                 local basedata = self:getOrCreateAirbaseData(baseName)
                 local point = base:getPoint()
-                local airbaseZone = Spearhead.DcsUtil.getAirbaseZoneByName(baseName)
+                local airbaseZone = DcsUtil.getAirbaseZoneByName(baseName)
 
                 if airbaseZone == nil then
                     airbaseZone = {
@@ -768,9 +775,9 @@ function Database:loadAirbaseGroups()
 
 
                 if airbaseZone and base:getDesc().category == Airbase.Category.AIRDROME then
-                    local groups = Spearhead.DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
+                    local groups = DcsUtil.areGroupsInCustomZone(all_groups, airbaseZone)
                     for _, groupName in pairs(groups) do
-                        if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
+                        if MizGroupsManager.IsGroupStatic(groupName) == true then
                             local object = StaticObject.getByName(groupName)
                             if object then
                                 if object:getCoalition() == coalition.side.RED then
@@ -806,9 +813,9 @@ function Database:loadMiscGroupsInStages()
     for _, stageZone in pairs(self._tables.StageZones) do
         stageZone.MiscGroups = {}
 
-        local groups = Spearhead.DcsUtil.getGroupsInZone(all_groups, stageZone.StageZoneName)
+        local groups = DcsUtil.getGroupsInZone(all_groups, stageZone.StageZoneName)
         for _, groupName in pairs(groups) do
-            if Spearhead.classes.helpers.MizGroupsManager.IsGroupStatic(groupName) == true then
+            if MizGroupsManager.IsGroupStatic(groupName) == true then
                 local object = StaticObject.getByName(groupName)
                 if object and object:getCoalition() ~= coalition.side.NEUTRAL then
                     is_group_taken[groupName] = true
@@ -846,14 +853,14 @@ function Database:GetCapZoneForZoneID(zoneID)
 
     if capZonesForID and capZonesForID.zones then
 
-        local count = Spearhead.Util.tableLength(capZonesForID.zones)
+        local count = Util.tableLength(capZonesForID.zones)
         if count == 0 then
             self._logger:warn("Tried to get cap zone for zoneID: " .. zoneID .. " but cap zones were empty for this ID")
             return nil
         end
 
         capZonesForID.current = capZonesForID.current + 1
-        if Spearhead.Util.tableLength(capZonesForID.zones) < capZonesForID.current then
+        if Util.tableLength(capZonesForID.zones) < capZonesForID.current then
             capZonesForID.current = 1
         end
         return capZonesForID.zones[capZonesForID.current]

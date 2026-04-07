@@ -1,4 +1,5 @@
 local Util = require("classes.util.Util")
+local SpearheadSceneryObject = require("classes.stageClasses.Groups.SpearheadSceneryObject")
 
 ---DCS UTIL Takes inspiration from MIST but only takes the things it needs, changes for DCS updates and different vision for advanced mission scripting stuff.
 ---It also adds functions that make the other TDCS scripts easier without taking too much "control" away like MOOSE can sometimes.
@@ -552,7 +553,7 @@ do     -- INIT DCS_UTIL
             if object and object:isExist() and
                 object:hasAttribute("Buildings")
             then
-                local obj = Spearhead.classes.stageClasses.Groups.SpearheadSceneryObject.New(object["id_"])
+                local obj = SpearheadSceneryObject.New(object["id_"])
                 table.insert(sceneryObjects, obj)
             end
         end

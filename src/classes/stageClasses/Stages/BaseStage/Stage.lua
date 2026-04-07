@@ -1,3 +1,16 @@
+local SpearheadGroup = require("classes.stageClasses.Groups.SpearheadGroup")
+local MissionCommandsHelper = require("classes.stageClasses.helpers.MissionCommandsHelper")
+local DcsUtil = require("classes.util.DcsUtil")
+local FarpZone = require("classes.stageClasses.SpecialZones.FarpZone")
+local SupplyHub = require("classes.stageClasses.SpecialZones.SupplyHub")
+local Util = require("classes.util.Util")
+local ZoneMission = require("classes.stageClasses.missions.ZoneMission")
+local MissionEditorWarnings = require("classes.util.MissionEditorWarnings")
+local Persistence = require("classes.persistence.Persistence")
+local StageBase = require("classes.stageClasses.SpecialZones.StageBase")
+local BlueSam = require("classes.stageClasses.SpecialZones.BlueSam")
+local Events = require("classes.spearhead_events")
+local GlobalCapManager = require("classes.capClasses.GlobalCapManager")
 
 ---@alias StageColor
 ---| "RED"
@@ -71,8 +84,6 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
 
     logger:debug("[BaseStage] Initiating stage with name: " .. initData.stageZoneName)
 
-    local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup
-
     self.zoneName = initData.stageZoneName
     self.stageNumber = initData.stageNumber
     self._isActive = false
@@ -101,11 +112,11 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
     self._activeStage = -99
     self._preActivated = false
     self._stageConfig = stageConfig or {}
-    self._missionCommandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(logger.LogLevel)
+    self._missionCommandsHelper = MissionCommandsHelper.getOrCreate(logger.LogLevel)
 
-    local zone = Spearhead.DcsUtil.getZoneByName(self.zoneName)
+    local zone = DcsUtil.getZoneByName(self.zoneName)
     if zone then
-        self._stageDrawingId = Spearhead.DcsUtil.DrawZone(zone, Stage.StageColors.INVISIBLE, Stage.StageColors.INVISIBLE, 4)
+        self._stageDrawingId = DcsUtil.DrawZone(zone, Stage.StageColors.INVISIBLE, Stage.StageColors.INVISIBLE, 4)
     end
 
     self._spawnedGroups = {}
@@ -114,13 +125,13 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
 
     local farpNames = database:getFarpNamesInStage(self.zoneName)
     for _, farpName in pairs(farpNames) do
-        local farp = Spearhead.classes.stageClasses.SpecialZones.FarpZone.New(database, logger, farpName, spawnManager)
+        local farp = FarpZone.New(database, logger, farpName, spawnManager)
         table.insert(self._db.farps, farp)
     end
 
     local supplyHubNames = database:getSupplyHubsInStage(self.zoneName)
     for _, supplyHubName in pairs(supplyHubNames) do
-        local supplyHub = Spearhead.classes.stageClasses.SpecialZones.SupplyHub.new(database, logger, supplyHubName)
+        local supplyHub = SupplyHub.new(database, logger, supplyHubName)
         table.insert(self._db.supplyHubs, supplyHub)
     end
 
@@ -144,17 +155,17 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
 
     do -- load tables
         local missionZones = database:getMissionsForStage(self.zoneName)
-        self._logger:debug("Found " .. Spearhead.Util.tableLength(missionZones) .. " mission zones for stage: " .. self.zoneName)
+        self._logger:debug("Found " .. Util.tableLength(missionZones) .. " mission zones for stage: " .. self.zoneName)
         for _, missionZone in pairs(missionZones) do
             
-            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZone, self._missionPriority, database, logger, self, spawnManager)
+            local mission = ZoneMission.new(missionZone, self._missionPriority, database, logger, self, spawnManager)
             if mission then
                 self._db.missionsByCode[mission.code] = mission
 
                 if mission.name and self._db.missionsByName[mission.name] == nil then
                     self._db.missionsByName[mission.name] = mission
                 else
-                    Spearhead.AddMissionEditorWarning("DUPLICATE MISSION NAME ALERT: " .. mission.name .. " in zone: " .. self.zoneName)
+                    MissionEditorWarnings.Add("DUPLICATE MISSION NAME ALERT: " .. mission.name .. " in zone: " .. self.zoneName)
                 end
 
                 if mission.missionType == "SAM" then
@@ -170,7 +181,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         ---@type table<string, Array<Mission>>
         local randomMissionByName = {}
         for _, missionZoneName in pairs(randomMissionNames) do
-            local mission = Spearhead.classes.stageClasses.missions.ZoneMission.new(missionZoneName, self._missionPriority, database, logger, self, spawnManager)
+            local mission = ZoneMission.new(missionZoneName, self._missionPriority, database, logger, self, spawnManager)
             if mission then
                 if randomMissionByName[mission.name] == nil then
                     randomMissionByName[mission.name] = {}
@@ -181,18 +192,18 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
 
         for missionName, missions in pairs(randomMissionByName) do
 
-            local missionZonePicked = Spearhead.classes.persistence.Persistence.GetPickedRandomMission(missionName)
+            local missionZonePicked = Persistence.GetPickedRandomMission(missionName)
             if missionZonePicked == nil then
-                local mission = Spearhead.Util.randomFromList(missions) --[[@as Mission]]
+                local mission = Util.randomFromList(missions) --[[@as Mission]]
                 if mission then
-                    Spearhead.classes.persistence.Persistence.RegisterPickedRandomMission(mission.name, mission.zoneName)
+                    Persistence.RegisterPickedRandomMission(mission.name, mission.zoneName)
 
                     self._db.missionsByCode[mission.code] = mission
 
                     if mission.name and self._db.missionsByName[mission.name] == nil then
                         self._db.missionsByName[mission.name] = mission
                     else
-                        Spearhead.AddMissionEditorWarning("DUPLICATE MISSION NAME ALERT: " .. mission.name .. " in zone: " .. self.zoneName)
+                        MissionEditorWarnings.Add("DUPLICATE MISSION NAME ALERT: " .. mission.name .. " in zone: " .. self.zoneName)
                     end
 
                     if mission.missionType == "SAM" then
@@ -223,13 +234,13 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         local airbaseNames = database:getAirbaseNamesInStage(self.zoneName)
         if airbaseNames ~= nil and type(airbaseNames) == "table" then
             for _, airbaseName in pairs(airbaseNames) do
-                local airbase = Spearhead.classes.stageClasses.SpecialZones.StageBase.New(database, logger, airbaseName, spawnManager)
+                local airbase = StageBase.New(database, logger, airbaseName, spawnManager)
                 table.insert(self._db.airbases, airbase)
             end
         end
 
         for _, samZoneName in pairs(database:getBlueSamsInStage(self.zoneName)) do
-            local blueSam =  Spearhead.classes.stageClasses.SpecialZones.BlueSam.New(database, logger, samZoneName, spawnManager)
+            local blueSam = BlueSam.New(database, logger, samZoneName, spawnManager)
             table.insert(self._db.blueSams, blueSam)
         end
 
@@ -242,7 +253,7 @@ function Stage:superNew(database, stageConfig, logger, initData, missionPriority
         end
     end
 
-    Spearhead.Events.AddStageNumberChangedListener(self)
+    Events.AddStageNumberChangedListener(self)
 
     return self
 end
@@ -304,14 +315,14 @@ function Stage:CheckAndUpdateSelf()
     end
 
     local max = dbTables.maxMissions
-    local availableMissionsCount = Spearhead.Util.tableLength(getAvailableMissions())
+    local availableMissionsCount = Util.tableLength(getAvailableMissions())
     local activeCount = getActiveMissionsCount()
     if activeCount < max and availableMissionsCount > 0  then
         for i = activeCount+1, max do
             if availableMissionsCount == 0 then
                 i = max+1 --exits this loop
             else
-                local mission = Spearhead.Util.randomFromList(getAvailableMissions()) --[[@as Mission]]
+                local mission = Util.randomFromList(getAvailableMissions()) --[[@as Mission]]
                 if mission then
                     mission:SpawnActive()
                     activeCount = activeCount + 1;
@@ -391,8 +402,8 @@ function Stage:MarkStage(stageColor)
     end
 
     if self._stageDrawingId and self._stageConfig.isDrawStagesEnabled == true then
-        Spearhead.DcsUtil.SetLineColor(self._stageDrawingId, lineColor)
-        Spearhead.DcsUtil.SetFillColor(self._stageDrawingId, fillColor)
+        DcsUtil.SetLineColor(self._stageDrawingId, lineColor)
+        DcsUtil.SetFillColor(self._stageDrawingId, fillColor)
     end
 end
 
@@ -405,7 +416,7 @@ function Stage:ActivateStage()
 
     self:PreActivate(false)
     
-    self._logger:debug("Activating Misc groups for zone. Count: " .. Spearhead.Util.tableLength(self._db.miscGroups))
+    self._logger:debug("Activating Misc groups for zone. Count: " .. Util.tableLength(self._db.miscGroups))
     for _, miscGroup in pairs(self._db.miscGroups) do
         miscGroup:Spawn()
     end
@@ -452,7 +463,7 @@ function Stage:OnStageNumberChanged(number)
     if self.stageNumber - self._activeStage  == self._stageConfig.AmountPreactivateStage then
         self._logger:debug("Pre-activating stage: " .. self.zoneName .. " with number: " .. number)
         self:PreActivate(true)
-    elseif Spearhead.capInfo.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
+    elseif GlobalCapManager.IsCapActiveWhenZoneIsActive(self.zoneName, number) == true then
         self:PreActivate(false)
     end
 
@@ -547,7 +558,7 @@ end
 
 function Stage:ActivateBlueStage()
 
-    self._logger:debug("Setting stage '" .. Spearhead.Util.toString(self.zoneName) .. "' to blue")
+    self._logger:debug("Setting stage '" .. Util.toString(self.zoneName) .. "' to blue")
     
     for _, mission in pairs(self._db.missions) do
         mission:SpawnPersistedState()

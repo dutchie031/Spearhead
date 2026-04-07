@@ -1,3 +1,8 @@
+local Util = require("classes.util.Util")
+local DcsUtil = require("classes.util.DcsUtil")
+local SupplyUnitsTracker = require("classes.stageClasses.helpers.SupplyUnitsTracker")
+local MissionCommandsHelper = require("classes.stageClasses.helpers.MissionCommandsHelper")
+
 ---@class SupplyHub
 ---@field private _database Database
 ---@field private _logger Logger
@@ -26,18 +31,18 @@ function SupplyHub.new(database, logger, zoneName)
     self._logger = logger
     self._zoneName = zoneName
 
-    local split = Spearhead.Util.split_string(zoneName, "_")
+    local split = Util.split_string(zoneName, "_")
     if string.lower(split[2]) == "a" then
         self._activeAtStart = true
     else
         self._activeAtStart = false
     end
 
-    self._zone = Spearhead.DcsUtil.getZoneByName(zoneName)
+    self._zone = DcsUtil.getZoneByName(zoneName)
     
-    self._supplyUnitsTracker = Spearhead.classes.stageClasses.helpers.SupplyUnitsTracker.getOrCreate(logger.LogLevel)
+    self._supplyUnitsTracker = SupplyUnitsTracker.getOrCreate(logger.LogLevel)
     self._inZone = {}
-    self._missionCommandsHelper = Spearhead.classes.stageClasses.helpers.MissionCommandsHelper.getOrCreate(logger.LogLevel)
+    self._missionCommandsHelper = MissionCommandsHelper.getOrCreate(logger.LogLevel)
 
     self._logger:debug("Creating Supply Hub zone: " .. self._zoneName)
 
@@ -66,14 +71,14 @@ function SupplyHub:Activate()
 
     self._logger:debug("Activating Supply Hub zone: " .. self._zoneName)
 
-    local zone = Spearhead.DcsUtil.getZoneByName(self._zoneName)
+    local zone = DcsUtil.getZoneByName(self._zoneName)
     if zone and self._drawID == nil then
         ---@type DrawColor
         local fillColor = { r=0, g=1, b=0, a=0.2 }
         ---@type DrawColor
         local lineColor = { r=0, g=1, b=0, a=1}
         local lineStyle = 1
-        self._drawID = Spearhead.DcsUtil.DrawZone(zone, lineColor, fillColor, lineStyle)
+        self._drawID = DcsUtil.DrawZone(zone, lineColor, fillColor, lineStyle)
     end
 
     self._supplyUnitsTracker:RegisterHub(self)

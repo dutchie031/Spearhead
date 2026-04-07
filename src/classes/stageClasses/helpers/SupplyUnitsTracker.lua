@@ -5,8 +5,6 @@ local SpearheadEvents = require("classes.spearhead_events")
 local SupplyConfigHelper = require("classes.stageClasses.helpers.SupplyConfigHelper")
 local MaxLoadConfig = require("classes.stageClasses.helpers.MaxLoadConfig")
 
-env.info("Spearhead SupplyUnitsTracker loaded")
-
 ---@class SupplyUnitEventListener
 ---@field supplyUnitSpawned fun(self:SupplyUnitEventListener, unit:Unit) | nil
 ---@field enteredSupplyHub fun(self:SupplyUnitEventListener, unit:Unit, hub:SupplyHub) | nil

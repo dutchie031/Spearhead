@@ -1,3 +1,7 @@
+local BuildableZone = require("classes.stageClasses.SpecialZones.abstract.BuildableZone")
+local SpearheadGroup = require("classes.stageClasses.Groups.SpearheadGroup")
+local Util = require("classes.util.Util")
+local DcsUtil = require("classes.util.DcsUtil")
 
 ---@class BlueSam : BuildableZone
 ---@field Activate fun(self: BlueSam)
@@ -20,7 +24,7 @@ BlueSam.__index = BlueSam
 ---@return BlueSam?
 function BlueSam.New(database, logger, zoneName, spawnManager)
 
-    setmetatable(BlueSam, Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone)
+    setmetatable(BlueSam, BuildableZone)
     local self = setmetatable({}, BlueSam)
 
     self._database = database
@@ -53,39 +57,39 @@ function BlueSam.New(database, logger, zoneName, spawnManager)
     end
 
     for _, groupName in pairs(blueSamData.groups) do
-        local SpearheadGroup = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName, spawnManager, true)
-        if SpearheadGroup then
+        local spearheadGroup = SpearheadGroup.New(groupName, spawnManager, true)
+        if spearheadGroup then
             
-            if SpearheadGroup:GetCoalition() == 2 or SpearheadGroup:GetCoalition() == 0 then
-                table.insert(self._blueGroups, SpearheadGroup)
+            if spearheadGroup:GetCoalition() == 2 or spearheadGroup:GetCoalition() == 0 then
+                table.insert(self._blueGroups, spearheadGroup)
             end
 
-            for _, unit in pairs(SpearheadGroup:GetObjects()) do
-                if SpearheadGroup:GetCoalition() == 1 then
+            for _, unit in pairs(spearheadGroup:GetObjects()) do
+                if spearheadGroup:GetCoalition() == 1 then
                     table.insert(blueUnitsPos, unit:getPoint())
-                elseif SpearheadGroup:GetCoalition() == 2 then
+                elseif spearheadGroup:GetCoalition() == 2 then
                     table.insert(redUnitsPos, unit:getPoint())
                 end
             end
 
         end
-        SpearheadGroup:Destroy()
+        spearheadGroup:Destroy()
     end
 
     --Cleanup units
     local cleanup_distance = 5
     for blueUnitName, blueUnitPos in pairs(blueUnitsPos) do
         for redUnitName, redUnitPos in pairs(redUnitsPos) do
-            local distance = Spearhead.Util.VectorDistance3d(blueUnitPos, redUnitPos)
+            local distance = Util.VectorDistance3d(blueUnitPos, redUnitPos)
             if distance <= cleanup_distance then
                 self._cleanupUnits[redUnitName] = true
             end
         end
     end
 
-    local zone = Spearhead.DcsUtil.getZoneByName(zoneName)
+    local zone = DcsUtil.getZoneByName(zoneName)
     if zone then
-        Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone.New(self, zone, self._buildableCrateKilos or 0, "SAM_CRATE", self._blueGroups, logger, database)
+        BuildableZone.New(self, zone, self._buildableCrateKilos or 0, "SAM_CRATE", self._blueGroups, logger, database)
     end
 
     return self
@@ -104,9 +108,9 @@ function BlueSam:GetNoLandingZone()
         end
     end
 
-    local vecs = Spearhead.Util.getConvexHull(points)
+    local vecs = Util.getConvexHull(points)
 
-    local zone = Spearhead.DcsUtil.getZoneByName(self._zoneName)
+    local zone = DcsUtil.getZoneByName(self._zoneName)
     if zone == nil then
         self._logger:error("Zone not found: " .. self._zoneName)
         return nil
@@ -136,7 +140,7 @@ end
 
 function BlueSam:SpawnGroups()
     for unitName, needsCleanup in pairs(self._cleanupUnits) do
-        Spearhead.DcsUtil.DestroyUnit(unitName)
+        DcsUtil.DestroyUnit(unitName)
     end
 
     for _, group in pairs(self._blueGroups) do

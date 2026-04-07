@@ -1,3 +1,6 @@
+local DcsUtil = require("classes.util.DcsUtil")
+local Util = require("classes.util.Util")
+
 ---@class SpearheadRouteUtil
 local ROUTE_UTIL = {}
 do --setup route util
@@ -23,7 +26,7 @@ do --setup route util
     ---@return table task
     local RtbTask = function(airdromeId, basePoint, speed)
         if basePoint == nil then
-            basePoint = Spearhead.Util.getAirbaseById(airdromeId):getPoint()
+            basePoint = DcsUtil.getAirbaseById(airdromeId):getPoint()
         end
 
         return {
@@ -215,7 +218,7 @@ do --setup route util
     ---@param deviationDistance number
     ---@return table? route
     ROUTE_UTIL.createCapMission = function(groupName, airdromeId, capPoint, racetrackSecondPoint, altitude, speed, durationOnStation, attackHelos, deviationDistance)
-        local baseName = Spearhead.DcsUtil.getAirbaseName(airdromeId)
+        local baseName = DcsUtil.getAirbaseName(airdromeId)
         if baseName == nil then
             return nil
         end
@@ -295,7 +298,7 @@ do --setup route util
             TODO: Test the creation and pubishing of event and the timing of said event
         ]] --
 
-        local base = Spearhead.DcsUtil.getAirbaseById(airdromeId)
+        local base = DcsUtil.getAirbaseById(airdromeId)
         if base == nil then
             return nil, "No airbase found for ID " .. tostring(airdromeId)
         end
@@ -308,7 +311,7 @@ do --setup route util
         end
 
         local units = group:getUnits()
-        while pos == nil and i <= Spearhead.Util.tableLength(units) do
+        while pos == nil and i <= Util.tableLength(units) do
             local unit = units[i]
             if unit and unit:isExist() == true and unit:inAir() == true then
                 pos = unit:getPoint()

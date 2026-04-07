@@ -1,4 +1,8 @@
-
+local BuildableZone = require("classes.stageClasses.SpecialZones.abstract.BuildableZone")
+local Util = require("classes.util.Util")
+local DcsUtil = require("classes.util.DcsUtil")
+local SupplyHub = require("classes.stageClasses.SpecialZones.SupplyHub")
+local SpearheadGroup = require("classes.stageClasses.Groups.SpearheadGroup")
 
 ---@class FarpZone: BuildableZone 
 ---@field private _startingFarp boolean
@@ -18,14 +22,14 @@ FarpZone.__index = FarpZone
 ---@param spawnManager SpawnManager
 ---@return FarpZone
 function FarpZone.New(database, logger, zoneName, spawnManager)
-    setmetatable(FarpZone, Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone)
+    setmetatable(FarpZone, BuildableZone)
     local self = setmetatable({}, FarpZone)
 
     self._database = database
     self._logger = logger
     self._zoneName = zoneName
 
-    local split = Spearhead.Util.split_string(zoneName, "_")
+    local split = Util.split_string(zoneName, "_")
     if string.lower(split[2]) == "a" then
         self._startingFarp = true
     else
@@ -44,7 +48,7 @@ function FarpZone.New(database, logger, zoneName, spawnManager)
         self._padNames = farpData.padNames
         
         for _, supplyHubName in pairs(farpData.supplyHubNames) do
-            local supplyHub = Spearhead.classes.stageClasses.SpecialZones.SupplyHub.new(database, logger, supplyHubName)
+            local supplyHub = SupplyHub.new(database, logger, supplyHubName)
             if supplyHub then
                 table.insert(self._supplyHubs, supplyHub)
             end
@@ -52,15 +56,15 @@ function FarpZone.New(database, logger, zoneName, spawnManager)
 
 
         for _, groupName in pairs(farpData.groups) do 
-            local group = Spearhead.classes.stageClasses.Groups.SpearheadGroup.New(groupName, spawnManager, true)
+            local group = SpearheadGroup.New(groupName, spawnManager, true)
             table.insert(self._groups, group)
             group:Destroy()
         end
 
-        local zone = Spearhead.DcsUtil.getZoneByName(zoneName)
+        local zone = DcsUtil.getZoneByName(zoneName)
         if zone then
             self._logger:debug("Creating Buildable zone: " .. zoneName .. " with " .. (farpData.buildingKilos or "nil") .. " kilos")
-            Spearhead.classes.stageClasses.SpecialZones.abstract.BuildableZone.New(self, zone, farpData.buildingKilos or 0, "FARP_CRATE",  self._groups, logger, database)
+            BuildableZone.New(self, zone, farpData.buildingKilos or 0, "FARP_CRATE",  self._groups, logger, database)
         end
     end
     self:Deactivate()

@@ -1,4 +1,6 @@
 
+local Stage = require("classes.stageClasses.Stages.BaseStage.Stage")
+
 ---@class PrimaryStage : Stage
 local PrimaryStage = {}
 
@@ -13,7 +15,6 @@ PrimaryStage.__index = PrimaryStage
 ---@return PrimaryStage
 function PrimaryStage.New(database, stageConfig, logger, initData, spawnManager)
 
-    local Stage = Spearhead.classes.stageClasses.Stages.BaseStage.Stage
     setmetatable(PrimaryStage, Stage)
 
     local self = setmetatable({}, { __index = PrimaryStage }) --[[@as PrimaryStage]]
