@@ -13,7 +13,7 @@ jobs:
           fetch-depth: 0
 
       - name: Compile Spearhead
-        uses: dutchie031/DcsMissionScriptingTools/github-action@feature/github-action
+        uses: dutchie031/DcsMissionScriptingTools/github-action@actions/v1
         with:
           source-root: ./src
           output-file: ./output/spearhead.lua

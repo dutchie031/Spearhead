@@ -18,6 +18,7 @@
     },
     "livePreview.serverRoot": "/_docs",
     "Lua.workspace.library": [
-        "/Users/ex61wi/Developer/personal/DcsMissionScriptingTools/dutchies-dcs-scripting-tools/lua-addons"
+        "/Users/ex61wi/Developer/personal/DcsMissionScriptingTools/dutchies-dcs-scripting-tools/lua-addons",
+        "c:\\Users\\Tim\\.vscode\\extensions\\dutchie031.dutchies-dcs-scripting-tools-0.0.3\\lua-addons"
     ],
 }
