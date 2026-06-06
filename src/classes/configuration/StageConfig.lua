@@ -1,0 +1,35 @@
+
+--- @class StageConfig
+--- @field isEnabled boolean
+--- @field isDrawStagesEnabled boolean
+--- @field isDrawPreActivatedEnabled boolean
+--- @field isAutoStages boolean
+--- @field startingStage integer
+--- @field maxMissionsPerStage integer
+--- @field AmountPreactivateStage integer
+local StageConfig = {};
+
+---comment
+---@return StageConfig
+function StageConfig:new()
+
+    if SpearheadConfig == nil then SpearheadConfig = {} end
+    if SpearheadConfig.StageConfig == nil then SpearheadConfig.StageConfig = {} end
+
+    ---@type StageConfig
+    local o = {
+        isEnabled = SpearheadConfig.StageConfig.enabled or true,
+        isDrawStagesEnabled = SpearheadConfig.StageConfig.drawStages or true,
+        isAutoStages = SpearheadConfig.StageConfig.autoStages or true,
+        startingStage = SpearheadConfig.StageConfig.startingStage or 1,
+        maxMissionsPerStage = SpearheadConfig.StageConfig.maxMissionStage or 10,
+        isDrawPreActivatedEnabled = SpearheadConfig.StageConfig.drawPreActivated or true,
+        AmountPreactivateStage = SpearheadConfig.StageConfig.preactivateStage or 1,
+    }
+    
+    setmetatable(o, { __index = self })
+
+    return o;
+end
+
+return StageConfig

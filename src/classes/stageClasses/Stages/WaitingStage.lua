@@ -1,0 +1,73 @@
+local Stage = require("classes.stageClasses.Stages.BaseStage.Stage")
+
+---@class WaitingStage : Stage
+---@field private _waitTimeSeconds integer
+---@field private _startTime number
+local WaitingStage = {}
+
+WaitingStage.__index = WaitingStage
+
+---@class WaitingStageInitData : StageInitData
+---@field waitingSeconds integer
+local WaitingStageInitData = {}
+
+---comment
+---@param database Database
+---@param stageConfig StageConfig
+---@param logger any
+---@param initData WaitingStageInitData
+---@param spawnManager SpawnManager
+---@return WaitingStage
+function WaitingStage.New(database, stageConfig, logger, initData, spawnManager)
+    setmetatable(WaitingStage, Stage)
+
+    local self = setmetatable({}, { __index = WaitingStage }) --[[@as WaitingStage]]
+    self:superNew(database, stageConfig, logger, initData, "none", spawnManager)
+
+    self._waitTimeSeconds = 5
+    if initData.waitingSeconds and initData.waitingSeconds > 5 then self._waitTimeSeconds  = initData.waitingSeconds end
+    self._startTime = nil
+
+    self.CheckContinuousAsync = function (selfA, time)
+       
+        if selfA:IsComplete() == true then
+            selfA:NotifyComplete()
+            return nil
+        end
+
+        return time + 2
+    end
+
+    return self
+end
+
+
+function WaitingStage:ActivateStage()
+
+    self._logger:info("Starting Waiting Stage '" .. self.zoneName .. "' which will complete in about " .. self._waitTimeSeconds .. " seconds")
+
+    self._isActive = true
+    self._startTime = timer.getTime()
+    timer.scheduleFunction(self.CheckContinuousAsync, self, self._startTime + self._waitTimeSeconds)
+end
+
+function WaitingStage:IsComplete() 
+    if timer.getTime() > (self._startTime + self._waitTimeSeconds) then return true end
+    return false
+end
+
+function WaitingStage:OnStageNumberChanged()
+    self._logger:debug("Waiting Stage OnStageNumberChanged override")
+end
+
+function WaitingStage:MarkStage(stageColor)
+    self._logger:debug("Waiting Stage MarkStage override")
+end
+
+function WaitingStage:GetExpectedTime()
+    return self._startTime + self._waitTimeSeconds    
+end
+
+return WaitingStage
+
+

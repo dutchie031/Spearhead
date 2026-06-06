@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spearhead Tutorials</title>
+    
+    <link rel="stylesheet" href="/style/prism.css">
+    <link rel="stylesheet" href="/style/style.css">
+
+    <script src="/js/prism.js"></script>
+    <script src="/js/site.js"></script>
+    <style>
+    .side-nav a.active {
+        font-weight: bold;
+        color: #4fc3f7;
+    }    
+    </style>
+    <script type="module" src="../js/components.js"></script>
+</head>
+
+<body>
+    <header>
+        <app-header></app-header>
+    </header>    <main>
+        <div class="reference-container">
+            <app-sidebar></app-sidebar>
+
+            <div class="content-wrapper">
+                <h1>Include the Spearhead Script</h1>
+
+                <h2 id="include-the-script">Include the Script</h2>
+                <p>
+                    Download the latest version of Spearhead. You can choose which version you feel comfortable with. <br />
+                    Versions that end in -rc are not stable. Versions that do not have the "release candidate" (rc) tag are. <br>
+                    Stable does not mean bug-free, so if you find any issues let us know!
+                    <br />
+                    Here is the latest stable version:
+                    <download-spearhead></download-spearhead>
+                </p>
+
+                <p>
+                    Then run the script in the mission. <br />
+                    Please do exactly as it's done below. <br />
+                </p>
+                <div style="width: 100%;">
+                    <img style="width: 100%;" src="../img/script_install.png"></img>
+                </div>
+
+                <note-box type="info" title="Note">
+                    Spearhead does not require any dependencies (eg. MIST or MOOSE). Compatibility with other frameworks is
+                    not tested at this time, so cannot be guaranteed, but there should be no conflicts if they are not
+                    controlling the same units.
+                </note-box>
+
+                <div class="next-steps">
+                    <a href="/pages/first-start.html">Next: Getting started with Spearhead &rarr;</a>
+                </div>
+
+            </div>
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 Spearhead Project</p>
+    </footer>
+</body>
+
+</html>

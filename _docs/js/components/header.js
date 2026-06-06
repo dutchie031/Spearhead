@@ -6,7 +6,7 @@ class Header extends HTMLElement {
     }
 
     connectedCallback() {
-        this.innerHTML = `
+        this.innerHTML = /*html*/`
             <div class="header-box">
                 <a class="logo" href="/index.html">Spearhead</a>
                 <span class="subTitle">mission making, made easy</span>
@@ -17,9 +17,11 @@ class Header extends HTMLElement {
                         <div class="dropdown">
                             <a href="/pages/tutorials.html">Tutorials</a>
                             <div class="dropdown-content">
-                                <a href="/pages/tutorials.html">Quick Starts</a>
-                                 <a href="/pages/advanced/CAP.html">Advanced: CAP</a>
-                                 <a href="/pages/advanced/missions.html">Advanced: Missions</a>
+                                <a href="/pages/include-script.html">Include the Script</a>
+                                <a href="/pages/first-start.html">First Start</a>
+                                <a href="/pages/advanced/CAP.html">Advanced: CAP</a>
+                                <a href="/pages/advanced/missions.html">Advanced: Missions</a>
+                                <a href="/pages/advanced/map-markings.html">Map Markings</a>
                             </div>
                         </div>
                         

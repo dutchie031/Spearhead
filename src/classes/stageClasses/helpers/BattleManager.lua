@@ -1,0 +1,286 @@
+local Logger = require("classes.util.Logger")
+local Util = require("classes.util.Util")
+local DcsUtil = require("classes.util.DcsUtil")
+
+---@class BattleManager
+---@field private _name string
+---@field private _logger Logger
+---@field private _redGroups Array<SpearheadGroup>
+---@field private _blueGroups Array<SpearheadGroup>
+---@field private _redShootAtPoints Array<Vec2>
+---@field private _blueShootAtPoints Array<Vec2>
+---@field private _isActive boolean
+local BattleManager = {}
+BattleManager.__index = BattleManager
+
+local debugDrawing = false
+
+---@param redGroups Array<SpearheadGroup>
+---@param blueGroups Array<SpearheadGroup>
+---@param name string
+---@param logLevel LogLevel
+---@return BattleManager
+function BattleManager.New(redGroups, blueGroups, name, logLevel)
+    local self = setmetatable({}, BattleManager)
+
+    self._isActive = false
+    self._name = name
+    self._logger = Logger.new("BattleManager_" .. name, logLevel)
+
+    self._redGroups = redGroups
+    self._blueGroups = blueGroups
+
+    self._logger:debug("BattleManager created with name: " .. self._name 
+        .. ", red groups: " .. #self._redGroups 
+        .. ", blue groups: " .. #self._blueGroups)
+
+    return self
+end
+
+---@param self BattleManager
+---@param time number
+local function CheckTask(self, time)
+    local interval = self:Update()
+    if not interval then return end
+    return time + interval
+end
+
+function BattleManager:Start()
+    self._logger:info("BattleManager started: " .. self._name)
+    self._isActive = true
+    self:SetAllInvisible()
+
+    timer.scheduleFunction(CheckTask, self, timer.getTime() + 5)
+end
+
+function BattleManager:Stop()
+    self._isActive = false
+    self:SetAllVisible()
+end
+
+---@private
+function BattleManager:SetAllInvisible()
+    for _, group in pairs(self._redGroups) do
+        group:SetInvisible()
+    end
+
+    for _, group in pairs(self._blueGroups) do
+        group:SetInvisible()
+    end
+end
+
+
+---@private
+function BattleManager:SetAllVisible()
+    for _, group in pairs(self._redGroups) do
+        group:SetVisible()
+    end
+
+    for _, group in pairs(self._blueGroups) do
+        group:SetVisible()
+    end
+end
+
+---comment
+---@return number?
+function BattleManager:Update()
+    if self._isActive == false then
+        return nil
+    end
+
+    self._logger:debug("BattleManager Update called for " .. self._name)
+
+    local shootChance = 1 -- Adjust this value to control the shooting probability (0.0 to 1.0)
+
+    self:LetUnitsShoot(self._redGroups, self._blueGroups)
+    self:LetUnitsShoot(self._blueGroups, self._redGroups)
+
+    return math.random(4, 10) -- Return a random interval between 5 and 10 seconds for the next update
+end
+
+
+---@private
+---@param groups Array<SpearheadGroup>
+---@param targetGroups Array<SpearheadGroup>
+function BattleManager:LetUnitsShoot(groups, targetGroups)
+
+    local shootChance = math.random(3, 7) / 10
+
+    local targetHulls = self:ToShootingHulls(targetGroups)
+
+    for _, group in pairs(groups) do
+
+        local units = group:GetAsUnits()
+
+        for _, unit in pairs(units) do
+
+            if self:IsUnitApplicable(unit) == true then
+
+                if unit:hasAttribute("Infantry") == true then
+                    shootChance = 0.8
+                end
+
+                if math.random() <= shootChance then
+                    local unitPos = unit:getPoint()
+                    local point = self:GetRandomPoint({x = unitPos.x, y = unitPos.z }, targetHulls)
+                    if point then
+
+                        local ammo, qty = self:getBestAmmo(unit)
+                        local shootTask = {
+                            id = "FireAtPoint",
+                            params = {
+                                point = point,
+                                radius = 1,
+                                expendQty = qty,
+                                weaponType = ammo,
+                                expendQtyEnabled = true
+                            }
+                        }
+                        
+                        if debugDrawing == true then
+                            self:DrawDebugLine(point, unit)
+                        end
+
+                        local controller = unit:getController()
+                        if controller then
+                            controller:setTask(shootTask)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end 
+
+---@param unit Unit
+---@return number
+---@return number 
+function BattleManager:getBestAmmo(unit)
+
+    local ammo = unit:getAmmo()
+
+    if not ammo then return 3221225470, 1 end -- Default ammo if no ammo is found
+
+    local shells = {}
+
+    for _, entry in pairs(ammo) do
+        if entry.count and entry.count > 0 then
+            if entry.desc.category == Weapon.Category.SHELL then
+                table.insert(shells, entry)
+            end
+        end
+    end
+
+    local entry = Util.randomFromList(shells)
+    if entry and entry.desc and entry.desc.warhead then
+        local caliber = entry.desc.warhead.caliber
+        if caliber > 50 then
+            return 258503344128, 1
+        else
+            return 258503344129, 25
+        end
+    end
+    return 3221225470, 1
+end
+
+---@private
+---@param unit Unit
+---@return boolean
+function BattleManager:IsUnitApplicable(unit)
+    if not unit or not unit:isExist() then
+        return false
+    end
+
+    if
+        unit:hasAttribute("AAA") == true
+        or unit:hasAttribute("Air Defence") == true
+        or unit:hasAttribute("Mobile AAA") == true
+    then
+        return false
+    end
+
+    return true
+    
+end
+
+---@private
+---@param groups Array<SpearheadGroup>
+---@return Array<Array<Vec2>>
+function BattleManager:ToShootingHulls(groups)
+    local result = {}
+
+    local points = {}
+    for _, group in pairs(groups) do
+        for _, unit in pairs(group:GetObjects()) do
+            local pos = unit:getPoint()
+            table.insert(points, {x = pos.x, y = pos.z})
+        end
+    end
+
+    local hulls = Util.getSeparatedConvexHulls(points, 50)
+    local enlargedHulls = {}
+    for _, hull in pairs(hulls) do
+        local enlarged = Util.enlargeConvexHull(hull, 25)
+        if enlarged then
+            table.insert(enlargedHulls, enlarged)
+        end
+    end
+
+    for _, hull in pairs(enlargedHulls) do
+        if #hull > 2 then
+            table.insert(result, hull)
+        end
+    end
+
+    return result
+end
+
+---@private
+---@param origin Vec2
+---@param groupHulls Array<Array<Vec2>>
+---@return Vec2?
+function BattleManager:GetRandomPoint(origin, groupHulls)
+    
+    local hull = Util.randomFromList(groupHulls) --[[@as Array<Vec2>]]
+    if not hull then return nil end
+    local shootPoints = Util.GetTangentHullPointsFromOrigin(hull, origin)
+
+    if debugDrawing == true then
+        self:DrawDebugZone({ hull })
+    end
+
+    return Util.randomFromList(shootPoints) --[[@as Vec2]]
+end
+
+do --DEBUG
+
+    ---@param unit Unit
+    ---@param target Vec2
+    function BattleManager:DrawDebugLine(target, unit)
+        local color = {r = 1, g = 0, b = 0, a = 1}
+        if unit:getCoalition() == 2 then
+            color = {r = 0, g = 0, b = 1, a = 1}
+        end
+
+        DcsUtil.DrawLine(unit:getPoint(), {x = target.x, y = 0, z = target.y}, color, 1)
+    end
+
+    ---@param hulls Array<Array<Vec2>>
+    function BattleManager:DrawDebugZone(hulls)
+        for _, drawHull in pairs(hulls) do
+            
+            ---@type SpearheadTriggerZone
+            local zone = {
+                name = "temp",
+                zone_type = "Polygon",
+                radius = 0,
+                verts = drawHull,
+                location = { x=drawHull[1].x, y=drawHull[1].y },
+            }
+
+            DcsUtil.DrawZone(zone, {r =0, g=0, b =1, a = 0.5} ,{r =0, g= 0, b =1, a = 0}, 1)
+        end
+    end
+end --DEBUG
+
+return BattleManager
